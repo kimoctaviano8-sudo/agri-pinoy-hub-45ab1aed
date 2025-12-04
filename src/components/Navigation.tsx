@@ -170,9 +170,6 @@ const Navigation = ({
           </div>
         </div>
         {/* Visual app switcher line and safe area spacing */}
-        <div className="flex items-center justify-center bg-background/80 pt-1 pb-2">
-          <div className="w-16 h-[3px] rounded-full bg-muted" />
-        </div>
         <div className="safe-area-bottom bg-background" />
       </div>
     </>;
