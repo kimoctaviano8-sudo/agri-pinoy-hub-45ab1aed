@@ -239,35 +239,33 @@ export const AdminOrdersTab = ({
   };
   const resolveDateRangeOrShowError = () => {
     let dateRange = getDateRange();
-
     if (!dateRange && dateFilter === "all") {
       if (filteredOrders.length === 0) {
         toast({
           title: "No Data",
           description: "There are no orders to include in the report",
-          variant: "destructive",
+          variant: "destructive"
         });
         return null;
       }
-
       const dates = filteredOrders.map(order => new Date(order.created_at));
       const start = new Date(Math.min(...dates.map(d => d.getTime())));
       const end = new Date(Math.max(...dates.map(d => d.getTime())));
-      dateRange = { start, end };
+      dateRange = {
+        start,
+        end
+      };
     }
-
     if (!dateRange) {
       toast({
         title: "Select Date Range",
         description: "Please select a valid date range before exporting",
-        variant: "destructive",
+        variant: "destructive"
       });
       return null;
     }
-
     return dateRange;
   };
-
   const getDateFilterLabel = () => {
     switch (dateFilter) {
       case "all":
@@ -280,30 +278,28 @@ export const AdminOrdersTab = ({
         return "This Month";
       case "custom":
         if (customStartDate && customEndDate) {
-          return `${format(customStartDate, "MMM dd, yyyy")} - ${format(
-            customEndDate,
-            "MMM dd, yyyy",
-          )}`;
+          return `${format(customStartDate, "MMM dd, yyyy")} - ${format(customEndDate, "MMM dd, yyyy")}`;
         }
         return "Custom Range";
       default:
         return "All Time";
     }
   };
-
-  const generatePdfReport = async (
-    metrics: { totalSales: number; totalOrders: number; totalProductsOrdered: number },
-    dateRange: { start: Date; end: Date },
-    dateRangeLabel: string,
-  ) => {
+  const generatePdfReport = async (metrics: {
+    totalSales: number;
+    totalOrders: number;
+    totalProductsOrdered: number;
+  }, dateRange: {
+    start: Date;
+    end: Date;
+  }, dateRangeLabel: string) => {
     // Preload logo to maintain its original aspect ratio in the PDF
     const logoImage = await new Promise<HTMLImageElement>((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
-      img.onerror = (event) => reject(event);
+      img.onerror = event => reject(event);
       img.src = logo;
     });
-
     const maxLogoHeight = 14;
     const maxLogoWidth = 30;
     let logoDisplayWidth = logoImage.width;
@@ -315,7 +311,11 @@ export const AdminOrdersTab = ({
     logoDisplayHeight *= scale;
 
     // Generate PDF report matching on-screen metrics
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4"
+    });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const marginLeft = 20;
@@ -325,17 +325,15 @@ export const AdminOrdersTab = ({
     // Header with logo and title (corporate style)
     const title = "Order Summary Report";
     doc.addImage(logo, "PNG", marginLeft, 14, logoDisplayWidth, logoDisplayHeight);
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     const titleX = marginLeft + usableWidth / 2;
-    doc.text(title, titleX, 22, { align: "center" });
+    doc.text(title, titleX, 22, {
+      align: "center"
+    });
 
     // Summary block
-    const periodLabel = `${format(dateRange.start, "MMM dd, yyyy")} - ${format(
-      dateRange.end,
-      "MMM dd, yyyy",
-    )}`;
+    const periodLabel = `${format(dateRange.start, "MMM dd, yyyy")} - ${format(dateRange.end, "MMM dd, yyyy")}`;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     let y = 38;
@@ -345,7 +343,6 @@ export const AdminOrdersTab = ({
     y += 6;
     doc.text(`Generated At: ${format(new Date(), "MMM dd, yyyy - h:mm a")}`, marginLeft, y);
     y += 10;
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text(`Total Sales: PHP ${metrics.totalSales.toFixed(2)}`, marginLeft, y);
@@ -357,37 +354,36 @@ export const AdminOrdersTab = ({
 
     // Detailed order breakdown table - formal line-item view
     const breakdownOrders = filteredOrders;
-
     const colOrderNoX = marginLeft;
     const colCustomerX = marginLeft + 30;
     const colProductNameX = marginLeft + 65;
     const colProductPriceX = marginLeft + 120;
     const colQuantityX = marginLeft + 145;
     const colSubtotalX = pageWidth - marginRight;
-
     const rowHeight = 6;
-
     const drawTableHeader = () => {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       let headerY = y;
-
       doc.text("Order No.", colOrderNoX, headerY);
       doc.text("Customer", colCustomerX, headerY);
       doc.text("Product Name", colProductNameX, headerY);
-      doc.text("Product Price", colProductPriceX, headerY, { align: "right" });
-      doc.text("Quantity", colQuantityX, headerY, { align: "center" });
-      doc.text("Subtotal", colSubtotalX, headerY, { align: "right" });
-
+      doc.text("Product Price", colProductPriceX, headerY, {
+        align: "right"
+      });
+      doc.text("Quantity", colQuantityX, headerY, {
+        align: "center"
+      });
+      doc.text("Subtotal", colSubtotalX, headerY, {
+        align: "right"
+      });
       headerY += 3;
       doc.setDrawColor(220);
       doc.line(marginLeft, headerY, pageWidth - marginRight, headerY);
-
       y = headerY + 3;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
     };
-
     const ensurePageSpace = () => {
       if (y > pageHeight - 30) {
         doc.addPage();
@@ -398,27 +394,28 @@ export const AdminOrdersTab = ({
 
     // Draw initial header
     drawTableHeader();
-
     breakdownOrders.forEach(order => {
       const orderNo = order.order_number || order.id;
       const customerName = order.profiles?.full_name || order.profiles?.email || "N/A";
-
       if (Array.isArray(order.items) && order.items.length > 0) {
         (order.items as OrderItem[]).forEach(item => {
           ensurePageSpace();
-
           const productName = item.name;
           const priceText = `PHP ${Number(item.price).toFixed(2)}`;
           const subtotalValue = Number(item.price) * Number(item.quantity || 0);
           const subtotalText = `PHP ${subtotalValue.toFixed(2)}`;
-
           doc.text(String(orderNo), colOrderNoX, y);
           doc.text(String(customerName), colCustomerX, y);
           doc.text(String(productName), colProductNameX, y);
-          doc.text(priceText, colProductPriceX, y, { align: "right" });
-          doc.text(String(item.quantity), colQuantityX, y, { align: "center" });
-          doc.text(subtotalText, colSubtotalX, y, { align: "right" });
-
+          doc.text(priceText, colProductPriceX, y, {
+            align: "right"
+          });
+          doc.text(String(item.quantity), colQuantityX, y, {
+            align: "center"
+          });
+          doc.text(subtotalText, colSubtotalX, y, {
+            align: "right"
+          });
           y += rowHeight;
           doc.setDrawColor(240);
           doc.line(marginLeft, y - 1, pageWidth - marginRight, y - 1);
@@ -426,15 +423,19 @@ export const AdminOrdersTab = ({
       } else {
         // Fallback row when no item breakdown is available
         ensurePageSpace();
-
         const subtotalText = `PHP ${Number(order.total_amount || 0).toFixed(2)}`;
         doc.text(String(orderNo), colOrderNoX, y);
         doc.text(String(customerName), colCustomerX, y);
         doc.text("-", colProductNameX, y);
-        doc.text("-", colProductPriceX, y, { align: "right" });
-        doc.text("-", colQuantityX, y, { align: "center" });
-        doc.text(subtotalText, colSubtotalX, y, { align: "right" });
-
+        doc.text("-", colProductPriceX, y, {
+          align: "right"
+        });
+        doc.text("-", colQuantityX, y, {
+          align: "center"
+        });
+        doc.text(subtotalText, colSubtotalX, y, {
+          align: "right"
+        });
         y += rowHeight;
         doc.setDrawColor(240);
         doc.line(marginLeft, y - 1, pageWidth - marginRight, y - 1);
@@ -445,51 +446,59 @@ export const AdminOrdersTab = ({
     });
 
     // Payment method summary section
-    const paymentSummary = new Map<string, { orders: number; sales: number }>();
+    const paymentSummary = new Map<string, {
+      orders: number;
+      sales: number;
+    }>();
     breakdownOrders.forEach(order => {
       const methodKey = order.payment_method || "N/A";
-      const current = paymentSummary.get(methodKey) || { orders: 0, sales: 0 };
+      const current = paymentSummary.get(methodKey) || {
+        orders: 0,
+        sales: 0
+      };
       paymentSummary.set(methodKey, {
         orders: current.orders + 1,
-        sales: current.sales + Number(order.total_amount || 0),
+        sales: current.sales + Number(order.total_amount || 0)
       });
     });
-
     if (paymentSummary.size > 0) {
       if (y > pageHeight - 40) {
         doc.addPage();
         y = 20;
       }
-
       y += 2;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.text("Payment Method Summary", marginLeft, y);
       y += 6;
-
       const ordersColX = marginLeft + usableWidth * 0.55;
       const salesColX = marginLeft + usableWidth * 0.85;
-
       doc.setFontSize(9);
       doc.text("Method", marginLeft, y);
-      doc.text("Orders", ordersColX, y, { align: "right" });
-      doc.text("Sales", salesColX, y, { align: "right" });
+      doc.text("Orders", ordersColX, y, {
+        align: "right"
+      });
+      doc.text("Sales", salesColX, y, {
+        align: "right"
+      });
       y += 4;
       doc.setDrawColor(220);
       doc.line(marginLeft, y, pageWidth - marginRight, y);
       y += 4;
-
       doc.setFont("helvetica", "normal");
       paymentSummary.forEach((summary, method) => {
         if (y > pageHeight - 20) {
           doc.addPage();
           y = 20;
         }
-
         const salesText = `PHP ${summary.sales.toFixed(2)}`;
         doc.text(String(method), marginLeft, y);
-        doc.text(String(summary.orders), ordersColX, y, { align: "right" });
-        doc.text(String(salesText), salesColX, y, { align: "right" });
+        doc.text(String(summary.orders), ordersColX, y, {
+          align: "right"
+        });
+        doc.text(String(salesText), salesColX, y, {
+          align: "right"
+        });
         y += 4;
       });
     }
@@ -498,132 +507,113 @@ export const AdminOrdersTab = ({
     const footerText = `Generated on ${format(new Date(), "MMM dd, yyyy - h:mm a")}`;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.text(footerText, marginLeft + usableWidth / 2, pageHeight - 10, { align: "center" });
-
+    doc.text(footerText, marginLeft + usableWidth / 2, pageHeight - 10, {
+      align: "center"
+    });
     doc.save(`order-summary-${format(new Date(), "yyyyMMdd-HHmmss")}.pdf`);
   };
-
   const handleSaveData = async () => {
     if (!user) {
       toast({
         title: "Error",
         description: "You must be logged in to save data",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     const dateRange = resolveDateRangeOrShowError();
     if (!dateRange) {
       return;
     }
-
     const dateRangeLabel = getDateFilterLabel();
     const metrics = calculateMetrics();
-
     try {
       setSaving(true);
-      const { error } = await supabase.from("sales_reports").insert({
+      const {
+        error
+      } = await supabase.from("sales_reports").insert({
         admin_id: user.id,
         date_range_start: dateRange.start.toISOString(),
         date_range_end: dateRange.end.toISOString(),
         total_sales: metrics.totalSales,
         total_orders: metrics.totalOrders,
-        total_products_ordered: metrics.totalProductsOrdered,
+        total_products_ordered: metrics.totalProductsOrdered
       });
       if (error) throw error;
-
       await generatePdfReport(metrics, dateRange, dateRangeLabel);
-
       toast({
         title: "Report Saved",
-        description: `PDF downloaded. Total Sales: PHP ${metrics.totalSales.toFixed(
-          2,
-        )} | Orders: ${metrics.totalOrders} | Products: ${metrics.totalProductsOrdered}`,
+        description: `PDF downloaded. Total Sales: PHP ${metrics.totalSales.toFixed(2)} | Orders: ${metrics.totalOrders} | Products: ${metrics.totalProductsOrdered}`
       });
     } catch (error) {
       console.error("Error saving sales report:", error);
       toast({
         title: "Error",
         description: "Failed to save sales report",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSaving(false);
     }
   };
-
   const handleDownloadPdf = async () => {
     const dateRange = resolveDateRangeOrShowError();
     if (!dateRange) {
       return;
     }
-
     const dateRangeLabel = getDateFilterLabel();
     const metrics = calculateMetrics();
-
     if (filteredOrders.length === 0) {
       toast({
         title: "No Data",
         description: "There are no orders to include in the PDF report",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
       setExportingPdf(true);
       await generatePdfReport(metrics, dateRange, dateRangeLabel);
       toast({
         title: "PDF Exported",
-        description: `PDF downloaded. Total Sales: PHP ${metrics.totalSales.toFixed(
-          2,
-        )} | Orders: ${metrics.totalOrders} | Products: ${metrics.totalProductsOrdered}`,
+        description: `PDF downloaded. Total Sales: PHP ${metrics.totalSales.toFixed(2)} | Orders: ${metrics.totalOrders} | Products: ${metrics.totalProductsOrdered}`
       });
     } catch (error) {
       console.error("Error exporting PDF:", error);
       toast({
         title: "Error",
         description: "Failed to export PDF report",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setExportingPdf(false);
     }
   };
-
   const handleDownloadExcel = async () => {
     const dateRange = resolveDateRangeOrShowError();
     if (!dateRange) {
       return;
     }
-
     const dateRangeLabel = getDateFilterLabel();
     const breakdownOrders = filteredOrders;
-
     if (breakdownOrders.length === 0) {
       toast({
         title: "No Data",
         description: "There are no orders to include in the Excel export",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
       setExportingExcel(true);
-
       const rows: any[] = [];
-
       breakdownOrders.forEach(order => {
         const orderNo = order.order_number || order.id;
         const customerName = order.profiles?.full_name || order.profiles?.email || "N/A";
         const orderDate = format(new Date(order.created_at), "yyyy-MM-dd HH:mm");
-
         if (Array.isArray(order.items) && order.items.length > 0) {
           (order.items as OrderItem[]).forEach(item => {
             const subtotalValue = Number(item.price) * Number(item.quantity || 0);
-
             rows.push({
               "Order No": orderNo,
               Customer: customerName,
@@ -633,7 +623,7 @@ export const AdminOrdersTab = ({
               Subtotal: subtotalValue,
               Status: getStatusLabel(order.status),
               "Payment Method": order.payment_method.replace("_", " "),
-              "Order Date": orderDate,
+              "Order Date": orderDate
             });
           });
         } else {
@@ -646,53 +636,49 @@ export const AdminOrdersTab = ({
             Subtotal: Number(order.total_amount || 0),
             Status: getStatusLabel(order.status),
             "Payment Method": order.payment_method.replace("_", " "),
-            "Order Date": orderDate,
+            "Order Date": orderDate
           });
         }
       });
-
       const worksheet = XLSX.utils.json_to_sheet(rows);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Order Summary");
-
       const fileName = `order-summary-${format(new Date(), "yyyyMMdd-HHmmss")}.xlsx`;
       XLSX.writeFile(workbook, fileName);
-
       toast({
         title: "Excel Exported",
-        description: `Excel file downloaded for ${dateRangeLabel}.`,
+        description: `Excel file downloaded for ${dateRangeLabel}.`
       });
     } catch (error) {
       console.error("Error exporting Excel:", error);
       toast({
         title: "Error",
         description: "Failed to export Excel file",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setExportingExcel(false);
     }
   };
-
   const handleUpdateStatus = async (orderId: string, newStatus: string, successMessage: string) => {
     try {
       setUpdatingOrderId(orderId);
       const {
-        error,
+        error
       } = await supabase.from("orders").update({
-        status: newStatus,
+        status: newStatus
       }).eq("id", orderId);
       if (error) throw error;
       toast({
         title: "Order Updated",
-        description: successMessage,
+        description: successMessage
       });
     } catch (error) {
       console.error("Error updating order status:", error);
       toast({
         title: "Error",
         description: "Failed to update order status",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setUpdatingOrderId(null);
@@ -735,7 +721,7 @@ export const AdminOrdersTab = ({
             </Button>
           </div>
 
-          {dateFilter === "custom" && <div className="flex flex-wrap gap-2 items-center">
+          {dateFilter === "custom" && <div className="flex-wrap gap-2 flex items-center justify-center">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className={cn("text-xs justify-start", !customStartDate && "text-muted-foreground")}>
@@ -784,24 +770,12 @@ export const AdminOrdersTab = ({
           {/* Export Actions */}
           <div className="mt-3 space-y-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                onClick={handleDownloadPdf}
-                disabled={exportingPdf || (dateFilter === "custom" && (!customStartDate || !customEndDate))}
-                size="sm"
-                className="w-full"
-              >
+              <Button variant="outline" onClick={handleDownloadPdf} disabled={exportingPdf || dateFilter === "custom" && (!customStartDate || !customEndDate)} size="sm" className="w-full">
                 <FileDown className="w-4 h-4 mr-2" />
                 {exportingPdf ? "Exporting..." : "Download as PDF"}
               </Button>
 
-              <Button
-                variant="outline"
-                onClick={handleDownloadExcel}
-                disabled={exportingExcel || (dateFilter === "custom" && (!customStartDate || !customEndDate))}
-                size="sm"
-                className="w-full"
-              >
+              <Button variant="outline" onClick={handleDownloadExcel} disabled={exportingExcel || dateFilter === "custom" && (!customStartDate || !customEndDate)} size="sm" className="w-full">
                 <FileSpreadsheet className="w-4 h-4 mr-2" />
                 {exportingExcel ? "Exporting..." : "Download as Excel (XLSX)"}
               </Button>
