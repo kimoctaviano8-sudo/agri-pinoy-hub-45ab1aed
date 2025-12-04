@@ -1,0 +1,7 @@
+project_id = "bywimfvrbcjcktqzdvmk"
+
+[functions.weather-forecast]
+verify_jwt = false
+
+[functions.csc-location]
+verify_jwt = false

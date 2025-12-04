@@ -1,0 +1,266 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-22
+*/
+
+@layer base {
+  :root {
+    /* Plant Scanner Inspired Color Palette - Reduced Light Colors */
+    --background: 0 0% 100%;  /* Pure white background */
+    --foreground: 150 81% 20%;  /* Deep emerald for text */
+
+    --card: 0 0% 97%;  /* Slightly darker white cards */
+    --card-foreground: 150 81% 20%;
+
+    --popover: 0 0% 97%;  /* Slightly darker white */
+    --popover-foreground: 150 81% 20%;
+
+    /* Primary using much darker emerald tones */
+    --primary: 151 83% 25%;  /* Much darker emerald */
+    --primary-foreground: 0 0% 100%;  /* Pure white text on primary */
+    --primary-glow: 142 76% 30%;  /* Much darker green */
+    --primary-deep: 150 81% 20%;  /* Much darker emerald-700 */
+
+    /* Secondary using much darker green */
+    --secondary: 142 71% 28%;  /* Much darker green */
+    --secondary-foreground: 0 0% 100%;  /* Pure white text on secondary */
+
+    /* Muted using darker emerald-100 tones */
+    --muted: 154 54% 85%;  /* Darker emerald-100 */
+    --muted-foreground: 150 81% 20%;
+
+    /* Accent using darker green */
+    --accent: 142 76% 35%;  /* Much darker green */
+    --accent-foreground: 0 0% 100%;
+    --accent-warm: 138 60% 85%;  /* Much darker green-50 */
+
+    --destructive: 0 75% 58%;
+    --destructive-foreground: 0 0% 100%;  /* Pure white text on destructive */
+
+    --warning: 38 92% 50%;  /* amber-500 for warning states */
+    --warning-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;  /* green-600 for success states */
+    --success-foreground: 0 0% 100%;
+
+    --border: 154 54% 83%;  /* Darker emerald border */
+    --input: 138 60% 95%;     /* Darker green input background */
+    --ring: 151 83% 42%;   /* Primary emerald for focus rings */
+
+    /* Using emerald for links */
+    --link: 151 83% 42%;  /* emerald-600 */
+    --link-foreground: 150 81% 20%;
+
+    /* Plant Scanner Exact Gradients - Light Background Gradients */
+    --gradient-primary: linear-gradient(to right, hsl(142 71% 45%), hsl(150 81% 36%));  /* green-600 to emerald-700 */
+    --gradient-earth: linear-gradient(to bottom right, hsl(138 60% 97%), hsl(154 54% 95%));  /* Very light green-50 to emerald-100 */
+    --gradient-accent: linear-gradient(to right, hsl(142 76% 50%), hsl(151 83% 42%));  /* green-500 to emerald-600 */
+    --gradient-forest: linear-gradient(to right, hsl(156 81% 49%), hsl(142 76% 50%));  /* emerald-500 to green-600 */
+    --gradient-botanical: linear-gradient(to bottom right, hsl(138 60% 98%), hsl(154 54% 96%));  /* Very light backgrounds */
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 99%), hsl(138 60% 98%));
+    --gradient-scanner-hero: linear-gradient(to right, hsl(142 71% 45%), hsl(150 81% 36%));  /* Header gradient */
+    --gradient-scanner-bg: linear-gradient(to bottom right, hsl(138 60% 98%), hsl(154 54% 96%));  /* Very light background gradient */
+    --gradient-emerald: linear-gradient(to right, hsl(151 83% 42%), hsl(156 81% 49%));  /* emerald-600 to emerald-500 */
+    --gradient-button-primary: linear-gradient(to right, hsl(142 76% 50%), hsl(151 83% 42%));  /* green-500 to emerald-600 */
+    --gradient-button-secondary: linear-gradient(to right, hsl(217 91% 60%), hsl(224 76% 48%));  /* blue-500 to indigo-600 */
+    --gradient-button-primary-deep: linear-gradient(to right, hsl(151 83% 35%), hsl(151 83% 40%));  /* lighter by ~15% */
+    --gradient-info: linear-gradient(to right, hsl(214 100% 97%), hsl(224 76% 94%));  /* Very light blue-50 to indigo-100 */
+    --gradient-section: linear-gradient(to bottom right, hsl(0 0% 100%), hsl(138 60% 98%));  /* White to very light green */
+    --gradient-page: linear-gradient(to bottom, hsl(0 0% 100%), hsl(154 54% 97%));  /* White to very light emerald */
+
+    /* Updated shadows with Plant Scanner palette */
+    --shadow-card: 0 4px 25px hsl(151 83% 42% / 0.15), 0 2px 10px hsl(151 83% 42% / 0.08);
+    --shadow-elevated: 0 8px 35px hsl(151 83% 42% / 0.20), 0 4px 15px hsl(151 83% 42% / 0.12);
+    --shadow-glow: 0 0 30px hsl(142 76% 50% / 0.4);
+    --shadow-botanical: 0 4px 20px hsl(150 81% 36% / 0.18);
+
+    /* Smooth transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.75rem;
+
+    /* Mobile-optimized font sizes */
+    --font-xs: 0.75rem;      /* 12px */
+    --font-sm: 0.875rem;     /* 14px */
+    --font-base: 0.9375rem;  /* 15px - slightly smaller base for mobile */
+    --font-lg: 1.0625rem;    /* 17px - reduced from default 18px */
+    --font-xl: 1.1875rem;    /* 19px - reduced from default 20px */
+    --font-2xl: 1.375rem;    /* 22px - reduced from default 24px */
+    --font-3xl: 1.625rem;    /* 26px - reduced from default 30px */
+    --font-4xl: 2rem;        /* 32px - reduced from default 36px */
+
+    /* Updated sidebar with Plant Scanner palette */
+    --sidebar-background: 0 0% 100%;  /* Pure white sidebar */
+    --sidebar-foreground: 150 81% 20%;
+    --sidebar-primary: 151 83% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;  /* Pure white text on primary */
+    --sidebar-accent: 138 76% 98%;  /* Very light green accent */
+    --sidebar-accent-foreground: 150 81% 20%;
+    --sidebar-border: 154 54% 88%;
+    --sidebar-ring: 151 83% 42%;
+  }
+
+  .dark {
+    /* Dark mode - Soft dark gray for eye comfort (#121212 / #1A1A1A inspired) */
+    --background: 0 0% 7%;         /* Soft dark gray #121212 */
+    --foreground: 0 0% 95%;        /* Off-white text for readability */
+
+    --card: 0 0% 10%;              /* Slightly lighter card #1A1A1A */
+    --card-foreground: 0 0% 95%;   /* Off-white text on cards */
+
+    --popover: 0 0% 12%;           /* Popover background */
+    --popover-foreground: 0 0% 95%; /* Off-white text on popovers */
+
+    /* Bright emerald primary for dark mode - high contrast */
+    --primary: 151 70% 50%;        /* Bright emerald for visibility */
+    --primary-foreground: 0 0% 100%; /* Pure white text on primary */
+    --primary-glow: 142 70% 55%;   /* Bright green glow */
+    --primary-deep: 151 70% 45%;   /* Deeper emerald */
+
+    /* Secondary with subtle green tint */
+    --secondary: 150 15% 18%;      /* Dark gray with subtle green */
+    --secondary-foreground: 0 0% 95%; /* Off-white text on secondary */
+
+    /* Muted dark tones */
+    --muted: 0 0% 15%;             /* Neutral dark muted */
+    --muted-foreground: 0 0% 65%;  /* Muted gray text */
+
+    /* Accent colors - bright for visibility */
+    --accent: 142 70% 50%;         /* Bright green accent */
+    --accent-foreground: 0 0% 100%; /* White text on accent */
+    --accent-warm: 151 50% 40%;    /* Warm green accent */
+
+    /* Status colors adjusted for dark mode */
+    --destructive: 0 72% 51%;      /* Bright red for visibility */
+    --destructive-foreground: 0 0% 100%; /* White text on destructive */
+
+    --warning: 38 92% 50%;         /* Amber warning */
+    --warning-foreground: 0 0% 100%;
+
+    --success: 142 70% 45%;        /* Green success */
+    --success-foreground: 0 0% 100%;
+
+    /* Borders and inputs */
+    --border: 0 0% 20%;            /* Subtle gray border */
+    --input: 0 0% 15%;             /* Dark input background */
+    --ring: 151 70% 50%;           /* Emerald focus ring */
+
+    /* Link colors */
+    --link: 151 70% 55%;           /* Bright emerald links */
+    --link-foreground: 151 70% 55%;
+
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(to right, hsl(142 70% 45%), hsl(151 70% 50%));
+    --gradient-earth: linear-gradient(to bottom right, hsl(0 0% 10%), hsl(0 0% 12%));
+    --gradient-accent: linear-gradient(to right, hsl(142 70% 45%), hsl(151 70% 50%));
+    --gradient-forest: linear-gradient(to right, hsl(151 70% 45%), hsl(142 70% 50%));
+    --gradient-botanical: linear-gradient(to bottom right, hsl(0 0% 8%), hsl(0 0% 10%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 11%), hsl(0 0% 9%));
+    --gradient-scanner-hero: linear-gradient(to right, hsl(142 70% 40%), hsl(151 70% 45%));
+    --gradient-scanner-bg: linear-gradient(to bottom right, hsl(0 0% 8%), hsl(0 0% 10%));
+    --gradient-emerald: linear-gradient(to right, hsl(151 70% 45%), hsl(142 70% 50%));
+    --gradient-button-primary: linear-gradient(to right, hsl(142 70% 45%), hsl(151 70% 50%));
+    --gradient-button-secondary: linear-gradient(to right, hsl(217 80% 50%), hsl(224 70% 45%));
+    --gradient-button-primary-deep: linear-gradient(to right, hsl(151 70% 40%), hsl(151 70% 45%));
+    --gradient-info: linear-gradient(to right, hsl(0 0% 12%), hsl(0 0% 15%));
+    --gradient-section: linear-gradient(to bottom right, hsl(0 0% 8%), hsl(0 0% 10%));
+    --gradient-page: linear-gradient(to bottom, hsl(0 0% 7%), hsl(0 0% 9%));
+
+    /* Dark mode shadows */
+    --shadow-card: 0 4px 25px hsl(0 0% 0% / 0.3), 0 2px 10px hsl(0 0% 0% / 0.2);
+    --shadow-elevated: 0 8px 35px hsl(0 0% 0% / 0.4), 0 4px 15px hsl(0 0% 0% / 0.25);
+    --shadow-glow: 0 0 30px hsl(151 70% 50% / 0.3);
+    --shadow-botanical: 0 4px 20px hsl(0 0% 0% / 0.3);
+
+    /* Dark sidebar */
+    --sidebar-background: 0 0% 7%;        /* Soft dark gray */
+    --sidebar-foreground: 0 0% 90%;       /* Off-white text */
+    --sidebar-primary: 151 70% 50%;       /* Bright emerald primary */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on primary */
+    --sidebar-accent: 0 0% 15%;           /* Dark accent surface */
+    --sidebar-accent-foreground: 0 0% 90%; /* Off-white text */
+    --sidebar-border: 0 0% 20%;           /* Subtle border */
+    --sidebar-ring: 151 70% 50%;          /* Emerald focus ring */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    /* Comprehensive smooth transitions for theme switching */
+    transition: 
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      fill 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      stroke 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Smooth theme transitions on root element */
+  html {
+    transition: 
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Hide scrollbars on html element */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    transition: 
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    /* Hide scrollbars for mobile design */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  body::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mobile-first scrollbar hiding */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area helper for iOS/Android home indicator */
+  .safe-area-bottom {
+    height: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Enhanced touch targets for mobile */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  /* Mobile-optimized hover effects */
+  .hover-scale {
+    transition: transform 0.2s ease-out;
+  }
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Responsive text truncation */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}

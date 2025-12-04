@@ -1,0 +1,624 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { ArrowLeft, MapPin, CreditCard, Truck, Percent } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image_url: string;
+  description: string;
+}
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  image_url: string;
+  quantity: number;
+  category?: string;
+}
+
+const Checkout = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const productId = searchParams.get('product');
+  const quantity = parseInt(searchParams.get('quantity') || '1');
+  
+  // Check if coming from cart or single product
+  const cartData = location.state as { items: CartItem[]; fromCart: boolean } | null;
+  const isFromCart = cartData?.fromCart || false;
+  const cartItems = cartData?.items || [];
+
+  const [product, setProduct] = useState<Product | null>(null);
+  const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Form states
+  const [address, setAddress] = useState({
+    street_number: '',
+    barangay: '',
+    city: '',
+    phone: ''
+  });
+  const [voucherCode, setVoucherCode] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
+  const [paymentSubMethod, setPaymentSubMethod] = useState('');
+  const [notes, setNotes] = useState('');
+
+  // Pricing states
+  const [voucherDiscount, setVoucherDiscount] = useState(0);
+  const shippingFee = 50; // Fixed shipping fee
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Handle cart checkout
+      if (isFromCart) {
+        if (cartItems.length === 0) {
+          navigate('/cart');
+          return;
+        }
+        setCheckoutItems(cartItems);
+        setLoading(false);
+      }
+      // Handle single product checkout
+      else if (productId) {
+        try {
+          // Fetch product
+          const { data: productData, error: productError } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', productId)
+            .single();
+
+          if (productError) throw productError;
+          setProduct(productData);
+          
+          // Convert single product to cart item format
+          setCheckoutItems([{
+            id: productData.id,
+            name: productData.name,
+            price: productData.price,
+            image_url: productData.image_url,
+            quantity: quantity
+          }]);
+        } catch (error) {
+          console.error('Error fetching product:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load product data",
+            variant: "destructive"
+          });
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        navigate('/products');
+        return;
+      }
+
+      // Fetch user profile if logged in
+      if (user) {
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (!profileError && profileData) {
+            setUserProfile(profileData);
+            setAddress({
+              street_number: profileData.street_number || '',
+              barangay: profileData.barangay || '',
+              city: profileData.city || '',
+              phone: profileData.phone || ''
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      }
+    };
+
+    fetchData();
+  }, [productId, isFromCart, cartItems, user, navigate, toast, quantity]);
+
+  const handleVoucherApply = async () => {
+    if (!voucherCode.trim()) return;
+
+    const subtotal = checkoutItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const currentDate = new Date();
+    
+    try {
+      // Check monthly sales first
+      const { data: monthlySale, error: saleError } = await supabase
+        .from('monthly_sales')
+        .select('*')
+        .eq('event_code', voucherCode)
+        .eq('active', true)
+        .single();
+
+      if (monthlySale && !saleError) {
+        const startDate = new Date(monthlySale.valid_date_start);
+        const endDate = new Date(monthlySale.valid_date_end);
+        
+        if (currentDate >= startDate && currentDate <= endDate) {
+          const discountAmount = subtotal * (monthlySale.discount_percentage / 100);
+          setVoucherDiscount(discountAmount);
+          toast({
+            title: "Monthly Sale Applied!",
+            description: `${monthlySale.discount_percentage}% discount has been applied to your order`
+          });
+          return;
+        } else {
+          toast({
+            title: "Sale Not Active",
+            description: "This monthly sale is not currently active",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Check vouchers table
+      const { data: voucher, error: voucherError } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('code', voucherCode)
+        .eq('active', true)
+        .single();
+
+      if (voucher && !voucherError) {
+        // Check if voucher hasn't started yet
+        if (voucher.valid_from && new Date(voucher.valid_from) > currentDate) {
+          toast({
+            title: "Voucher Not Yet Active",
+            description: "This voucher is not yet active",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Check if voucher has expired
+        if (voucher.expires_at && new Date(voucher.expires_at) < currentDate) {
+          toast({
+            title: "Voucher Expired",
+            description: "This voucher has expired",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Check minimum purchase requirement
+        if (subtotal < voucher.min_purchase) {
+          toast({
+            title: "Minimum Purchase Not Met",
+            description: `This voucher requires a minimum purchase of ₱${voucher.min_purchase.toFixed(2)}`,
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Check usage limit
+        if (voucher.usage_limit && voucher.used_count >= voucher.usage_limit) {
+          toast({
+            title: "Voucher Limit Reached",
+            description: "This voucher has reached its usage limit",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Calculate discount
+        let discountAmount = 0;
+        if (voucher.discount_type === 'percentage') {
+          discountAmount = subtotal * (voucher.discount_value / 100);
+          if (voucher.max_discount) {
+            discountAmount = Math.min(discountAmount, voucher.max_discount);
+          }
+        } else {
+          discountAmount = voucher.discount_value;
+        }
+
+        setVoucherDiscount(discountAmount);
+        toast({
+          title: "Voucher Applied!",
+          description: `₱${discountAmount.toFixed(2)} discount has been applied to your order`
+        });
+        return;
+      }
+
+      // If no valid voucher or sale found
+      toast({
+        title: "Invalid Voucher",
+        description: "The voucher code you entered is not valid or has expired",
+        variant: "destructive"
+      });
+    } catch (error) {
+      console.error('Error validating voucher:', error);
+      toast({
+        title: "Error",
+        description: "Failed to validate voucher code",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handlePlaceOrder = async () => {
+    if (checkoutItems.length === 0) return;
+
+    // Validate required fields
+    if (!address.street_number || !address.barangay || !address.city || !address.phone) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all address fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Check stock availability for all items before placing order
+      const stockChecks = await Promise.all(
+        checkoutItems.map(async (item) => {
+          const { data: product, error } = await supabase
+            .from('products')
+            .select('stock_quantity')
+            .eq('id', item.id)
+            .single();
+          
+          if (error) throw error;
+          
+          return {
+            id: item.id,
+            name: item.name,
+            requestedQuantity: item.quantity,
+            availableStock: product.stock_quantity
+          };
+        })
+      );
+
+      // Check if any items have insufficient stock
+      const insufficientStockItems = stockChecks.filter(
+        item => item.availableStock < item.requestedQuantity
+      );
+
+      if (insufficientStockItems.length > 0) {
+        const itemNames = insufficientStockItems.map(item => 
+          `${item.name} (requested: ${item.requestedQuantity}, available: ${item.availableStock})`
+        ).join(', ');
+        
+        toast({
+          title: "Insufficient Stock",
+          description: `Not enough stock for: ${itemNames}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Generate order number
+      const orderNumber = `ORD${Date.now()}`;
+      
+      // Save order to database - this will trigger stock deduction via database trigger
+      const { error } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user?.id,
+          order_number: orderNumber,
+          items: JSON.parse(JSON.stringify(checkoutItems)),
+          total_amount: finalAmount,
+          shipping_address: JSON.parse(JSON.stringify(address)),
+          payment_method: paymentMethod,
+          voucher_code: voucherCode || null,
+          voucher_discount: voucherDiscount,
+          shipping_fee: shippingFee,
+          notes: notes || null,
+          status: 'to_pay'
+        });
+
+      if (error) throw error;
+
+      const itemNames = checkoutItems.map(item => item.name).join(', ');
+      toast({
+        title: "Order Placed Successfully!",
+        description: `Your order for ${itemNames} has been placed`,
+      });
+      
+      // Navigate to Order Success page
+      navigate('/order-success');
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast({
+        title: "Order Failed",
+        description: "There was an error placing your order. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">Loading checkout...</div>
+      </div>
+    );
+  }
+
+  if (checkoutItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">No items to checkout</div>
+      </div>
+    );
+  }
+
+  const subtotal = checkoutItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalQuantity = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
+  const finalAmount = subtotal + shippingFee - voucherDiscount;
+
+  return (
+    <div className="min-h-screen bg-background p-4 pb-24">
+      <div className="max-w-2xl mx-auto">
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate(-1)}
+          className="mb-4 p-2"
+          size="sm"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+
+        <h1 className="text-xl font-bold mb-6">Checkout</h1>
+
+        {/* Order Summary */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="w-5 h-5" />
+              Order Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {checkoutItems.map((item, index) => (
+                <div key={item.id} className={`flex gap-4 ${index > 0 ? 'border-t pt-4' : ''}`}>
+                  <img
+                    src={item.image_url || "/placeholder.svg"}
+                    alt={item.name}
+                    className="w-16 h-16 object-cover rounded-md"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-sm">{item.name}</h3>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
+                      <span className="font-bold text-primary">₱{(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Delivery Address */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              Delivery Address
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="street_number">Street/House Number</Label>
+                <Input
+                  id="street_number"
+                  value={address.street_number}
+                  onChange={(e) => setAddress(prev => ({ ...prev, street_number: e.target.value }))}
+                  placeholder="Enter street/house number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  value={address.phone}
+                  onChange={(e) => setAddress(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Enter phone number"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="barangay">Barangay</Label>
+                <Input
+                  id="barangay"
+                  value={address.barangay}
+                  onChange={(e) => setAddress(prev => ({ ...prev, barangay: e.target.value }))}
+                  placeholder="Enter barangay"
+                />
+              </div>
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={address.city}
+                  onChange={(e) => setAddress(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Enter city"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="notes">Delivery Notes (Optional)</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add any special delivery instructions..."
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Voucher Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Percent className="w-5 h-5" />
+              Voucher Code
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input
+                value={voucherCode}
+                onChange={(e) => setVoucherCode(e.target.value)}
+                placeholder="Enter voucher code (e.g., 1.1, 2.2, WELCOME10)"
+              />
+              <Button onClick={handleVoucherApply} variant="outline">
+                Apply
+              </Button>
+            </div>
+            {voucherDiscount > 0 && (
+              <p className="text-sm text-green-600 mt-2">
+                Voucher applied! You saved ₱{voucherDiscount.toFixed(2)}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Payment Method */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Payment Method
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RadioGroup 
+              value={paymentMethod} 
+              onValueChange={(value) => {
+                setPaymentMethod(value);
+                setPaymentSubMethod(''); // Reset sub-method when changing payment method
+              }}
+            >
+              <div className="space-y-4">
+                {/* Cash on Delivery */}
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <Label htmlFor="cod" className="flex-1 cursor-pointer">Cash on Delivery</Label>
+                  <RadioGroupItem value="cash_on_delivery" id="cod" />
+                </div>
+
+                {/* PayMongo */}
+                <div className="border rounded-lg">
+                  <div className="flex items-center justify-between p-3">
+                    <Label htmlFor="paymongo" className="flex-1 cursor-pointer">PayMongo</Label>
+                    <RadioGroupItem value="paymongo" id="paymongo" />
+                  </div>
+                  {paymentMethod === 'paymongo' && (
+                    <div className="px-3 pb-3 border-t">
+                      <Select value={paymentSubMethod} onValueChange={setPaymentSubMethod}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select payment option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gcash">GCash</SelectItem>
+                          <SelectItem value="maya">Maya</SelectItem>
+                          <SelectItem value="credit_debit">Credit/Debit Card</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+
+                {/* Bank Transfer */}
+                <div className="border rounded-lg">
+                  <div className="flex items-center justify-between p-3">
+                    <Label htmlFor="bank" className="flex-1 cursor-pointer">Bank Transfer</Label>
+                    <RadioGroupItem value="bank_transfer" id="bank" />
+                  </div>
+                  {paymentMethod === 'bank_transfer' && (
+                    <div className="px-3 pb-3 border-t">
+                      <Select value={paymentSubMethod} onValueChange={setPaymentSubMethod}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select bank" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bdo">BDO</SelectItem>
+                          <SelectItem value="bpi">BPI</SelectItem>
+                          <SelectItem value="landbank">Landbank</SelectItem>
+                          <SelectItem value="metrobank">Metrobank</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </RadioGroup>
+          </CardContent>
+        </Card>
+
+        {/* Payment Summary */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Payment Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span>Product Total ({totalQuantity} item{totalQuantity > 1 ? 's' : ''})</span>
+              <span>₱{subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Shipping Fee</span>
+              <span>₱{shippingFee.toFixed(2)}</span>
+            </div>
+            {voucherDiscount > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Voucher Discount</span>
+                <span>-₱{voucherDiscount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="border-t pt-3">
+              <div className="flex justify-between font-bold text-base">
+                <span>Total Amount</span>
+                <span className="text-primary">₱{finalAmount.toFixed(2)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Place Order Button */}
+        <Button 
+          onClick={handlePlaceOrder}
+          className="w-full h-12 text-base font-medium"
+          size="lg"
+        >
+          Place Order - ₱{finalAmount.toFixed(2)}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default Checkout;
