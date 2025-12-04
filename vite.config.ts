@@ -9,6 +9,14 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  optimizeDeps: {
+    include: ["xlsx"],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/xlsx/, /node_modules/],
+    },
+  },
   plugins: [
     react(),
     mode === 'development' &&
