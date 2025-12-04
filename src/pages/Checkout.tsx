@@ -123,12 +123,13 @@ const Checkout = () => {
 
           if (!profileError && profileData) {
             setUserProfile(profileData);
-            setAddress({
-              street_number: profileData.street_number || '',
-              barangay: profileData.barangay || '',
-              city: profileData.city || '',
-              phone: profileData.phone || ''
-            });
+            // Only prefill address fields that are still empty so we don't override user typing
+            setAddress((prev) => ({
+              street_number: prev.street_number || profileData.street_number || '',
+              barangay: prev.barangay || profileData.barangay || '',
+              city: prev.city || profileData.city || '',
+              phone: prev.phone || profileData.phone || '',
+            }));
           }
         } catch (error) {
           console.error('Error fetching profile:', error);
