@@ -78,28 +78,6 @@ export const AdminAnalytics = ({ news, products, users, forumPosts }: AnalyticsP
               </RechartsBarChart>
             </ResponsiveContainer>
           </div>
-
-          {/* Horizontal stacked metrics for quick overview */}
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {contentOverviewData.map((item) => (
-              <div
-                key={item.name}
-                className="flex flex-col items-start justify-between rounded-md border bg-background/50 px-3 py-2"
-              >
-                <span className="text-xs font-medium text-muted-foreground">
-                  {item.name}
-                </span>
-                <div className="mt-1 flex items-baseline gap-1">
-                  <span className="text-lg font-semibold text-foreground">
-                    {item.value}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    / {item.total}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
         </CardContent>
       </Card>
 
