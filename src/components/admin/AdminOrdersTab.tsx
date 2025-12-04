@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, Clock, Truck, CheckCircle, XCircle, Loader2, Calendar as CalendarIcon, Save, FileDown, FileSpreadsheet } from "lucide-react";
+import { Package, Clock, Truck, CheckCircle, XCircle, Loader2, Calendar as CalendarIcon, FileDown, FileSpreadsheet } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -52,7 +52,7 @@ export const AdminOrdersTab = ({
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "weekly" | "monthly" | "custom">("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
-  const [saving, setSaving] = useState(false);
+  
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
@@ -528,7 +528,6 @@ export const AdminOrdersTab = ({
     const dateRangeLabel = getDateFilterLabel();
     const metrics = calculateMetrics();
     try {
-      setSaving(true);
       const {
         error
       } = await supabase.from("sales_reports").insert({
@@ -552,8 +551,6 @@ export const AdminOrdersTab = ({
         description: "Failed to save sales report",
         variant: "destructive"
       });
-    } finally {
-      setSaving(false);
     }
   };
   const handleDownloadPdf = async () => {
