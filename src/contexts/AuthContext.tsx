@@ -181,6 +181,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (userData: RegisterData): Promise<boolean> => {
     try {
+      // Determine default avatar based on gender (AI-generated Asian farmer avatars)
+      const getDefaultAvatarUrl = (gender: string) => {
+        const baseUrl = window.location.origin;
+        if (gender === 'female') {
+          return `${baseUrl}/avatars/default-female-farmer.jpg`;
+        }
+        // Default to male farmer for male, other, or prefer_not_to_say
+        return `${baseUrl}/avatars/default-male-farmer.jpg`;
+      };
+
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -197,6 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             barangay: userData.barangay,
             role: userData.role,
             gender: userData.gender,
+            avatar_url: getDefaultAvatarUrl(userData.gender),
           }
         }
       });
