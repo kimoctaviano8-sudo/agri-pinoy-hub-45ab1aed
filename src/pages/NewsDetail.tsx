@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { NewsVideoEmbed } from "@/components/NewsVideoEmbed";
 
 interface NewsArticle {
   id: string;
@@ -101,9 +102,55 @@ const NewsDetail = () => {
 
   const estimateReadTime = (content: string) => {
     const wordsPerMinute = 200;
-    const wordCount = content.split(' ').length;
+    const wordCount = content.split(" ").length;
     const readTime = Math.ceil(wordCount / wordsPerMinute);
     return `${readTime} min read`;
+  };
+
+  const isSupportedVideoUrl = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+
+      return (
+        host.includes("youtube.com") ||
+        host === "youtu.be" ||
+        host.includes("facebook.com") ||
+        host === "fb.watch"
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  const extractVideoUrlFromLine = (line: string): string | null => {
+    const match = line.trim().match(/(https?:\/\/[^\s]+)/);
+    if (!match) return null;
+    const url = match[1];
+    return isSupportedVideoUrl(url) ? url : null;
+  };
+
+  const renderContentWithEmbeds = (content: string) => {
+    const lines = content.split(/\r?\n/);
+
+    return lines.map((line, index) => {
+      const trimmed = line.trim();
+      const videoUrl = extractVideoUrlFromLine(trimmed);
+
+      if (videoUrl) {
+        return <NewsVideoEmbed key={`video-${index}`} url={videoUrl} />;
+      }
+
+      if (!trimmed) {
+        return null;
+      }
+
+      return (
+        <p key={`text-${index}`} className="whitespace-pre-wrap">
+          {line}
+        </p>
+      );
+    });
   };
 
   if (loading) {
@@ -175,8 +222,8 @@ const NewsDetail = () => {
             </div>
 
             <div className="prose prose-sm md:prose-lg max-w-none">
-              <div className="whitespace-pre-wrap text-foreground text-sm md:text-base leading-relaxed">
-                {article.content}
+              <div className="space-y-4 text-foreground text-sm md:text-base leading-relaxed">
+                {renderContentWithEmbeds(article.content)}
               </div>
             </div>
           </CardContent>
