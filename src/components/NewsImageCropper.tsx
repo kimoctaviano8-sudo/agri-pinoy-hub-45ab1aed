@@ -186,7 +186,7 @@ export const NewsImageCropper = ({
                     <Slider
                       value={zoom}
                       onValueChange={setZoom}
-                      min={50}
+                      min={10}
                       max={300}
                       step={10}
                       className="w-full"
