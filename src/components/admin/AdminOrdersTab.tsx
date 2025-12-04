@@ -781,18 +781,8 @@ export const AdminOrdersTab = ({
             </div>
           </div>
 
-          {/* Save & Export Actions */}
-          <div className="space-y-2">
-            <Button
-              onClick={handleSaveData}
-              disabled={saving || (dateFilter === "custom" && (!customStartDate || !customEndDate))}
-              size="sm"
-              className="w-full"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? "Saving..." : "Save Data"}
-            </Button>
-
+          {/* Export Actions */}
+          <div className="mt-3 space-y-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
                 variant="outline"
