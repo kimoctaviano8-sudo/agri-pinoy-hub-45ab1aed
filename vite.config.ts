@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    __APP_VERSION__: JSON.stringify("1.0.2"),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
   },
 }));
