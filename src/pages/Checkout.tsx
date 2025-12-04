@@ -444,8 +444,12 @@ const Checkout = () => {
                   type="tel"
                   inputMode="numeric"
                   pattern="[0-9]*"
+                  maxLength={11}
                   value={address.phone}
-                  onChange={(e) => setAddress(prev => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e) => {
+                    const numericValue = e.target.value.replace(/\D/g, "").slice(0, 11);
+                    setAddress((prev) => ({ ...prev, phone: numericValue }));
+                  }}
                   placeholder="Enter phone number"
                 />
               </div>
