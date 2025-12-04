@@ -441,6 +441,9 @@ const Checkout = () => {
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={address.phone}
                   onChange={(e) => setAddress(prev => ({ ...prev, phone: e.target.value }))}
                   placeholder="Enter phone number"
