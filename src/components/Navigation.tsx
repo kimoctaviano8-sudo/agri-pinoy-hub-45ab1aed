@@ -170,7 +170,7 @@ const Navigation = ({
           </div>
         </div>
         {/* Visual app switcher line and safe area spacing */}
-        <div className="safe-area-bottom pb-[4%] bg-primary-foreground" />
+        <div className="safe-area-bottom pb-[4%] bg-card" />
       </div>
     </>;
 };
