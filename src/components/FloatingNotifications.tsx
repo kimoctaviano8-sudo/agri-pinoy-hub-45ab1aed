@@ -68,10 +68,10 @@ export const FloatingNotifications: React.FC<FloatingNotificationProps> = ({
             setVisibleNotifications(prev => [typedNotification.id, ...prev]);
           }, 100);
           
-          // Auto-dismiss after 8 seconds
+          // Auto-dismiss after 3 seconds
           const timeoutId = setTimeout(() => {
             dismissNotification(typedNotification.id);
-          }, 8000);
+          }, 3000);
           
           notificationRefs.current.set(typedNotification.id, timeoutId);
         }
