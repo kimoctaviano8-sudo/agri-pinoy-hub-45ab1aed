@@ -101,8 +101,8 @@ const Navigation = ({
     icon: User
   }];
   const isActive = (path: string) => location.pathname === path;
-  const renderNavItem = (item: typeof navItems[0]) => <Link key={item.href} to={item.href} className={cn("flex flex-col items-center justify-center py-2 transition-smooth", isActive(item.href) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground")}>
-      <item.icon className={cn("w-5 h-5 mb-1", isActive(item.href) && "text-primary")} />
+  const renderNavItem = (item: typeof navItems[0]) => <Link key={item.href} to={item.href} className={cn("flex flex-col items-center justify-center py-2 transition-smooth", isActive(item.href) ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+      <item.icon className={cn("w-5 h-5 mb-1", isActive(item.href) && "text-primary fill-primary")} />
       <span className="text-xs font-medium">{item.name}</span>
     </Link>;
   const renderHeaderActions = () => <div className="flex items-center space-x-2">
