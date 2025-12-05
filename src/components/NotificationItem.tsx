@@ -57,10 +57,10 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   return (
     <div
       className={cn(
-        "fixed top-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)] bg-background border border-border rounded-xl shadow-elevated transition-all duration-500 ease-out transform",
+        "fixed top-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)] bg-background border border-border rounded-xl shadow-elevated transition-all transform",
         isVisible 
-          ? "translate-x-0 opacity-100 scale-100" 
-          : "translate-x-full opacity-0 scale-95",
+          ? "translate-x-0 opacity-100 scale-100 duration-400 ease-out" 
+          : "translate-x-full opacity-0 scale-95 duration-200 ease-in",
         !read && "border-l-4 border-l-primary"
       )}
     >
