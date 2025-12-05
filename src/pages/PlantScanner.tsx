@@ -928,7 +928,7 @@ const PlantScanner = () => {
         <TooltipProvider>
           <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
             <TooltipTrigger asChild>
-              <Button onClick={() => setShowTechnicianDialog(true)} className="fixed bottom-[12%] right-6 z-50 rounded-full w-14 h-14 shadow-lg hover:shadow-xl transition-all duration-300 opacity-20 hover:opacity-100 focus-visible:opacity-100 active:opacity-100 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 hover:scale-110" size="icon">
+              <Button onClick={() => setShowTechnicianDialog(true)} className="fixed bottom-[12%] right-6 z-50 rounded-full w-14 h-14 shadow-lg hover:shadow-xl transition-all duration-300 opacity-40 hover:opacity-100 focus-visible:opacity-100 active:opacity-100 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 hover:scale-110" size="icon">
                 <MessageCircle className="w-6 h-6 text-white" />
               </Button>
             </TooltipTrigger>
