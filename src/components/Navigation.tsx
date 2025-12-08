@@ -101,7 +101,11 @@ const Navigation = ({
     icon: User
   }];
   const isActive = (path: string) => location.pathname === path;
-  const renderNavItem = (item: typeof navItems[0]) => <Link key={item.href} to={item.href} className={cn("flex flex-col items-center justify-center py-2 transition-smooth", isActive(item.href) ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+  const renderNavItem = (item: typeof navItems[0]) => <Link key={item.href} to={item.href} className={cn("flex flex-col items-center justify-center py-2 transition-smooth relative", isActive(item.href) ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+      <div className={cn(
+        "absolute top-0 left-1/2 -translate-x-1/2 h-0.5 bg-primary rounded-full transition-all duration-300",
+        isActive(item.href) ? "w-8 opacity-100" : "w-0 opacity-0"
+      )} />
       <item.icon className={cn("w-5 h-5 mb-1", isActive(item.href) && "text-primary")} />
       <span className="text-xs font-medium">{item.name}</span>
     </Link>;
