@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { TranslationProvider } from "./contexts/TranslationContext";
 import { CartProvider } from "./contexts/CartContext";
@@ -11,6 +12,7 @@ import { useState } from "react";
 import Navigation from "./components/Navigation";
 import { FloatingNotifications } from "./components/FloatingNotifications";
 import Onboarding from "./components/Onboarding";
+import PageTransition from "./components/PageTransition";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -49,6 +51,7 @@ const ProtectedApp = () => {
   const [showAuthPage, setShowAuthPage] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
+  const location = useLocation();
 
   // Request location permission on app startup
   useLocationPermission();
@@ -76,29 +79,31 @@ const ProtectedApp = () => {
     return <div className="min-h-screen bg-background">
         <Navigation notificationCount={notificationCount} setNotificationCount={setNotificationCount} />
         <FloatingNotifications onNotificationCountChange={setNotificationCount} />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/news/:id" element={<NewsDetail />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/products/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/order-success" element={<OrderSuccess />} />
-          <Route path="/my-purchase" element={<MyPurchase />} />
-          <Route path="/plant-scanner" element={<PlantScanner />} />
-          <Route path="/forum" element={<Forum />} />
-          <Route path="/knowledge-base" element={<KnowledgeBase />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/inbox" element={<Inbox />} />
-          <Route path="/help-centre" element={<HelpCentre />} />
-          <Route path="/gemini-cares" element={<GeminiCares />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/news/:id" element={<AdminNewsForm />} />
-          <Route path="/admin/products/:id" element={<AdminProductForm />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+            <Route path="/news/:id" element={<PageTransition><NewsDetail /></PageTransition>} />
+            <Route path="/products" element={<PageTransition><Products /></PageTransition>} />
+            <Route path="/products/:id" element={<PageTransition><ProductDetail /></PageTransition>} />
+            <Route path="/cart" element={<PageTransition><Cart /></PageTransition>} />
+            <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
+            <Route path="/order-success" element={<PageTransition><OrderSuccess /></PageTransition>} />
+            <Route path="/my-purchase" element={<PageTransition><MyPurchase /></PageTransition>} />
+            <Route path="/plant-scanner" element={<PageTransition><PlantScanner /></PageTransition>} />
+            <Route path="/forum" element={<PageTransition><Forum /></PageTransition>} />
+            <Route path="/knowledge-base" element={<PageTransition><KnowledgeBase /></PageTransition>} />
+            <Route path="/profile" element={<PageTransition><Profile /></PageTransition>} />
+            <Route path="/inbox" element={<PageTransition><Inbox /></PageTransition>} />
+            <Route path="/help-centre" element={<PageTransition><HelpCentre /></PageTransition>} />
+            <Route path="/gemini-cares" element={<PageTransition><GeminiCares /></PageTransition>} />
+            <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+            <Route path="/admin" element={<PageTransition><AdminDashboard /></PageTransition>} />
+            <Route path="/admin/news/:id" element={<PageTransition><AdminNewsForm /></PageTransition>} />
+            <Route path="/admin/products/:id" element={<PageTransition><AdminProductForm /></PageTransition>} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
+          </Routes>
+        </AnimatePresence>
       </div>;
   }
 
