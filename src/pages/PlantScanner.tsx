@@ -271,8 +271,23 @@ const PlantScanner = () => {
   const analyzePlant = async () => {
     if (!selectedImage || !user) return;
 
-    if (credits <= 0) {
+    // Refresh credits before checking to ensure we have the latest value
+    const { data: creditData } = await supabase
+      .from('user_credits')
+      .select('credits_remaining')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    const currentCredits = creditData?.credits_remaining ?? 0;
+    setCredits(currentCredits);
+
+    if (currentCredits <= 0) {
       setShowCreditDialog(true);
+      toast({
+        title: "No Credits Available",
+        description: "Please purchase credits to continue scanning.",
+        variant: "destructive"
+      });
       return;
     }
     
