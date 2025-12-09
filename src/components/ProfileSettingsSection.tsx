@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor } from "lucide-react";
+import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor, Trash2, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,6 +7,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { APP_VERSION, getFormattedBuildDate } from "@/lib/version";
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 type ThemeMode = "light" | "dark" | "system";
 
@@ -36,16 +40,60 @@ const applyTheme = (mode: ThemeMode) => {
 export const ProfileSettingsSection = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [notifications, setNotifications] = useState<NotificationSettings>({
     orderUpdates: true,
     promotions: true,
     communityAlerts: true,
     newsUpdates: true
   });
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("No user found");
+      }
+
+      // Delete user data from related tables
+      await Promise.all([
+        supabase.from('user_streaks').delete().eq('user_id', user.id),
+        supabase.from('user_points').delete().eq('user_id', user.id),
+        supabase.from('user_achievements').delete().eq('user_id', user.id),
+        supabase.from('user_credits').delete().eq('user_id', user.id),
+        supabase.from('notifications').delete().eq('user_id', user.id),
+        supabase.from('plant_scan_history').delete().eq('user_id', user.id),
+      ]);
+
+      // Delete profile
+      await supabase.from('profiles').delete().eq('id', user.id);
+
+      // Sign out the user
+      await supabase.auth.signOut();
+
+      toast({
+        title: "Account Deleted",
+        description: "Your account has been successfully deleted.",
+      });
+
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -260,7 +308,7 @@ export const ProfileSettingsSection = () => {
           </div>
           {accountOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
         </CollapsibleTrigger>
-        <CollapsibleContent className="pl-11 pr-3 pb-2 space-y-2">
+        <CollapsibleContent className="pl-11 pr-3 pb-2 space-y-3">
           <p className="text-xs text-muted-foreground py-1">
             {t('manage_your_account')}
           </p>
@@ -269,6 +317,43 @@ export const ProfileSettingsSection = () => {
           </div>
           <div className="text-xs text-muted-foreground">
             <span className="font-medium text-foreground">{t('password')}:</span> Set
+          </div>
+          
+          <div className="pt-3 border-t border-border">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="w-full gap-2"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                  Delete Account
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your account and remove all your data from our servers, including your profile, orders, scan history, and achievements.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete Account
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </CollapsibleContent>
       </Collapsible>
