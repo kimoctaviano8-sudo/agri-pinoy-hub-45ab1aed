@@ -44,22 +44,26 @@ serve(async (req) => {
       );
     }
 
-    const body: { creditPackage?: 'small' | 'medium' | 'large' | 'xlarge' } = await req.json();
+    const body: { creditPackage?: string } = await req.json();
     const creditPackage = body.creditPackage;
 
-    type CreditPackageKey = 'small' | 'medium' | 'large' | 'xlarge';
-
-    // Define credit packages with explicit typing to satisfy TypeScript
-    const packages: Record<CreditPackageKey, { credits: number; price: number; name: string }> = {
-      small: { credits: 10, price: 5.0, name: '10 Credits' },
-      medium: { credits: 25, price: 10.0, name: '25 Credits' },
-      large: { credits: 50, price: 18.0, name: '50 Credits' },
-      xlarge: { credits: 100, price: 30.0, name: '100 Credits' },
+    // Define credit packages matching frontend values (credit amounts as strings)
+    const packages: Record<string, { credits: number; price: number; name: string }> = {
+      '100': { credits: 100, price: 299, name: '100 Credits' },
+      '200': { credits: 200, price: 499, name: '200 Credits' },
+      '300': { credits: 300, price: 699, name: '300 Credits' },
+      '500': { credits: 500, price: 999, name: '500 Credits' },
+      // Legacy package names for backwards compatibility
+      'small': { credits: 10, price: 50, name: '10 Credits' },
+      'medium': { credits: 25, price: 100, name: '25 Credits' },
+      'large': { credits: 50, price: 180, name: '50 Credits' },
+      'xlarge': { credits: 100, price: 300, name: '100 Credits' },
     };
 
     if (!creditPackage || !(creditPackage in packages)) {
+      console.log('Invalid package received:', creditPackage);
       return new Response(
-        JSON.stringify({ error: 'Invalid credit package' }),
+        JSON.stringify({ error: 'Invalid credit package', received: creditPackage }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
