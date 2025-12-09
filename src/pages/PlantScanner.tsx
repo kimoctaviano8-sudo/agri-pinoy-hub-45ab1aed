@@ -235,147 +235,141 @@ const PlantScanner = () => {
   const handleCameraCapture = () => {
     cameraInputRef.current?.click();
   };
+  // Compress image for faster upload
+  const compressImage = (file: File, maxWidth = 800, quality = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = document.createElement('img');
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Convert to compressed base64
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        URL.revokeObjectURL(img.src);
+        resolve(compressedBase64);
+      };
+      
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const analyzePlant = async () => {
     if (!selectedImage || !user) return;
 
-    // Check if user has credits
     if (credits <= 0) {
       setShowCreditDialog(true);
       return;
     }
     
     setLoading(true);
+    const startTime = Date.now();
     
-    // Add haptic feedback for mobile devices
+    // Haptic feedback
     if ('vibrate' in navigator) {
-      navigator.vibrate([100, 50, 100]);
+      navigator.vibrate([50]);
     }
-    
-    // Increase timeout to 90 seconds for Gemini Vision AI
-    const analysisTimeout = setTimeout(() => {
-      setLoading(false);
-      toast({
-        title: "Analysis Taking Longer",
-        description: "The AI is still processing your image. Please wait...",
-        variant: "default"
-      });
-    }, 60000); // 60 second soft timeout (won't stop the request)
 
     try {
-      // Convert image to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(selectedImage);
-      reader.onload = async () => {
-        try {
-          const base64Image = reader.result as string;
+      // Run compression and session fetch in parallel for speed
+      const [compressedImage, sessionResult] = await Promise.all([
+        compressImage(selectedImage, 800, 0.7),
+        supabase.auth.getSession()
+      ]);
 
-          // Get session token
-          const session = await supabase.auth.getSession();
-          if (!session.data.session?.access_token) {
-            clearTimeout(analysisTimeout);
-            throw new Error('Please log in to use the scanner');
-          }
+      if (!sessionResult.data.session?.access_token) {
+        throw new Error('Please log in to use the scanner');
+      }
 
-          // Call our edge function with credit checking
-          const response = await supabase.functions.invoke('plant-disease-analyzer', {
-            body: { image: base64Image },
-            headers: {
-              Authorization: `Bearer ${session.data.session.access_token}`
-            }
-          });
-          
-          clearTimeout(analysisTimeout);
-          
-          // Check if it's a 402 status (insufficient credits)
-          if (response.error) {
-            console.error('Edge function error:', response.error);
-            
-            // Check for credit errors - handle both 402 status and error message
-            const isCreditsError = 
-              response.error.message?.includes('Insufficient credits') || 
-              response.error.message?.includes('creditsRequired') ||
-              response.error.message?.includes('no remaining scan credits');
-            
-            if (isCreditsError) {
-              setShowCreditDialog(true);
-              toast({
-                title: "Insufficient Credits",
-                description: "You need more credits to scan. Please purchase credits to continue.",
-                variant: "destructive"
-              });
-              return;
-            }
-            
-            throw new Error(response.error.message || 'Analysis failed');
-          }
-          
-          const data = response.data;
+      console.log(`Image compressed in ${Date.now() - startTime}ms`);
 
-          if (!data || !data.disease) {
-            throw new Error('Invalid response from analysis service');
-          }
+      // Call edge function with compressed image
+      const response = await supabase.functions.invoke('plant-disease-analyzer', {
+        body: { image: compressedImage },
+        headers: {
+          Authorization: `Bearer ${sessionResult.data.session.access_token}`
+        }
+      });
 
-          // Update credits after successful scan
-          setCredits(prev => Math.max(0, prev - 1));
+      console.log(`Total analysis time: ${Date.now() - startTime}ms`);
 
-          // Format results with proper confidence calculation
-          const confidenceValue = typeof data.confidence === 'number' 
-            ? data.confidence 
-            : parseFloat(data.confidence) || 0;
-          
-          const formattedResults = [{
-            disease: data.disease || 'Unknown',
-            confidence: confidenceValue > 1 ? confidenceValue : confidenceValue * 100
-          }];
-          setResults(formattedResults);
-
-          // Track achievements
-          await trackAchievements(confidenceValue);
-
-          // Save scan result to history with full analysis data
-          await saveScanToHistory(formattedResults[0], base64Image);
-          
+      if (response.error) {
+        console.error('Edge function error:', response.error);
+        
+        const isCreditsError = 
+          response.error.message?.includes('Insufficient credits') || 
+          response.error.message?.includes('creditsRequired') ||
+          response.error.message?.includes('no remaining scan credits');
+        
+        if (isCreditsError) {
+          setShowCreditDialog(true);
           toast({
-            title: "Analysis Complete",
-            description: `Found: ${formattedResults[0].disease}. ${credits - 1} credits remaining.`
-          });
-
-          // Show technician contact dialog for disease detection
-          if (formattedResults[0].disease.toLowerCase() !== 'healthy crop') {
-            setTimeout(() => {
-              setShowTechnicianDialog(true);
-            }, 2000);
-          }
-        } catch (error: any) {
-          clearTimeout(analysisTimeout);
-          console.error('Error analyzing plant:', error);
-          toast({
-            title: "Analysis Failed",
-            description: error.message || "Failed to analyze plant. Please try again.",
+            title: "Insufficient Credits",
+            description: "You need more credits to scan. Please purchase credits to continue.",
             variant: "destructive"
           });
-        } finally {
-          setLoading(false);
+          return;
         }
-      };
+        
+        throw new Error(response.error.message || 'Analysis failed');
+      }
       
-      reader.onerror = () => {
-        clearTimeout(analysisTimeout);
-        toast({
-          title: "Image Read Failed",
-          description: "Failed to read the image file. Please try another image.",
-          variant: "destructive"
-        });
-        setLoading(false);
-      };
+      const data = response.data;
+
+      if (!data || !data.disease) {
+        throw new Error('Invalid response from analysis service');
+      }
+
+      // Update credits
+      setCredits(prev => Math.max(0, prev - 1));
+
+      const confidenceValue = typeof data.confidence === 'number' 
+        ? data.confidence 
+        : parseFloat(data.confidence) || 0;
+      
+      const formattedResults = [{
+        disease: data.disease || 'Unknown',
+        confidence: confidenceValue > 1 ? confidenceValue : confidenceValue * 100
+      }];
+      setResults(formattedResults);
+
+      // Run non-blocking operations in parallel
+      Promise.all([
+        trackAchievements(confidenceValue),
+        saveScanToHistory(formattedResults[0], compressedImage)
+      ]).catch(console.error);
+      
+      toast({
+        title: "Analysis Complete",
+        description: `Found: ${formattedResults[0].disease}. ${credits - 1} credits remaining.`
+      });
+
+      // Show technician dialog for disease detection
+      if (formattedResults[0].disease.toLowerCase() !== 'healthy crop') {
+        setTimeout(() => setShowTechnicianDialog(true), 2000);
+      }
     } catch (error: any) {
-      clearTimeout(analysisTimeout);
       console.error('Error analyzing plant:', error);
       toast({
         title: "Analysis Failed",
         description: error.message || "Failed to analyze plant. Please try again.",
         variant: "destructive"
       });
+    } finally {
       setLoading(false);
     }
   };
