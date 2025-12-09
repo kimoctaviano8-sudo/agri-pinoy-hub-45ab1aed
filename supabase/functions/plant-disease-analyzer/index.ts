@@ -6,137 +6,92 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Analyze plant health using Gemini Vision AI
+// Optimized plant health analysis using Gemini Vision AI
 const analyzePlantHealth = async (imageBase64: string) => {
-  try {
-    console.log('Starting Gemini Vision AI plant analysis...');
-    
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
-    // Validate image data
-    if (!imageBase64 || typeof imageBase64 !== 'string') {
-      throw new Error('Invalid image data');
-    }
-
-    const base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
-    
-    if (base64Data.length < 500) {
-      throw new Error('Image data too small for analysis');
-    }
-
-    // Prepare the image URL for Gemini
-    const imageUrl = imageBase64.startsWith('data:') 
-      ? imageBase64 
-      : `data:image/jpeg;base64,${base64Data}`;
-
-    // Call Gemini Vision API
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert agricultural AI specializing in plant disease detection for Filipino farmers. Analyze crop images and provide:
-1. Disease identification (if any)
-2. Confidence level (0-100%)
-3. Severity (low/medium/high)
-4. Detailed description
-5. Specific treatment recommendations
-6. Suggested foliar fertilizer products
-
-Focus ONLY on agricultural crops (rice, corn, tomato, potato, etc.). If image shows non-crop plants, people, or objects, clearly state it's not a valid crop scan.
-
-Respond in this EXACT JSON format:
-{
-  "disease": "Disease Name or Healthy Crop",
-  "confidence": 85,
-  "severity": "low|medium|high",
-  "description": "Detailed analysis",
-  "recommendations": ["Rec 1", "Rec 2", "Rec 3"],
-  "foliarProducts": [
-    {
-      "name": "Product Name",
-      "type": "Product Type",
-      "description": "Product description",
-      "usage": "Application instructions"
-    }
-  ]
-}`
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analyze this plant image for diseases. If this is not an agricultural crop, or if you detect people or other objects, please indicate that clearly. Focus on Filipino agricultural crops like rice, corn, tomato, potato, eggplant, etc.'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageUrl
-                }
-              }
-            ]
-          }
-        ],
-        max_completion_tokens: 1500
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
-      throw new Error(`AI analysis failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('Gemini response received');
-    
-    const aiContent = data.choices?.[0]?.message?.content;
-    if (!aiContent) {
-      throw new Error('No response from AI');
-    }
-
-    // Parse JSON response
-    let analysisResult;
-    try {
-      // Extract JSON from markdown code blocks if present
-      const jsonMatch = aiContent.match(/```json\s*([\s\S]*?)\s*```/) || 
-                       aiContent.match(/```\s*([\s\S]*?)\s*```/);
-      const jsonStr = jsonMatch ? jsonMatch[1] : aiContent;
-      analysisResult = JSON.parse(jsonStr.trim());
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      console.log('AI response:', aiContent);
-      throw new Error('Failed to parse AI response');
-    }
-
-    // Validate and ensure all required fields
-    return {
-      disease: analysisResult.disease || 'Unknown',
-      confidence: Math.min(100, Math.max(0, analysisResult.confidence || 50)),
-      severity: analysisResult.severity || 'medium',
-      description: analysisResult.description || 'Analysis completed',
-      recommendations: Array.isArray(analysisResult.recommendations) 
-        ? analysisResult.recommendations 
-        : ['Consult with agricultural expert'],
-      foliarProducts: Array.isArray(analysisResult.foliarProducts)
-        ? analysisResult.foliarProducts
-        : []
-    };
-    
-  } catch (error) {
-    console.error('Error in Gemini plant analysis:', error);
-    throw error;
+  const startTime = Date.now();
+  console.log('Starting optimized Gemini Vision AI plant analysis...');
+  
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    throw new Error('LOVABLE_API_KEY not configured');
   }
+
+  // Quick validation
+  if (!imageBase64 || typeof imageBase64 !== 'string' || imageBase64.length < 500) {
+    throw new Error('Invalid or insufficient image data');
+  }
+
+  // Prepare image URL efficiently
+  const imageUrl = imageBase64.startsWith('data:') 
+    ? imageBase64 
+    : `data:image/jpeg;base64,${imageBase64.replace(/^data:image\/[a-z]+;base64,/, '')}`;
+
+  // Optimized prompt - more concise for faster processing
+  const systemPrompt = `Expert agricultural AI for Filipino crop disease detection. Analyze image and respond ONLY with valid JSON:
+{"disease":"Name or Healthy Crop","confidence":85,"severity":"low|medium|high","description":"Brief analysis","recommendations":["Rec1","Rec2","Rec3"],"foliarProducts":[{"name":"Product","type":"Type","description":"Desc","usage":"Usage"}]}
+Focus on: rice, corn, tomato, potato, eggplant. For non-crops, set disease to "Not a valid crop".`;
+
+  // Call Gemini Vision API with optimized settings
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Analyze this crop image for diseases. Respond with JSON only.' },
+            { type: 'image_url', image_url: { url: imageUrl } }
+          ]
+        }
+      ],
+      max_completion_tokens: 800, // Reduced for faster response
+      temperature: 0.3 // Lower temperature for more deterministic, faster responses
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Gemini API error:', response.status, errorText);
+    throw new Error(`AI analysis failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const aiContent = data.choices?.[0]?.message?.content;
+  
+  if (!aiContent) {
+    throw new Error('No response from AI');
+  }
+
+  // Fast JSON parsing
+  let analysisResult;
+  try {
+    const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+    analysisResult = JSON.parse(jsonMatch ? jsonMatch[0] : aiContent.trim());
+  } catch {
+    console.error('JSON parse error, raw:', aiContent);
+    throw new Error('Failed to parse AI response');
+  }
+
+  console.log(`Analysis completed in ${Date.now() - startTime}ms`);
+
+  return {
+    disease: analysisResult.disease || 'Unknown',
+    confidence: Math.min(100, Math.max(0, analysisResult.confidence || 50)),
+    severity: analysisResult.severity || 'medium',
+    description: analysisResult.description || 'Analysis completed',
+    recommendations: Array.isArray(analysisResult.recommendations) 
+      ? analysisResult.recommendations.slice(0, 5) 
+      : ['Consult with agricultural expert'],
+    foliarProducts: Array.isArray(analysisResult.foliarProducts)
+      ? analysisResult.foliarProducts.slice(0, 3)
+      : []
+  };
 };
 
 serve(async (req) => {
