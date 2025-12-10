@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +19,7 @@ import { AdminOrdersTab } from "@/components/admin/AdminOrdersTab";
 import { StockManagement } from "@/components/admin/StockManagement";
 import { AdminCarouselTab } from "@/components/admin/AdminCarouselTab";
 import { AdminVouchersTab } from "@/components/admin/AdminVouchersTab";
+
 const AdminDashboard = () => {
   const {
     user,
@@ -31,7 +33,9 @@ const AdminDashboard = () => {
   // Profanity word state
   const [newProfanityWord, setNewProfanityWord] = useState("");
   const [newWordSeverity, setNewWordSeverity] = useState("medium");
-
+  
+  // New orders count for notification badge
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
 
   // Use the custom hook for data management
   const {
@@ -112,7 +116,17 @@ const AdminDashboard = () => {
           <div className="w-full overflow-hidden">
             <div className="overflow-x-auto scrollbar-hide">
           <TabsList className="inline-flex h-auto p-1 gap-1 w-max min-w-full">
-                <TabsTrigger value="orders" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Orders</TabsTrigger>
+              <TabsTrigger value="orders" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0 relative">
+                Orders
+                {newOrdersCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center"
+                  >
+                    {newOrdersCount > 99 ? "99+" : newOrdersCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
                 <TabsTrigger value="analytics" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Analytics</TabsTrigger>
                 <TabsTrigger value="news" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">News</TabsTrigger>
                 <TabsTrigger value="products" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Products</TabsTrigger>
@@ -127,7 +141,7 @@ const AdminDashboard = () => {
 
           {/* Orders Tab */}
           <TabsContent value="orders" className="space-y-3">
-            <AdminOrdersTab />
+            <AdminOrdersTab onNewOrdersCountChange={setNewOrdersCount} />
           </TabsContent>
 
           {/* Analytics Tab */}
