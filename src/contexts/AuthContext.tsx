@@ -246,14 +246,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async (): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Initiating Google Sign In...');
+      console.log('Redirect URL:', `${window.location.origin}/`);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
 
+      console.log('OAuth response:', { data, error });
+
       if (error) {
+        console.error('Google Sign In Error:', error);
         toast({
           variant: "destructive",
           title: "Google Sign In Failed",
@@ -265,6 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // OAuth redirects automatically, so we don't show success toast here
       return true;
     } catch (error) {
+      console.error('Google Sign In Exception:', error);
       toast({
         variant: "destructive",
         title: "Google Sign In Failed",
