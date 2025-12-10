@@ -65,7 +65,6 @@ const Profile = () => {
     farmSize: "",
     primaryCrops: [],
     yearsExperience: "",
-    bio: "",
     gender: "",
     age: "",
     memberSince: ""
@@ -760,13 +759,6 @@ Streak</div>
                 <Input id="edit-email" name="email" type="email" value={profileData.email} onChange={handleInputChange} className="mt-1" />
               </div>
 
-              <div>
-                <Label htmlFor="edit-bio" className="text-sm font-medium">Bio</Label>
-                <Textarea id="edit-bio" name="bio" value={profileData.bio || ''} onChange={handleInputChange} placeholder="Tell others about yourself..." className="mt-1 resize-none" rows={3} maxLength={200} />
-                <div className="text-xs text-muted-foreground mt-1">
-                  {(profileData.bio || '').length}/200 characters
-                </div>
-              </div>
               
               <div>
                 <Label htmlFor="edit-phone" className="text-sm font-medium">Phone</Label>
