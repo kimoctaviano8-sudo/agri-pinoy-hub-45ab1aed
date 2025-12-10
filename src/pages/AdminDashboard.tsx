@@ -113,15 +113,15 @@ const AdminDashboard = () => {
 
         {/* Main Tabs */}
         <Tabs defaultValue="orders" className="space-y-4">
-          <div className="w-full overflow-hidden">
-            <div className="overflow-x-auto scrollbar-hide">
+          <div className="w-full overflow-visible">
+            <div className="overflow-x-auto scrollbar-hide overflow-y-visible">
           <TabsList className="inline-flex h-auto p-1 gap-1 w-max min-w-full">
               <TabsTrigger value="orders" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0 relative">
                 Orders
                 {newOrdersCount > 0 && (
                   <Badge 
                     variant="destructive" 
-                    className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center"
+                    className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center z-20"
                   >
                     {newOrdersCount > 99 ? "99+" : newOrdersCount}
                   </Badge>
