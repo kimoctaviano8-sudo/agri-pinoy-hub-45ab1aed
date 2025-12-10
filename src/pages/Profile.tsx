@@ -602,7 +602,7 @@ const Profile = () => {
               </p>
               
               {/* Role Badge */}
-              {userRole && <div className="mb-2">
+              {userRole && <div className="mb-2 pt-[3%]">
                   <Badge className={`font-medium px-2 py-0.5 flex items-center gap-1 w-fit text-xs ${
                     userRole === 'admin' 
                       ? 'text-primary border-primary/20 bg-amber-100' 
