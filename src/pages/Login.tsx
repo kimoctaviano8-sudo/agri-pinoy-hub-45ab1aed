@@ -69,6 +69,7 @@ const Login = ({
   const {
     login,
     signInWithGoogle,
+    signInWithFacebook,
     register,
     isLoading
   } = useAuth();
@@ -549,11 +550,11 @@ const Login = ({
                   <span className="text-muted-foreground">Continue with Google</span>
                 </Button>
 
-                <Button type="button" variant="outline" disabled={true} className="w-full h-12 text-sm border-2 border-border rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <div className="w-5 h-5 bg-muted-foreground/50 rounded-sm flex items-center justify-center text-white text-xs font-bold">
+                <Button type="button" variant="outline" onClick={signInWithFacebook} className="w-full h-12 text-sm border-2 border-border rounded-2xl flex items-center justify-center gap-3 hover:bg-[#1877F2] hover:border-[#1877F2] hover:text-white transition-colors">
+                  <div className="w-5 h-5 bg-[#1877F2] rounded-sm flex items-center justify-center text-white text-xs font-bold">
                     f
                   </div>
-                  <span className="text-muted-foreground">Continue with Facebook</span>
+                  <span>Continue with Facebook</span>
                 </Button>
 
                 {/* Biometric Authentication Button - Disabled for now */}
