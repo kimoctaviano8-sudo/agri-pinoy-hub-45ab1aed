@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { jsPDF } from "jspdf";
 import * as XLSX from "xlsx";
+import QRCode from "qrcode";
 import logo from "@/assets/Gemini_logo_only.png";
 
 interface ShippingAddress {
@@ -902,7 +903,27 @@ export const AdminOrdersTab = ({
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.text(`Payment: ${order.payment_method.replace('_', ' ').toUpperCase()}`, marginLeft, y);
-      y += 8;
+      
+      // QR Code - Generate tracking URL
+      const trackingUrl = `${window.location.origin}/my-purchase?order=${order.order_number}`;
+      const qrCodeDataUrl = await QRCode.toDataURL(trackingUrl, {
+        width: 150,
+        margin: 1,
+        color: { dark: '#000000', light: '#ffffff' }
+      });
+      
+      // Add QR code to right side
+      const qrSize = 22;
+      const qrX = waybillWidth - marginRight - qrSize;
+      const qrY = y - 4;
+      doc.addImage(qrCodeDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+      
+      // QR code label
+      doc.setFontSize(5);
+      doc.setTextColor(100);
+      doc.text("Scan to Track", qrX + qrSize / 2, qrY + qrSize + 3, { align: "center" });
+      
+      y += 20;
 
       // Footer
       doc.setDrawColor(200);
