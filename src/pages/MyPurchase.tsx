@@ -338,12 +338,13 @@ const MyPurchase = () => {
                           </div>
 
                           {/* Action Buttons */}
-                          <div className="flex gap-2 justify-end">
+                          <div className="flex flex-wrap gap-2 justify-end pt-2">
                             {order.status === 'to_pay' && (
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => handleCancelOrderClick(order)}
+                                className="min-w-[100px]"
                               >
                                 Cancel Order
                               </Button>
@@ -353,20 +354,16 @@ const MyPurchase = () => {
                                 size="sm"
                                 onClick={() => handleConfirmReceived(order)}
                                 disabled={confirmingId === order.id}
+                                className="min-w-[120px]"
                               >
                                 {confirmingId === order.id ? 'Confirming...' : 'Confirm Received'}
                               </Button>
                             )}
-                            {order.status === 'completed' && (
-                              <Button variant="outline" size="sm">
-                                Buy Again
-                              </Button>
-                            )}
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" className="min-w-[100px]">
                               View Details
                             </Button>
-                            {order.status !== 'to_pay' && (
-                              <Button variant="default" size="sm">
+                            {order.status === 'completed' && (
+                              <Button variant="default" size="sm" className="min-w-[100px]">
                                 Buy Again
                               </Button>
                             )}
