@@ -69,11 +69,25 @@ const ProductDetail = () => {
   const handleQuantityChange = (increment: boolean) => {
     setQuantity(prev => {
       if (increment) {
-        return prev + 1;
+        return Math.min(500, prev + 1);
       } else {
         return Math.max(1, prev - 1);
       }
     });
+  };
+
+  const handleQuantityInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty string for typing
+    if (value === '') {
+      setQuantity(1);
+      return;
+    }
+    // Only allow numeric input
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue)) {
+      setQuantity(Math.min(500, Math.max(1, numValue)));
+    }
   };
 
   const handleAddToCart = () => {
@@ -236,9 +250,16 @@ const ProductDetail = () => {
                   >
                     <Minus className="w-3 h-3" />
                   </Button>
-                  <span className="w-12 text-center font-medium text-sm">
-                    {quantity}
-                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={quantity}
+                    onChange={handleQuantityInput}
+                    className="w-12 h-8 text-center font-medium text-sm border rounded-md bg-background"
+                    min={1}
+                    max={500}
+                  />
                   <Button
                     variant="outline"
                     size="sm"
