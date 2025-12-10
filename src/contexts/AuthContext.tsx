@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useOAuthSignIn } from '@/hooks/useOAuthSignIn';
 
 interface AuthContextType {
   user: User | null;
@@ -45,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const { toast } = useToast();
+  const { signInWithGoogle, signInWithFacebook } = useOAuthSignIn();
 
   // Role fetching for current user
   const fetchUserRole = async (userId: string) => {
@@ -238,84 +240,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: "An unexpected error occurred.",
-      });
-      return false;
-    }
-  };
-
-  const signInWithGoogle = async (): Promise<boolean> => {
-    try {
-      console.log('Initiating Google Sign In...');
-      console.log('Redirect URL:', `${window.location.origin}/`);
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
-      });
-
-      console.log('OAuth response:', { data, error });
-
-      if (error) {
-        console.error('Google Sign In Error:', error);
-        toast({
-          variant: "destructive",
-          title: "Google Sign In Failed",
-          description: error.message,
-        });
-        return false;
-      }
-
-      // OAuth redirects automatically, so we don't show success toast here
-      return true;
-    } catch (error) {
-      console.error('Google Sign In Exception:', error);
-      toast({
-        variant: "destructive",
-        title: "Google Sign In Failed",
-        description: "An unexpected error occurred.",
-      });
-      return false;
-    }
-  };
-
-  const signInWithFacebook = async (): Promise<boolean> => {
-    try {
-      console.log('Initiating Facebook Sign In...');
-      console.log('Redirect URL:', `${window.location.origin}/`);
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'facebook',
-        options: {
-          redirectTo: `${window.location.origin}/`,
-          scopes: 'email,public_profile'
-        }
-      });
-
-      console.log('Facebook OAuth response:', { data, error });
-
-      if (error) {
-        console.error('Facebook Sign In Error:', error);
-        toast({
-          variant: "destructive",
-          title: "Facebook Sign In Failed",
-          description: error.message,
-        });
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Facebook Sign In Exception:', error);
-      toast({
-        variant: "destructive",
-        title: "Facebook Sign In Failed",
         description: "An unexpected error occurred.",
       });
       return false;
