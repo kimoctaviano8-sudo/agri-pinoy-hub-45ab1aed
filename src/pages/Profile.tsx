@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Edit, Save, MapPin, Phone, Mail, Calendar, Briefcase, Award, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Heart, Download, Globe, Monitor, Rss, Trash2, History, Loader2, Check, User, Users, Trophy, Menu, Star, Target, DollarSign, Gift, Fingerprint, Smartphone, Crown, Headphones, PhilippinePeso } from "lucide-react";
-import { useNativeBiometric } from "@/hooks/useNativeBiometric";
+import { Camera, Edit, Save, MapPin, Phone, Mail, Calendar, Briefcase, Award, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Heart, Download, Globe, Monitor, Rss, Trash2, History, Loader2, Check, User, Users, Trophy, Menu, Star, Target, DollarSign, Gift, Fingerprint, Crown, Headphones, PhilippinePeso } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +27,7 @@ import OrderStatusTracker from "@/components/OrderStatusTracker";
 import AchievementsModal from "@/components/AchievementsModal";
 import { RatingModal } from "@/components/RatingModal";
 import { ProfileSettingsSection } from "@/components/ProfileSettingsSection";
+import { BiometricSettingsModal } from "@/components/BiometricSettingsModal";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -79,18 +79,7 @@ const Profile = () => {
   const [earnedPoints, setEarnedPoints] = useState(0);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showBiometricSettings, setShowBiometricSettings] = useState(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
-  
-  // Native biometric hook
-  const { 
-    isAvailable: biometricSupported, 
-    getBiometryTypeName, 
-    authenticate: nativeAuthenticate,
-    setCredentials,
-    deleteCredentials,
-    isNative
-  } = useNativeBiometric();
   const [showRatingModal, setShowRatingModal] = useState(false);
 
   // Load user profile and avatar on component mount
@@ -100,89 +89,8 @@ const Profile = () => {
       loadStreakData();
       loadEarnedPoints();
       updateLoginStreak();
-      checkBiometricStatus();
     }
   }, [user?.id]);
-
-  // Check if biometric is already enabled for this user
-  const checkBiometricStatus = () => {
-    const isEnabled = localStorage.getItem(`biometric_enabled_${user?.id}`) === 'true';
-    setBiometricEnabled(isEnabled);
-  };
-
-  // Enable biometric authentication using native plugin
-  const enableBiometric = async () => {
-    if (!biometricSupported) {
-      toast({
-        title: "Not Supported",
-        description: `${getBiometryTypeName()} is not available on this device.`,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      // First authenticate to verify user
-      const authenticated = await nativeAuthenticate(`Enable ${getBiometryTypeName()} for quick login`);
-      
-      if (authenticated) {
-        // Store that biometric is enabled
-        localStorage.setItem(`biometric_enabled_${user?.id}`, 'true');
-        
-        // For native, store credentials securely
-        if (isNative && user?.email) {
-          await setCredentials(user.email, user.id || '');
-        }
-        
-        setBiometricEnabled(true);
-        toast({
-          title: `${getBiometryTypeName()} Enabled`,
-          description: `${getBiometryTypeName()} authentication has been enabled successfully.`
-        });
-      } else {
-        toast({
-          title: "Authentication Cancelled",
-          description: "Biometric setup was cancelled.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Biometric setup error:', error);
-      toast({
-        title: "Setup Failed",
-        description: "Failed to enable biometric authentication. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Disable biometric authentication
-  const disableBiometric = async () => {
-    localStorage.removeItem(`biometric_enabled_${user?.id}`);
-    
-    if (isNative) {
-      await deleteCredentials();
-    }
-    
-    setBiometricEnabled(false);
-    toast({
-      title: `${getBiometryTypeName()} Disabled`,
-      description: `${getBiometryTypeName()} authentication has been disabled.`
-    });
-  };
-
-  // Authenticate with biometric
-  const authenticateWithBiometric = async () => {
-    if (!biometricEnabled || !biometricSupported) return false;
-    
-    try {
-      const authenticated = await nativeAuthenticate('Verify your identity');
-      return authenticated;
-    } catch (error) {
-      console.error('Biometric authentication error:', error);
-      return false;
-    }
-  };
   const loadProfile = async () => {
     if (!user?.id) return;
     try {
@@ -779,90 +687,10 @@ Streak</div>
 
 
       {/* Biometric Settings Modal */}
-      {showBiometricSettings && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-background rounded-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-foreground">Biometric Authentication</h2>
-              <Button variant="ghost" size="sm" onClick={() => setShowBiometricSettings(false)} className="text-muted-foreground hover:text-foreground">
-                ✕
-              </Button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Biometric Status */}
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Fingerprint className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Face ID / Fingerprint</p>
-                    <p className="text-sm text-muted-foreground">
-                      {biometricSupported ? biometricEnabled ? "Enabled" : "Available" : "Not supported on this device"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  {biometricSupported && <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${biometricEnabled ? 'bg-success' : 'bg-muted-foreground'}`} />
-                      <span className="text-sm text-muted-foreground">
-                        {biometricEnabled ? 'ON' : 'OFF'}
-                      </span>
-                    </div>}
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p>
-                  Use your device's biometric authentication (Face ID or fingerprint) 
-                  to quickly and securely log into your account.
-                </p>
-                {biometricSupported && <p className="text-primary">
-                    • Quick access to your account
-                    <br />
-                    • Enhanced security
-                    <br />
-                    • No need to remember passwords
-                  </p>}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                {biometricSupported ? <>
-                    {!biometricEnabled ? <Button onClick={enableBiometric} className="flex-1 bg-primary hover:bg-primary/90">
-                        <Fingerprint className="w-4 h-4 mr-2" />
-                        Enable Biometric
-                      </Button> : <Button onClick={disableBiometric} variant="destructive" className="flex-1">
-                        Disable Biometric
-                      </Button>}
-                    {biometricEnabled && <Button onClick={async () => {
-                const success = await authenticateWithBiometric();
-                if (success) {
-                  toast({
-                    title: "Authentication Successful",
-                    description: "Biometric authentication is working correctly."
-                  });
-                } else {
-                  toast({
-                    title: "Authentication Failed",
-                    description: "Could not authenticate with biometrics.",
-                    variant: "destructive"
-                  });
-                }
-              }} variant="outline" className="flex-1">
-                        <Smartphone className="w-4 h-4 mr-2" />
-                        Test
-                      </Button>}
-                  </> : <div className="w-full text-center p-4">
-                    <p className="text-muted-foreground">
-                      Biometric authentication is not available on this device or browser.
-                    </p>
-                  </div>}
-              </div>
-            </div>
-          </div>
-        </div>}
+      <BiometricSettingsModal 
+        open={showBiometricSettings} 
+        onOpenChange={setShowBiometricSettings} 
+      />
 
       {/* Achievements Modal */}
       <AchievementsModal isOpen={showAchievements} onClose={() => setShowAchievements(false)} currentPoints={earnedPoints} />
