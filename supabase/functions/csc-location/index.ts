@@ -99,13 +99,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Only support Philippines for this local data
-    if (countryCode !== 'PH') {
-      return new Response(JSON.stringify({ error: 'Only Philippines (PH) is supported' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Always use Philippine data regardless of country code (app is Philippines-only)
+    console.log(`Received request for country: ${countryCode}, using Philippine data`);
 
     let data: { iso2?: string; name: string }[] = [];
 
