@@ -755,12 +755,17 @@ export const AdminOrdersTab = ({
       // Company Name beside logo
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.text("AgriCares", marginLeft + logoDisplayWidth + 4, y + 7);
+      doc.text("Gemini Agri", marginLeft + logoDisplayWidth + 4, y + 5);
+      
+      // Tagline
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6);
+      doc.text("Helping Filipino farmers for a sustainable agriculture", marginLeft + logoDisplayWidth + 4, y + 9);
       
       // Waybill Title
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.text("WAYBILL", waybillWidth - marginRight, y + 4, { align: "right" });
-      
       y += maxLogoHeight + 6;
 
       // Order Number
@@ -855,8 +860,8 @@ export const AdminOrdersTab = ({
           
           doc.text(productName, colProductX, y);
           doc.text(String(item.quantity), colQtyX, y);
-          doc.text(`₱${Number(item.price).toFixed(2)}`, colPriceX, y);
-          doc.text(`₱${subtotal.toFixed(2)}`, colSubtotalX, y, { align: "right" });
+          doc.text(`PHP ${Number(item.price).toFixed(2)}`, colPriceX, y);
+          doc.text(`PHP ${subtotal.toFixed(2)}`, colSubtotalX, y, { align: "right" });
           y += 4;
         });
       }
@@ -871,17 +876,17 @@ export const AdminOrdersTab = ({
 
       doc.setFontSize(7);
       doc.text("Subtotal:", labelX, y);
-      doc.text(`₱${itemsSubtotal.toFixed(2)}`, valueX, y, { align: "right" });
+      doc.text(`PHP ${itemsSubtotal.toFixed(2)}`, valueX, y, { align: "right" });
       y += 4;
 
       const shippingFee = Number(order.shipping_fee || 50);
       doc.text("Shipping Fee:", labelX, y);
-      doc.text(`₱${shippingFee.toFixed(2)}`, valueX, y, { align: "right" });
+      doc.text(`PHP ${shippingFee.toFixed(2)}`, valueX, y, { align: "right" });
       y += 4;
 
       if (order.voucher_discount && Number(order.voucher_discount) > 0) {
         doc.text("Discount:", labelX, y);
-        doc.text(`-₱${Number(order.voucher_discount).toFixed(2)}`, valueX, y, { align: "right" });
+        doc.text(`PHP ${Number(order.voucher_discount).toFixed(2)}`, valueX, y, { align: "right" });
         y += 4;
       }
 
@@ -890,7 +895,7 @@ export const AdminOrdersTab = ({
       doc.setFontSize(9);
       y += 2;
       doc.text("TOTAL AMOUNT:", labelX, y);
-      doc.text(`₱${Number(order.total_amount).toFixed(2)}`, valueX, y, { align: "right" });
+      doc.text(`PHP ${Number(order.total_amount).toFixed(2)}`, valueX, y, { align: "right" });
       y += 6;
 
       // Payment Method
@@ -906,9 +911,9 @@ export const AdminOrdersTab = ({
       
       doc.setFontSize(6);
       doc.setTextColor(120);
-      doc.text("Thank you for shopping with AgriCares!", waybillWidth / 2, y, { align: "center" });
+      doc.text("Thank you for shopping with GeminiAgri!", waybillWidth / 2, y, { align: "center" });
       y += 3;
-      doc.text("For inquiries, contact us at support@agricares.com", waybillWidth / 2, y, { align: "center" });
+      doc.text("For inquiries, email us at geminicares@geminiagri.com", waybillWidth / 2, y, { align: "center" });
 
       // Save PDF
       doc.save(`waybill-${order.order_number}.pdf`);
