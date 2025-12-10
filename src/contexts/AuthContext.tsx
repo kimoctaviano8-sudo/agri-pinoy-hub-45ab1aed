@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   login: (email: string, password: string) => Promise<boolean>;
   signInWithGoogle: () => Promise<boolean>;
+  signInWithFacebook: () => Promise<boolean>;
   register: (userData: RegisterData) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
@@ -273,6 +274,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithFacebook = async (): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          scopes: 'email,public_profile'
+        }
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Facebook Sign In Failed",
+          description: error.message,
+        });
+        return false;
+      }
+
+      // OAuth redirects automatically, so we don't show success toast here
+      return true;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Facebook Sign In Failed",
+        description: "An unexpected error occurred.",
+      });
+      return false;
+    }
+  };
+
   const logout = async () => {
     // If there's no active session, treat as already logged out
     if (!session) {
@@ -320,6 +352,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     login,
     signInWithGoogle,
+    signInWithFacebook,
     register,
     logout,
     isLoading,
