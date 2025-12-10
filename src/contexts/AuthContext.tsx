@@ -287,7 +287,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithFacebook = async (): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Initiating Facebook Sign In...');
+      console.log('Redirect URL:', `${window.location.origin}/`);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
           redirectTo: `${window.location.origin}/`,
@@ -295,7 +298,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
+      console.log('Facebook OAuth response:', { data, error });
+
       if (error) {
+        console.error('Facebook Sign In Error:', error);
         toast({
           variant: "destructive",
           title: "Facebook Sign In Failed",
@@ -304,9 +310,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      // OAuth redirects automatically, so we don't show success toast here
       return true;
     } catch (error) {
+      console.error('Facebook Sign In Exception:', error);
       toast({
         variant: "destructive",
         title: "Facebook Sign In Failed",
