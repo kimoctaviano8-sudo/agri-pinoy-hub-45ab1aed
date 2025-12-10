@@ -220,7 +220,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Quantity Controls */}
-              <div className="space-y-2">
+              <div className="flex items-center space-x-4">
                 <label className="text-xs font-medium">Quantity</label>
                 <div className="flex items-center space-x-2">
                   <Button
