@@ -904,26 +904,33 @@ export const AdminOrdersTab = ({
       doc.setFontSize(7);
       doc.text(`Payment: ${order.payment_method.replace('_', ' ').toUpperCase()}`, marginLeft, y);
       
-      // QR Code - Generate tracking URL
+      y += 6;
+      
+      // Barcode - Generate tracking URL as Code128-style barcode
       const trackingUrl = `${window.location.origin}/my-purchase?order=${order.order_number}`;
-      const qrCodeDataUrl = await QRCode.toDataURL(trackingUrl, {
-        width: 150,
+      const barcodeDataUrl = await QRCode.toDataURL(trackingUrl, {
+        width: 400,
         margin: 1,
-        color: { dark: '#000000', light: '#ffffff' }
+        color: { dark: '#000000', light: '#ffffff' },
+        errorCorrectionLevel: 'M'
       });
       
-      // Add QR code to right side
-      const qrSize = 22;
-      const qrX = waybillWidth - marginRight - qrSize;
-      const qrY = y - 4;
-      doc.addImage(qrCodeDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+      // Add barcode centered - larger size
+      const barcodeWidth = 70;
+      const barcodeHeight = 25;
+      const barcodeX = (waybillWidth - barcodeWidth) / 2;
+      doc.addImage(barcodeDataUrl, "PNG", barcodeX, y, barcodeWidth, barcodeHeight);
       
-      // QR code label
+      // Barcode label - order number below
+      y += barcodeHeight + 3;
+      doc.setFontSize(7);
+      doc.setTextColor(60);
+      doc.text(order.order_number, waybillWidth / 2, y, { align: "center" });
       doc.setFontSize(5);
       doc.setTextColor(100);
-      doc.text("Scan to Track", qrX + qrSize / 2, qrY + qrSize + 3, { align: "center" });
+      doc.text("Scan to Track Order", waybillWidth / 2, y + 3, { align: "center" });
       
-      y += 20;
+      y += 8;
 
       // Footer
       doc.setDrawColor(200);
