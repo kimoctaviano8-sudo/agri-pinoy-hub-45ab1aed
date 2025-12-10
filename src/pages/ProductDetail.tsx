@@ -8,7 +8,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/contexts/CartContext";
-
 interface Product {
   id: string;
   name: string;
@@ -19,30 +18,33 @@ interface Product {
   active: boolean;
   stock_quantity: number;
 }
-
 const ProductDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { addToCart } = useCart();
+  const {
+    toast
+  } = useToast();
+  const {
+    addToCart
+  } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
-      
       try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', id)
-          .single();
-
+        const {
+          data,
+          error
+        } = await supabase.from('products').select('*').eq('id', id).single();
         if (error) {
           console.error('Error fetching product:', error);
           toast({
@@ -52,19 +54,13 @@ const ProductDetail = () => {
           });
           return;
         }
-
         setProduct(data);
 
         // Fetch related products from same category
         if (data?.category) {
-          const { data: related } = await supabase
-            .from('products')
-            .select('*')
-            .eq('category', data.category)
-            .eq('active', true)
-            .neq('id', id)
-            .limit(4);
-          
+          const {
+            data: related
+          } = await supabase.from('products').select('*').eq('category', data.category).eq('active', true).neq('id', id).limit(4);
           setRelatedProducts(related || []);
         }
       } catch (error) {
@@ -78,10 +74,8 @@ const ProductDetail = () => {
         setLoading(false);
       }
     };
-
     fetchProduct();
   }, [id, toast]);
-
   const handleQuantityChange = (increment: boolean) => {
     setQuantity(prev => {
       if (increment) {
@@ -91,7 +85,6 @@ const ProductDetail = () => {
       }
     });
   };
-
   const handleQuantityInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Allow empty string for typing
@@ -105,10 +98,8 @@ const ProductDetail = () => {
       setQuantity(Math.min(500, Math.max(1, numValue)));
     }
   };
-
   const handleAddToCart = () => {
     if (!product) return;
-    
     addToCart({
       id: product.id,
       name: product.name,
@@ -116,17 +107,19 @@ const ProductDetail = () => {
       image_url: product.image_url,
       category: product.category
     }, quantity);
-
     toast({
       title: "Added to Cart",
-      description: `${quantity} x ${product.name} added to cart`,
+      description: `${quantity} x ${product.name} added to cart`
     });
 
     // Auto-scroll to cart icon after a brief delay
     setTimeout(() => {
       const cartIcon = document.getElementById('cart-icon');
       if (cartIcon) {
-        cartIcon.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        cartIcon.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
         // Add a subtle animation effect
         cartIcon.style.transform = 'scale(1.1)';
         setTimeout(() => {
@@ -135,15 +128,12 @@ const ProductDetail = () => {
       }
     }, 500);
   };
-
   const handleBuyNow = () => {
     if (!product) return;
     navigate(`/checkout?product=${product.id}&quantity=${quantity}`);
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background p-2">
+    return <div className="min-h-screen bg-background p-2">
         <div className="max-w-lg mx-auto">
           <div className="animate-pulse">
             <div className="h-6 bg-muted rounded mb-3"></div>
@@ -152,20 +142,12 @@ const ProductDetail = () => {
             <div className="h-3 bg-muted rounded w-1/2"></div>
           </div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (!product) {
-    return (
-      <div className="min-h-screen bg-background p-2">
+    return <div className="min-h-screen bg-background p-2">
         <div className="max-w-lg mx-auto">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/products')}
-            className="mb-3 p-2"
-            size="sm"
-          >
+          <Button variant="ghost" onClick={() => navigate('/products')} className="mb-3 p-2" size="sm">
             <ArrowLeft className="w-3 h-3 mr-1" />
             <span className="text-sm">Back</span>
           </Button>
@@ -174,20 +156,12 @@ const ProductDetail = () => {
             <p className="text-sm text-muted-foreground">The product you're looking for doesn't exist.</p>
           </div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background p-2 pb-20">{/* Added pb-20 for bottom padding */}
+  return <div className="min-h-screen bg-background p-2 pb-20">{/* Added pb-20 for bottom padding */}
       <div className="max-w-lg mx-auto">
         {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/products')}
-          className="mb-3 p-2"
-          size="sm"
-        >
+        <Button variant="ghost" onClick={() => navigate('/products')} className="mb-3 p-2" size="sm">
           <ArrowLeft className="w-3 h-3 mr-1" />
           <span className="text-sm">Back</span>
         </Button>
@@ -197,45 +171,27 @@ const ProductDetail = () => {
           <CardContent className="p-3">
             {/* Product Image */}
             <div className="mb-4">
-              <div 
-                className="relative overflow-hidden rounded-lg cursor-pointer group"
-                onClick={() => setIsImageZoomed(true)}
-              >
-                <img
-                  src={product.image_url || "/placeholder.svg"}
-                  alt={product.name}
-                  className="w-full h-auto max-h-64 object-contain bg-muted/30 transition-transform duration-200 group-hover:scale-105"
-                />
+              <div className="relative overflow-hidden rounded-lg cursor-pointer group" onClick={() => setIsImageZoomed(true)}>
+                <img src={product.image_url || "/placeholder.svg"} alt={product.name} className="w-full h-auto max-h-64 bg-muted/30 transition-transform duration-200 group-hover:scale-105 object-cover" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                   <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
                 </div>
-                {product.category && (
-                  <div className="absolute top-2 left-2">
+                {product.category && <div className="absolute top-2 left-2">
                     <Badge variant="secondary" className="text-xs px-2 py-1">
                       {product.category}
                     </Badge>
-                  </div>
-                )}
+                  </div>}
               </div>
             </div>
 
             {/* Image Zoom Modal */}
             <Dialog open={isImageZoomed} onOpenChange={setIsImageZoomed}>
               <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 z-50 text-white hover:bg-white/20"
-                  onClick={() => setIsImageZoomed(false)}
-                >
+                <Button variant="ghost" size="icon" className="absolute top-2 right-2 z-50 text-white hover:bg-white/20" onClick={() => setIsImageZoomed(false)}>
                   <X className="w-6 h-6" />
                 </Button>
                 <div className="flex items-center justify-center w-full h-full p-4">
-                  <img
-                    src={product.image_url || "/placeholder.svg"}
-                    alt={product.name}
-                    className="max-w-full max-h-[85vh] object-contain"
-                  />
+                  <img src={product.image_url || "/placeholder.svg"} alt={product.name} className="max-w-full max-h-[85vh] object-contain" />
                 </div>
               </DialogContent>
             </Dialog>
@@ -258,24 +214,13 @@ const ProductDetail = () => {
                     <div className={`${!isDescriptionExpanded ? 'line-clamp-3' : ''}`}>
                       {product.description}
                     </div>
-                    {product.description && product.description.length > 150 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                        className="h-6 p-0 mt-2 text-xs text-primary hover:bg-transparent"
-                      >
-                        {isDescriptionExpanded ? (
-                          <>
+                    {product.description && product.description.length > 150 && <Button variant="ghost" size="sm" onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="h-6 p-0 mt-2 text-xs text-primary hover:bg-transparent">
+                        {isDescriptionExpanded ? <>
                             See Less <ChevronUp className="w-3 h-3 ml-1" />
-                          </>
-                        ) : (
-                          <>
+                          </> : <>
                             See More <ChevronDown className="w-3 h-3 ml-1" />
-                          </>
-                        )}
-                      </Button>
-                    )}
+                          </>}
+                      </Button>}
                   </div>
                 </div>
               </div>
@@ -284,31 +229,11 @@ const ProductDetail = () => {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium">Quantity</label>
                 <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuantityChange(false)}
-                    disabled={quantity <= 1}
-                    className="h-8 w-8 p-0"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleQuantityChange(false)} disabled={quantity <= 1} className="h-8 w-8 p-0">
                     <Minus className="w-3 h-3" />
                   </Button>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={quantity}
-                    onChange={handleQuantityInput}
-                    className="w-12 h-8 text-center font-medium text-sm border rounded-md bg-background"
-                    min={1}
-                    max={500}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuantityChange(true)}
-                    className="h-8 w-8 p-0"
-                  >
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" value={quantity} onChange={handleQuantityInput} className="w-12 h-8 text-center font-medium text-sm border rounded-md bg-background" min={1} max={500} />
+                  <Button variant="outline" size="sm" onClick={() => handleQuantityChange(true)} className="h-8 w-8 p-0">
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
@@ -316,25 +241,15 @@ const ProductDetail = () => {
 
               {/* Action Buttons */}
               <div className="space-y-2">
-                <Button
-                  onClick={handleAddToCart}
-                  className="w-full h-10"
-                  disabled={!product.active}
-                >
+                <Button onClick={handleAddToCart} className="w-full h-10" disabled={!product.active}>
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   <span className="text-sm">{product.active ? "Add to Cart" : "Out of Stock"}</span>
                 </Button>
                 
-                {product.active && (
-                  <Button
-                    onClick={handleBuyNow}
-                    variant="outline"
-                    className="w-full h-10"
-                  >
+                {product.active && <Button onClick={handleBuyNow} variant="outline" className="w-full h-10">
                     <CreditCard className="w-4 h-4 mr-2" />
                     <span className="text-sm">Buy Now</span>
-                  </Button>
-                )}
+                  </Button>}
               </div>
 
               {/* Product Features */}
@@ -352,41 +267,25 @@ const ProductDetail = () => {
         </Card>
         
         {/* Related Products Section */}
-        {relatedProducts.length > 0 && (
-          <div className="mt-6">
+        {relatedProducts.length > 0 && <div className="mt-6">
             <h2 className="text-lg font-semibold mb-3">Related Products</h2>
             <div className="grid grid-cols-2 gap-3">
-              {relatedProducts.map((item) => (
-                <Card 
-                  key={item.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => navigate(`/products/${item.id}`)}
-                >
+              {relatedProducts.map(item => <Card key={item.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/products/${item.id}`)}>
                   <CardContent className="p-2">
-                    <img
-                      src={item.image_url || "/placeholder.svg"}
-                      alt={item.name}
-                      className="w-full h-24 object-cover rounded-md mb-2"
-                    />
+                    <img src={item.image_url || "/placeholder.svg"} alt={item.name} className="w-full h-24 object-cover rounded-md mb-2" />
                     <h3 className="text-xs font-medium line-clamp-2 mb-1">{item.name}</h3>
                     <p className="text-sm font-bold text-primary">₱{item.price?.toFixed(2)}</p>
-                    {item.category && (
-                      <Badge variant="secondary" className="text-[10px] mt-1">
+                    {item.category && <Badge variant="secondary" className="text-[10px] mt-1">
                         {item.category}
-                      </Badge>
-                    )}
+                      </Badge>}
                   </CardContent>
-                </Card>
-              ))}
+                </Card>)}
             </div>
-          </div>
-        )}
+          </div>}
         
         {/* Extra spacing to ensure content isn't cut off */}
         <div className="h-8"></div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default ProductDetail;
