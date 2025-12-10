@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { jsPDF } from "jspdf";
 import * as XLSX from "xlsx";
-import QRCode from "qrcode";
+import JsBarcode from "jsbarcode";
 import logo from "@/assets/Gemini_logo_only.png";
 
 interface ShippingAddress {
@@ -906,31 +906,33 @@ export const AdminOrdersTab = ({
       
       y += 6;
       
-      // Barcode - Generate tracking URL as Code128-style barcode
-      const trackingUrl = `${window.location.origin}/my-purchase?order=${order.order_number}`;
-      const barcodeDataUrl = await QRCode.toDataURL(trackingUrl, {
-        width: 400,
-        margin: 1,
-        color: { dark: '#000000', light: '#ffffff' },
-        errorCorrectionLevel: 'M'
+      // Generate Code128 barcode using JsBarcode
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, order.order_number, {
+        format: "CODE128",
+        width: 2,
+        height: 50,
+        displayValue: true,
+        fontSize: 14,
+        margin: 10,
+        background: "#ffffff",
+        lineColor: "#000000"
       });
+      const barcodeDataUrl = canvas.toDataURL("image/png");
       
       // Add barcode centered - larger size
-      const barcodeWidth = 70;
-      const barcodeHeight = 25;
+      const barcodeWidth = 80;
+      const barcodeHeight = 22;
       const barcodeX = (waybillWidth - barcodeWidth) / 2;
       doc.addImage(barcodeDataUrl, "PNG", barcodeX, y, barcodeWidth, barcodeHeight);
       
-      // Barcode label - order number below
-      y += barcodeHeight + 3;
-      doc.setFontSize(7);
-      doc.setTextColor(60);
-      doc.text(order.order_number, waybillWidth / 2, y, { align: "center" });
+      // Barcode label below
+      y += barcodeHeight + 2;
       doc.setFontSize(5);
       doc.setTextColor(100);
-      doc.text("Scan to Track Order", waybillWidth / 2, y + 3, { align: "center" });
+      doc.text("Scan to Track Order", waybillWidth / 2, y, { align: "center" });
       
-      y += 8;
+      y += 6;
 
       // Footer
       doc.setDrawColor(200);
