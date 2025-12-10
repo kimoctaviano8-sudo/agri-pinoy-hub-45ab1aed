@@ -17,27 +17,27 @@ import { useNativeBiometric } from "@/hooks/useNativeBiometric";
 import { supabase } from "@/integrations/supabase/client";
 import loginBg from "@/assets/login-section-acc.jpg";
 import signupBg from "@/assets/auth-signup-bg.jpg";
-
 interface Country {
-  name: { common: string };
+  name: {
+    common: string;
+  };
   cca2: string;
 }
-
 interface State {
   name: string;
   iso2: string;
 }
-
 interface City {
   name: string;
 }
-
 interface LoginProps {
   initialMode?: boolean;
   onBack?: () => void;
 }
-
-const Login = ({ initialMode = true, onBack }: LoginProps) => {
+const Login = ({
+  initialMode = true,
+  onBack
+}: LoginProps) => {
   const [isLogin, setIsLogin] = useState(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -63,15 +63,22 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isSignupLoading, setIsSignupLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
-  const { toast } = useToast();
-  const { login, signInWithGoogle, register, isLoading } = useAuth();
-  
+  const {
+    toast
+  } = useToast();
+  const {
+    login,
+    signInWithGoogle,
+    register,
+    isLoading
+  } = useAuth();
+
   // Native biometric hook
-  const { 
-    isAvailable: biometricSupported, 
-    getBiometryTypeName, 
+  const {
+    isAvailable: biometricSupported,
+    getBiometryTypeName,
     authenticate: nativeAuthenticate,
-    getCredentials 
+    getCredentials
   } = useNativeBiometric();
 
   // Fetch countries on component mount
@@ -89,27 +96,24 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       });
       return;
     }
-
     try {
       // First check if we have stored credentials
       const credentials = await getCredentials('gemini-agriculture');
-      
       if (credentials) {
         // Authenticate with biometric
         const authenticated = await nativeAuthenticate(`Use ${getBiometryTypeName()} to log in`);
-        
         if (authenticated) {
           toast({
             title: `${getBiometryTypeName()} Verified`,
-            description: "Logging you in...",
+            description: "Logging you in..."
           });
-          
+
           // Use stored credentials to login
           const success = await login(credentials.username, credentials.password);
           if (success) {
             toast({
               title: "Login Successful",
-              description: "Welcome back!",
+              description: "Welcome back!"
             });
           } else {
             toast({
@@ -141,7 +145,6 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       });
     }
   };
-
   const fetchCountries = async () => {
     try {
       const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2');
@@ -151,11 +154,10 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       console.error('Error fetching countries:', error);
     }
   };
-
   const fetchStates = async (countryCode: string) => {
     try {
       setIsLoadingLocation(true);
-      
+
       // Use local data for Philippines
       if (countryCode === 'PH') {
         const philippinesStates = getProvincesList().map((province, index) => ({
@@ -165,20 +167,18 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
         setProvinces(philippinesStates);
       } else {
         // Use Supabase Edge Function proxy for other countries
-        const { data, error } = await supabase.functions.invoke<State[]>(
-          'csc-location',
-          {
-            body: {
-              type: 'states',
-              countryCode,
-            },
+        const {
+          data,
+          error
+        } = await supabase.functions.invoke<State[]>('csc-location', {
+          body: {
+            type: 'states',
+            countryCode
           }
-        );
-
+        });
         if (error) throw error;
         setProvinces((data || []).sort((a, b) => a.name.localeCompare(b.name)));
       }
-      
       setCities([]);
       setAvailableBarangays([]);
     } catch (error) {
@@ -188,31 +188,28 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       setIsLoadingLocation(false);
     }
   };
-
   const fetchCities = async (countryCode: string, stateCode: string) => {
     try {
       setIsLoadingLocation(true);
-      
+
       // For Philippines, we don't need to fetch cities from API since we use local data
       if (countryCode === 'PH') {
         setCities([]);
       } else {
         // Use Supabase Edge Function proxy for other countries
-        const { data, error } = await supabase.functions.invoke<City[]>(
-          'csc-location',
-          {
-            body: {
-              type: 'cities',
-              countryCode,
-              stateCode,
-            },
+        const {
+          data,
+          error
+        } = await supabase.functions.invoke<City[]>('csc-location', {
+          body: {
+            type: 'cities',
+            countryCode,
+            stateCode
           }
-        );
-
+        });
         if (error) throw error;
         setCities((data || []).sort((a, b) => a.name.localeCompare(b.name)));
       }
-      
       setAvailableBarangays([]);
     } catch (error) {
       console.error('Error fetching cities:', error);
@@ -221,9 +218,11 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       setIsLoadingLocation(false);
     }
   };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const {
+      name,
+      value
+    } = e.target;
     setFormData({
       ...formData,
       [name]: value
@@ -234,7 +233,12 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       const selectedCountry = countries.find(c => c.name.common === value);
       if (selectedCountry) {
         fetchStates(selectedCountry.cca2);
-        setFormData(prev => ({ ...prev, country: value, province: "", city: "" }));
+        setFormData(prev => ({
+          ...prev,
+          country: value,
+          province: "",
+          city: ""
+        }));
       }
     } else if (name === 'province') {
       const selectedCountry = countries.find(c => c.name.common === formData.country);
@@ -242,7 +246,11 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       if (selectedCountry && selectedProvince && formData.country !== 'Philippines') {
         fetchCities(selectedCountry.cca2, selectedProvince.iso2);
       }
-      setFormData(prev => ({ ...prev, province: value, city: "" }));
+      setFormData(prev => ({
+        ...prev,
+        province: value,
+        city: ""
+      }));
     } else if (name === 'city') {
       // For Philippines, use local barangay data
       if (formData.country === 'Philippines') {
@@ -251,33 +259,33 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
         console.log('Found barangays:', barangays.length, barangays);
         setAvailableBarangays(barangays);
       }
-      setFormData(prev => ({ ...prev, city: value }));
+      setFormData(prev => ({
+        ...prev,
+        city: value
+      }));
     }
   };
-
   const handleDateChange = (date: Date | undefined) => {
     setFormData({
       ...formData,
       birthday: date || null
     });
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       if (isLogin) {
         const success = await login(formData.email, formData.password);
         if (success) {
           toast({
             title: "Login Successful",
-            description: "Welcome back!",
+            description: "Welcome back!"
           });
         } else {
           toast({
             title: "Login Failed",
             description: "Invalid email or password. Please try again.",
-            variant: "destructive",
+            variant: "destructive"
           });
         }
       } else {
@@ -286,20 +294,21 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
           toast({
             title: "Password Mismatch",
             description: "Passwords do not match. Please try again.",
-            variant: "destructive",
+            variant: "destructive"
           });
           return;
         }
-        
+
         // Show the modal and start the signup process
         setShowSignupModal(true);
         setIsSignupLoading(true);
         setSignupSuccess(false);
-        
-        const success = await register({ ...formData, barangay: "", gender: formData.gender });
-        
+        const success = await register({
+          ...formData,
+          barangay: "",
+          gender: formData.gender
+        });
         setIsSignupLoading(false);
-        
         if (success) {
           setSignupSuccess(true);
           // Keep modal open to show email verification message
@@ -308,7 +317,7 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
           toast({
             title: "Registration Failed",
             description: "Please check your information and try again.",
-            variant: "destructive",
+            variant: "destructive"
           });
         }
       }
@@ -318,25 +327,26 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
-  const roles = [
-    { value: "farmer", label: "Farmer" },
-    { value: "agri-entrepreneur", label: "Agri-Entrepreneur" },
-    { value: "field-agent", label: "Field Agent" },
-    { value: "researcher", label: "Researcher" },
-  ];
-
-  return (
-    <div 
-      className="min-h-screen bg-cover bg-center bg-no-repeat relative"
-      style={{ 
-        backgroundImage: `url(${isLogin ? loginBg : signupBg})` 
-      }}
-    >
+  const roles = [{
+    value: "farmer",
+    label: "Farmer"
+  }, {
+    value: "agri-entrepreneur",
+    label: "Agri-Entrepreneur"
+  }, {
+    value: "field-agent",
+    label: "Field Agent"
+  }, {
+    value: "researcher",
+    label: "Researcher"
+  }];
+  return <div className="min-h-screen bg-cover bg-center bg-no-repeat relative" style={{
+    backgroundImage: `url(${isLogin ? loginBg : signupBg})`
+  }}>
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-black/40"></div>
       {/* Header */}
@@ -359,39 +369,20 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       {/* Form Container */}
       <div className="flex-1 bg-background rounded-t-3xl min-h-[calc(100vh-160px)] px-6 pt-6 pb-8 relative z-10 overflow-y-auto">
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
-          {!isLogin && (
-            <>
+          {!isLogin && <>
               {/* First Name and Last Name Fields */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="firstName" className="text-xs font-medium text-foreground">
                     First Name
                   </Label>
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    placeholder="First name"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary"
-                    required
-                  />
+                  <Input id="firstName" name="firstName" type="text" placeholder="First name" value={formData.firstName} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="lastName" className="text-xs font-medium text-foreground">
                     Last Name
                   </Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    placeholder="Last name"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary"
-                    required
-                  />
+                  <Input id="lastName" name="lastName" type="text" placeholder="Last name" value={formData.lastName} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
                 </div>
               </div>
 
@@ -400,31 +391,13 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
                 <Label className="text-xs font-medium text-foreground">Birthday</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "h-12 w-full text-sm bg-background border border-border rounded-xl justify-start text-left font-normal focus:border-primary",
-                        !formData.birthday && "text-muted-foreground"
-                      )}
-                    >
+                    <Button variant="outline" className={cn("h-12 w-full text-sm bg-background border border-border rounded-xl justify-start text-left font-normal focus:border-primary", !formData.birthday && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.birthday ? format(formData.birthday, "MMM dd, yyyy") : <span>Select birthday</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.birthday || undefined}
-                      onSelect={handleDateChange}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
-                      }
-                      captionLayout="dropdown-buttons"
-                      fromYear={1920}
-                      toYear={new Date().getFullYear()}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
+                    <Calendar mode="single" selected={formData.birthday || undefined} onSelect={handleDateChange} disabled={date => date > new Date() || date < new Date("1900-01-01")} captionLayout="dropdown-buttons" fromYear={1920} toYear={new Date().getFullYear()} initialFocus className="pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -432,14 +405,7 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
               {/* Gender Field */}
               <div className="space-y-1">
                 <Label htmlFor="gender" className="text-xs font-medium text-foreground">Gender</Label>
-                <select
-                  id="gender"
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                  className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary"
-                  required
-                >
+                <select id="gender" name="gender" value={formData.gender} onChange={handleInputChange} className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary" required>
                   <option value="">Select gender</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -453,39 +419,19 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
                 <Label htmlFor="phone" className="text-xs font-medium text-foreground">
                   Phone Number
                 </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder="+63 XXX XXX XXXX"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary"
-                  required
-                />
+                <Input id="phone" name="phone" type="tel" placeholder="+63 XXX XXX XXXX" value={formData.phone} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
               </div>
 
               {/* Location Section */}
               <div className="space-y-3 pt-2">
-                <h3 className="text-xs font-semibold text-foreground border-b border-border pb-1">
-                  📍 Location Details
-                </h3>
+                <h3 className="text-xs font-semibold text-foreground border-b border-border pb-1">Location Details</h3>
                 
                 {/* Street Number */}
                 <div className="space-y-1">
                   <Label htmlFor="streetNumber" className="text-xs font-medium text-foreground">
                     House/Street Number
                   </Label>
-                  <Input
-                    id="streetNumber"
-                    name="streetNumber"
-                    type="text"
-                    placeholder="e.g., 123, Blk 4 Lot 5"
-                    value={formData.streetNumber}
-                    onChange={handleInputChange}
-                    className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary"
-                    required
-                  />
+                  <Input id="streetNumber" name="streetNumber" type="text" placeholder="e.g., 123, Blk 4 Lot 5" value={formData.streetNumber} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
                 </div>
 
                 {/* Country */}
@@ -493,20 +439,11 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
                   <Label htmlFor="country" className="text-xs font-medium text-foreground">
                     Country
                   </Label>
-                  <select
-                    id="country"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary"
-                    required
-                  >
+                  <select id="country" name="country" value={formData.country} onChange={handleInputChange} className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary" required>
                     <option value="">Select your country</option>
-                    {countries.map((country) => (
-                      <option key={country.cca2} value={country.name.common}>
+                    {countries.map(country => <option key={country.cca2} value={country.name.common}>
                         {country.name.common}
-                      </option>
-                    ))}
+                      </option>)}
                   </select>
                 </div>
 
@@ -515,23 +452,13 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
                   <Label htmlFor="province" className="text-xs font-medium text-foreground">
                     Province/State
                   </Label>
-                  <select
-                    id="province"
-                    name="province"
-                    value={formData.province}
-                    onChange={handleInputChange}
-                    className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50"
-                    required
-                    disabled={!formData.country || isLoadingLocation}
-                  >
+                  <select id="province" name="province" value={formData.province} onChange={handleInputChange} className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50" required disabled={!formData.country || isLoadingLocation}>
                     <option value="">
                       {!formData.country ? "Select country first" : isLoadingLocation ? "Loading..." : "Select province/state"}
                     </option>
-                    {provinces.map((province) => (
-                      <option key={province.iso2} value={province.name}>
+                    {provinces.map(province => <option key={province.iso2} value={province.name}>
                         {province.name}
-                      </option>
-                    ))}
+                      </option>)}
                   </select>
                 </div>
 
@@ -540,31 +467,15 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
                   <Label htmlFor="city" className="text-xs font-medium text-foreground">
                     City
                   </Label>
-                  <select
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50"
-                    required
-                    disabled={!formData.province || isLoadingLocation}
-                  >
+                  <select id="city" name="city" value={formData.city} onChange={handleInputChange} className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50" required disabled={!formData.province || isLoadingLocation}>
                     <option value="">
                       {!formData.province ? "Select province first" : isLoadingLocation ? "Loading..." : "Select city"}
                     </option>
-                    {formData.country === 'Philippines' ? (
-                      getCitiesByProvince(formData.province).map((city) => (
-                        <option key={city} value={city}>
+                    {formData.country === 'Philippines' ? getCitiesByProvince(formData.province).map(city => <option key={city} value={city}>
                           {city}
-                        </option>
-                      ))
-                    ) : (
-                      cities.map((city) => (
-                        <option key={city.name} value={city.name}>
+                        </option>) : cities.map(city => <option key={city.name} value={city.name}>
                           {city.name}
-                        </option>
-                      ))
-                    )}
+                        </option>)}
                   </select>
                 </div>
               </div>
@@ -572,39 +483,20 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
               {/* Role Field */}
               <div className="space-y-1 pt-2">
                 <Label htmlFor="role" className="text-xs font-medium text-foreground">Your Role</Label>
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleInputChange}
-                  className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary"
-                  required
-                >
-                  {roles.map((role) => (
-                    <option key={role.value} value={role.value}>
+                <select id="role" name="role" value={formData.role} onChange={handleInputChange} className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary" required>
+                  {roles.map(role => <option key={role.value} value={role.value}>
                       {role.label}
-                    </option>
-                  ))}
+                    </option>)}
                 </select>
               </div>
-            </>
-          )}
+            </>}
 
           {/* Email Field */}
           <div className="space-y-1">
             <Label htmlFor="email" className="text-xs font-medium text-foreground">
               {isLogin ? "Email/Username" : "Email Address"}
             </Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder={isLogin ? "Enter email or username" : "Enter your email"}
-              value={formData.email}
-              onChange={handleInputChange}
-              className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary"
-              required
-            />
+            <Input id="email" name="email" type="email" placeholder={isLogin ? "Enter email or username" : "Enter your email"} value={formData.email} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
           </div>
 
           {/* Password Field */}
@@ -613,66 +505,35 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
               Password
             </Label>
             <div className="relative">
-              <Input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="h-12 text-sm bg-background border border-border rounded-xl pr-10 focus:border-primary"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
+              <Input id="password" name="password" type={showPassword ? "text" : "password"} placeholder="Enter password" value={formData.password} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl pr-10 focus:border-primary" required />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
           {/* Confirm Password Field */}
-          {!isLogin && (
-            <div className="space-y-1">
+          {!isLogin && <div className="space-y-1">
               <Label htmlFor="confirmPassword" className="text-xs font-medium text-foreground">
                 Confirm Password
               </Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary"
-                required
-              />
-            </div>
-          )}
+              <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm your password" value={formData.confirmPassword} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
+            </div>}
 
           {/* Forgot Password */}
-          {isLogin && (
-            <div className="text-right pt-1">
+          {isLogin && <div className="text-right pt-1">
               <Button variant="link" className="text-xs p-0 h-auto text-muted-foreground hover:text-primary">
                 Forgot password?
               </Button>
-            </div>
-          )}
+            </div>}
 
           {/* Submit Button */}
-          <Button 
-            type="submit" 
-            className="w-full h-12 text-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl mt-6"
-            disabled={isLoading}
-          >
-            {isLoading ? "Creating Account..." : (isLogin ? "Sign In" : "Create Account")}
+          <Button type="submit" className="w-full h-12 text-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl mt-6" disabled={isLoading}>
+            {isLoading ? "Creating Account..." : isLogin ? "Sign In" : "Create Account"}
           </Button>
 
           {/* Social Login Buttons - Only show for login */}
-          {isLogin && (
-            <>
+          {isLogin && <>
               <div className="relative my-6">
                 <Separator className="bg-border" />
                 <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background px-4">
@@ -681,24 +542,14 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
               </div>
 
               <div className="space-y-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={true}
-                  className="w-full h-12 text-sm border-2 border-border rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                <Button type="button" variant="outline" disabled={true} className="w-full h-12 text-sm border-2 border-border rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
                   <div className="w-5 h-5 bg-muted-foreground/50 rounded-sm flex items-center justify-center text-white text-xs font-bold">
                     G
                   </div>
                   <span className="text-muted-foreground">Continue with Google</span>
                 </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={true}
-                  className="w-full h-12 text-sm border-2 border-border rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                <Button type="button" variant="outline" disabled={true} className="w-full h-12 text-sm border-2 border-border rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
                   <div className="w-5 h-5 bg-muted-foreground/50 rounded-sm flex items-center justify-center text-white text-xs font-bold">
                     f
                   </div>
@@ -706,30 +557,19 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
                 </Button>
 
                 {/* Biometric Authentication Button - Disabled for now */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={true}
-                  className="w-full h-12 text-sm border-2 border-border rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                <Button type="button" variant="outline" disabled={true} className="w-full h-12 text-sm border-2 border-border rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
                   <Fingerprint className="w-5 h-5 text-muted-foreground" />
                   <span className="text-muted-foreground">Use Face ID / Fingerprint</span>
                 </Button>
               </div>
-            </>
-          )}
+            </>}
 
           {/* Switch Mode */}
           <div className="text-center mt-8 pt-4">
             <span className="text-muted-foreground text-sm">
               {isLogin ? "Don't have an account? " : "Already have an account? "}
             </span>
-            <Button
-              type="button"
-              variant="link"
-              className="text-sm p-0 h-auto text-primary hover:text-primary/80 font-semibold"
-              onClick={() => setIsLogin(!isLogin)}
-            >
+            <Button type="button" variant="link" className="text-sm p-0 h-auto text-primary hover:text-primary/80 font-semibold" onClick={() => setIsLogin(!isLogin)}>
               {isLogin ? "Sign Up" : "Log In"}
             </Button>
           </div>
@@ -737,15 +577,7 @@ const Login = ({ initialMode = true, onBack }: LoginProps) => {
       </div>
       
       {/* Signup Modal */}
-      <SignupModal
-        open={showSignupModal}
-        onOpenChange={setShowSignupModal}
-        isLoading={isSignupLoading}
-        isSuccess={signupSuccess}
-        email={formData.email}
-      />
-    </div>
-  );
+      <SignupModal open={showSignupModal} onOpenChange={setShowSignupModal} isLoading={isSignupLoading} isSuccess={signupSuccess} email={formData.email} />
+    </div>;
 };
-
 export default Login;
