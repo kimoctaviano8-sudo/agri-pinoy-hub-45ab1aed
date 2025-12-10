@@ -626,7 +626,7 @@ const Profile = () => {
             <div className="grid grid-cols-4 gap-3 mb-6">
               <div className="text-center">
                 <div className="flex items-center justify-center mb-1">
-                  <Target className="w-4 h-4 mr-1 text-primary" />
+                  <Target className="w-4 h-4 mr-1 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-foreground">{streakData.currentStreak}d</div>
                 <div className="text-xs text-muted-foreground">Current
@@ -634,7 +634,7 @@ Streak</div>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center mb-1">
-                  <Trophy className="w-4 h-4 mr-1 text-accent" />
+                  <Trophy className="w-4 h-4 mr-1 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-foreground">{streakData.longestStreak}</div>
                 <div className="text-xs text-muted-foreground">Longest
@@ -642,14 +642,14 @@ Streak</div>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center mb-1">
-                  <Gift className="w-4 h-4 mr-1 text-secondary" />
+                  <Gift className="w-4 h-4 mr-1 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-foreground">{streakData.vouchersEarned}</div>
                 <div className="text-xs text-muted-foreground">Vouchers Earned</div>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center mb-1">
-                  <PhilippinePeso className="w-4 h-4 mr-1 text-emerald-500" />
+                  <PhilippinePeso className="w-4 h-4 mr-1 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-foreground">{earnedPoints}</div>
                 <div className="text-xs text-muted-foreground">Earned Points</div>
