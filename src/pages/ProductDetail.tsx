@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ShoppingCart, CreditCard, Plus, Minus, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ShoppingCart, CreditCard, Plus, Minus, ChevronDown, ChevronUp, ZoomIn, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/contexts/CartContext";
@@ -28,7 +29,7 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
-
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   useEffect(() => {
@@ -196,12 +197,18 @@ const ProductDetail = () => {
           <CardContent className="p-3">
             {/* Product Image */}
             <div className="mb-4">
-              <div className="relative overflow-hidden rounded-lg">
+              <div 
+                className="relative overflow-hidden rounded-lg cursor-pointer group"
+                onClick={() => setIsImageZoomed(true)}
+              >
                 <img
                   src={product.image_url || "/placeholder.svg"}
                   alt={product.name}
-                  className="w-full h-auto max-h-64 object-contain bg-muted/30"
+                  className="w-full h-auto max-h-64 object-contain bg-muted/30 transition-transform duration-200 group-hover:scale-105"
                 />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                  <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+                </div>
                 {product.category && (
                   <div className="absolute top-2 left-2">
                     <Badge variant="secondary" className="text-xs px-2 py-1">
@@ -211,6 +218,27 @@ const ProductDetail = () => {
                 )}
               </div>
             </div>
+
+            {/* Image Zoom Modal */}
+            <Dialog open={isImageZoomed} onOpenChange={setIsImageZoomed}>
+              <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 z-50 text-white hover:bg-white/20"
+                  onClick={() => setIsImageZoomed(false)}
+                >
+                  <X className="w-6 h-6" />
+                </Button>
+                <div className="flex items-center justify-center w-full h-full p-4">
+                  <img
+                    src={product.image_url || "/placeholder.svg"}
+                    alt={product.name}
+                    className="max-w-full max-h-[85vh] object-contain"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Product Info */}
             <div className="space-y-4">
