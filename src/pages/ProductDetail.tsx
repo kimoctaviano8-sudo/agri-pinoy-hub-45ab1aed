@@ -200,7 +200,7 @@ const ProductDetail = () => {
                 <img
                   src={product.image_url || "/placeholder.svg"}
                   alt={product.name}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-auto max-h-64 object-contain bg-muted/30"
                 />
                 {product.category && (
                   <div className="absolute top-2 left-2">
