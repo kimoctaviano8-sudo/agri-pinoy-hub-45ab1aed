@@ -600,7 +600,7 @@ const Login = ({
                 >
                   <Fingerprint className={`w-5 h-5 ${biometricSupported ? 'text-primary' : 'text-muted-foreground'}`} />
                   <span className={biometricSupported ? 'text-foreground' : 'text-muted-foreground'}>
-                    Use {getBiometryTypeName()}
+                    Use Face ID/Fingerprint
                   </span>
                 </Button>
               </div>
