@@ -131,7 +131,7 @@ const Profile = () => {
         
         // For native, store credentials securely
         if (isNative && user?.email) {
-          await setCredentials('gemini-agriculture', user.email, user.id || '');
+          await setCredentials(user.email, user.id || '');
         }
         
         setBiometricEnabled(true);
@@ -161,7 +161,7 @@ const Profile = () => {
     localStorage.removeItem(`biometric_enabled_${user?.id}`);
     
     if (isNative) {
-      await deleteCredentials('gemini-agriculture');
+      await deleteCredentials();
     }
     
     setBiometricEnabled(false);
