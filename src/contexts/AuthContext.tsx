@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useOAuthSignIn } from '@/hooks/useOAuthSignIn';
+import { useNativeBiometric } from '@/hooks/useNativeBiometric';
 
 interface AuthContextType {
   user: User | null;
@@ -14,6 +15,7 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   userRole: string | null;
+  storeBiometricCredentials: (email: string, password: string) => Promise<boolean>;
 }
 
 interface RegisterData {
@@ -47,6 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<string | null>(null);
   const { toast } = useToast();
   const { signInWithGoogle, signInWithFacebook } = useOAuthSignIn();
+  const { setCredentials: setBiometricCredentials, isAvailable: biometricAvailable } = useNativeBiometric();
 
   // Role fetching for current user
   const fetchUserRole = async (userId: string) => {
@@ -288,6 +291,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       description: "You have been successfully logged out.",
     });
   };
+
+  // Store credentials for biometric login
+  const storeBiometricCredentials = async (email: string, password: string): Promise<boolean> => {
+    if (!biometricAvailable) return false;
+    return await setBiometricCredentials(email, password);
+  };
+
   const value = {
     user,
     session,
@@ -297,7 +307,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     logout,
     isLoading,
-    userRole
+    userRole,
+    storeBiometricCredentials
   };
 
   return (

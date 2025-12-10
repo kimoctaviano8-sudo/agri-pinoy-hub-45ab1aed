@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { NativeBiometric, BiometryType } from 'capacitor-native-biometric';
 
+// Server identifier for credential storage
+const BIOMETRIC_SERVER = 'app.buildnatively.com';
+
 interface BiometricState {
   isAvailable: boolean;
   biometryType: BiometryType | null;
   isNative: boolean;
+  isEnabled: boolean;
 }
 
 export const useNativeBiometric = () => {
@@ -13,6 +17,7 @@ export const useNativeBiometric = () => {
     isAvailable: false,
     biometryType: null,
     isNative: false,
+    isEnabled: false,
   });
 
   useEffect(() => {
@@ -25,14 +30,24 @@ export const useNativeBiometric = () => {
     if (isNativePlatform) {
       try {
         const result = await NativeBiometric.isAvailable();
+        // Check if credentials are already stored
+        let hasCredentials = false;
+        try {
+          const creds = await NativeBiometric.getCredentials({ server: BIOMETRIC_SERVER });
+          hasCredentials = !!(creds?.username && creds?.password);
+        } catch {
+          hasCredentials = false;
+        }
+        
         setState({
           isAvailable: result.isAvailable,
           biometryType: result.biometryType,
           isNative: true,
+          isEnabled: hasCredentials,
         });
       } catch (error) {
         console.log('Native biometric check failed:', error);
-        setState({ isAvailable: false, biometryType: null, isNative: true });
+        setState({ isAvailable: false, biometryType: null, isNative: true, isEnabled: false });
       }
     } else {
       // Fallback to WebAuthn for browser
@@ -43,11 +58,12 @@ export const useNativeBiometric = () => {
             isAvailable,
             biometryType: isAvailable ? BiometryType.FACE_ID : null,
             isNative: false,
+            isEnabled: false,
           });
         }
       } catch (error) {
         console.log('WebAuthn check failed:', error);
-        setState({ isAvailable: false, biometryType: null, isNative: false });
+        setState({ isAvailable: false, biometryType: null, isNative: false, isEnabled: false });
       }
     }
   };
@@ -88,24 +104,21 @@ export const useNativeBiometric = () => {
   };
 
   const setCredentials = async (
-    server: string,
     username: string,
     password: string
   ): Promise<boolean> => {
     if (!Capacitor.isNativePlatform()) {
-      // For web, do not persist raw credentials for security reasons
-      console.warn(
-        'Biometric credential storage is disabled on web to avoid storing passwords in localStorage.'
-      );
+      console.warn('Biometric credential storage is only available on native platforms.');
       return false;
     }
     
     try {
       await NativeBiometric.setCredentials({
-        server,
+        server: BIOMETRIC_SERVER,
         username,
         password,
       });
+      setState(prev => ({ ...prev, isEnabled: true }));
       return true;
     } catch (error) {
       console.log('Failed to set credentials:', error);
@@ -113,19 +126,14 @@ export const useNativeBiometric = () => {
     }
   };
 
-  const getCredentials = async (
-    server: string
-  ): Promise<{ username: string; password: string } | null> => {
+  const getCredentials = async (): Promise<{ username: string; password: string } | null> => {
     if (!Capacitor.isNativePlatform()) {
-      // For web, biometric credential retrieval is disabled for security reasons
-      console.warn(
-        'Biometric credential retrieval is disabled on web because credentials are not stored in localStorage.'
-      );
+      console.warn('Biometric credential retrieval is only available on native platforms.');
       return null;
     }
     
     try {
-      const credentials = await NativeBiometric.getCredentials({ server });
+      const credentials = await NativeBiometric.getCredentials({ server: BIOMETRIC_SERVER });
       return credentials;
     } catch (error) {
       console.log('Failed to get credentials:', error);
@@ -133,19 +141,14 @@ export const useNativeBiometric = () => {
     }
   };
 
-  const deleteCredentials = async (server: string): Promise<boolean> => {
+  const deleteCredentials = async (): Promise<boolean> => {
     if (!Capacitor.isNativePlatform()) {
-      // Best-effort cleanup of any legacy stored credentials
-      try {
-        localStorage.removeItem(`biometric_credentials_${server}`);
-      } catch (error) {
-        console.log('Failed to clean up legacy web biometric credentials:', error);
-      }
       return true;
     }
     
     try {
-      await NativeBiometric.deleteCredentials({ server });
+      await NativeBiometric.deleteCredentials({ server: BIOMETRIC_SERVER });
+      setState(prev => ({ ...prev, isEnabled: false }));
       return true;
     } catch (error) {
       console.log('Failed to delete credentials:', error);
@@ -178,5 +181,6 @@ export const useNativeBiometric = () => {
     deleteCredentials,
     getBiometryTypeName,
     checkBiometricAvailability,
+    server: BIOMETRIC_SERVER,
   };
 };

@@ -77,9 +77,11 @@ const Login = ({
   // Native biometric hook
   const {
     isAvailable: biometricSupported,
+    isEnabled: biometricEnabled,
     getBiometryTypeName,
     authenticate: nativeAuthenticate,
-    getCredentials
+    getCredentials,
+    setCredentials
   } = useNativeBiometric();
 
   // Fetch countries on component mount
@@ -97,43 +99,51 @@ const Login = ({
       });
       return;
     }
-    try {
-      // First check if we have stored credentials
-      const credentials = await getCredentials('gemini-agriculture');
-      if (credentials) {
-        // Authenticate with biometric
-        const authenticated = await nativeAuthenticate(`Use ${getBiometryTypeName()} to log in`);
-        if (authenticated) {
-          toast({
-            title: `${getBiometryTypeName()} Verified`,
-            description: "Logging you in..."
-          });
 
-          // Use stored credentials to login
-          const success = await login(credentials.username, credentials.password);
-          if (success) {
-            toast({
-              title: "Login Successful",
-              description: "Welcome back!"
-            });
-          } else {
-            toast({
-              title: "Login Failed",
-              description: "Please try logging in with your email and password.",
-              variant: "destructive"
-            });
-          }
-        } else {
+    if (!biometricEnabled) {
+      toast({
+        title: "Biometric Not Set Up",
+        description: "Please log in with your email first to enable biometric login.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // First authenticate with biometric
+      const authenticated = await nativeAuthenticate(`Use ${getBiometryTypeName()} to log in`);
+      
+      if (!authenticated) {
+        toast({
+          title: "Authentication Cancelled",
+          description: `${getBiometryTypeName()} authentication was cancelled.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Get stored credentials
+      const credentials = await getCredentials();
+      
+      if (credentials) {
+        toast({
+          title: `${getBiometryTypeName()} Verified`,
+          description: "Logging you in..."
+        });
+
+        // Use stored credentials to login
+        const success = await login(credentials.username, credentials.password);
+        if (!success) {
           toast({
-            title: "Authentication Cancelled",
-            description: `${getBiometryTypeName()} authentication was cancelled.`,
+            title: "Login Failed",
+            description: "Please try logging in with your email and password.",
             variant: "destructive"
           });
         }
       } else {
         toast({
-          title: "Biometric Not Set Up",
-          description: "Please log in with your email and enable biometric authentication in your profile settings.",
+          title: "Credentials Not Found",
+          description: "Please log in with your email and password to re-enable biometric login.",
           variant: "destructive"
         });
       }
@@ -145,6 +155,18 @@ const Login = ({
         variant: "destructive"
       });
     }
+  };
+
+  // Store credentials for biometric login after successful email/password login
+  const handleLoginWithCredentialStorage = async (email: string, password: string): Promise<boolean> => {
+    const success = await login(email, password);
+    
+    if (success && biometricSupported) {
+      // Store credentials for biometric login
+      await setCredentials(email, password);
+    }
+    
+    return success;
   };
   const fetchCountries = async () => {
     try {
@@ -276,7 +298,8 @@ const Login = ({
     e.preventDefault();
     try {
       if (isLogin) {
-        const success = await login(formData.email, formData.password);
+        // Use the credential-storing login handler
+        const success = await handleLoginWithCredentialStorage(formData.email, formData.password);
         if (success) {
           toast({
             title: "Login Successful",
@@ -563,10 +586,22 @@ const Login = ({
                   <span>Continue with Facebook</span>
                 </Button>
 
-                {/* Biometric Authentication Button - Disabled for now */}
-                <Button type="button" variant="outline" disabled={true} className="w-full h-12 text-sm border-2 border-border rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <Fingerprint className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-muted-foreground">Use Face ID / Fingerprint</span>
+                {/* Biometric Authentication Button */}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleBiometricAuth}
+                  disabled={!biometricSupported}
+                  className={`w-full h-12 text-sm border-2 rounded-2xl flex items-center justify-center gap-3 transition-colors ${
+                    biometricSupported 
+                      ? 'border-primary/50 hover:bg-primary/10 hover:border-primary' 
+                      : 'border-border disabled:opacity-50 disabled:cursor-not-allowed'
+                  }`}
+                >
+                  <Fingerprint className={`w-5 h-5 ${biometricSupported ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <span className={biometricSupported ? 'text-foreground' : 'text-muted-foreground'}>
+                    Use {getBiometryTypeName()}
+                  </span>
                 </Button>
               </div>
             </>}
