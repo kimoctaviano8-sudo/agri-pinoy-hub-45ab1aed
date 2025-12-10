@@ -190,8 +190,8 @@ const ProductDetail = () => {
                 <p className="text-lg font-bold text-primary">
                   ₱{product.price?.toFixed(2)}
                 </p>
-                <p className={`text-xs mb-3 ${product.stock_quantity > 10 ? 'text-green-600' : product.stock_quantity > 0 ? 'text-amber-600' : 'text-destructive'}`}>
-                  {product.stock_quantity > 0 ? `${product.stock_quantity} items available` : 'Out of stock'}
+                <p className="text-xs text-muted-foreground mb-3">
+                  {product.stock_quantity > 0 ? `Stock: ${product.stock_quantity}` : 'Out of stock'}
                 </p>
                 
                 {/* Product Description Section */}
