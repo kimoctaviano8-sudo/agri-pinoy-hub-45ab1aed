@@ -25,8 +25,10 @@ const ProductDetail = () => {
   const { toast } = useToast();
   const { addToCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   useEffect(() => {
@@ -51,6 +53,19 @@ const ProductDetail = () => {
         }
 
         setProduct(data);
+
+        // Fetch related products from same category
+        if (data?.category) {
+          const { data: related } = await supabase
+            .from('products')
+            .select('*')
+            .eq('category', data.category)
+            .eq('active', true)
+            .neq('id', id)
+            .limit(4);
+          
+          setRelatedProducts(related || []);
+        }
       } catch (error) {
         console.error('Error:', error);
         toast({
@@ -307,6 +322,37 @@ const ProductDetail = () => {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Related Products Section */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold mb-3">Related Products</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {relatedProducts.map((item) => (
+                <Card 
+                  key={item.id} 
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => navigate(`/products/${item.id}`)}
+                >
+                  <CardContent className="p-2">
+                    <img
+                      src={item.image_url || "/placeholder.svg"}
+                      alt={item.name}
+                      className="w-full h-24 object-cover rounded-md mb-2"
+                    />
+                    <h3 className="text-xs font-medium line-clamp-2 mb-1">{item.name}</h3>
+                    <p className="text-sm font-bold text-primary">₱{item.price?.toFixed(2)}</p>
+                    {item.category && (
+                      <Badge variant="secondary" className="text-[10px] mt-1">
+                        {item.category}
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Extra spacing to ensure content isn't cut off */}
         <div className="h-8"></div>
