@@ -65,7 +65,12 @@ const Checkout = () => {
   const [voucherDiscount, setVoucherDiscount] = useState(0);
   const shippingFee = 50; // Fixed shipping fee
 
+  // Use refs to track if initial data has been loaded to prevent re-fetching
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+
   useEffect(() => {
+    if (initialDataLoaded) return;
+
     const fetchData = async () => {
       // Handle cart checkout
       if (isFromCart) {
@@ -123,22 +128,24 @@ const Checkout = () => {
 
           if (!profileError && profileData) {
             setUserProfile(profileData);
-            // Only prefill address fields that are still empty so we don't override user typing
-            setAddress((prev) => ({
-              street_number: prev.street_number || profileData.street_number || '',
-              barangay: prev.barangay || profileData.barangay || '',
-              city: prev.city || profileData.city || '',
-              phone: prev.phone || profileData.phone || '',
-            }));
+            // Prefill address fields from profile
+            setAddress({
+              street_number: profileData.street_number || '',
+              barangay: profileData.barangay || '',
+              city: profileData.city || '',
+              phone: profileData.phone || '',
+            });
           }
         } catch (error) {
           console.error('Error fetching profile:', error);
         }
       }
+
+      setInitialDataLoaded(true);
     };
 
     fetchData();
-  }, [productId, isFromCart, cartItems, user, navigate, toast, quantity]);
+  }, [initialDataLoaded, productId, isFromCart, user, navigate, toast, quantity]);
 
   const handleVoucherApply = async () => {
     if (!voucherCode.trim()) return;
