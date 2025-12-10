@@ -108,14 +108,14 @@ const AdminDashboard = () => {
         <AdminStats news={news} products={products} users={users} forumPosts={forumPosts} />
 
         {/* Main Tabs */}
-        <Tabs defaultValue="analytics" className="space-y-4">
+        <Tabs defaultValue="orders" className="space-y-4">
           <div className="w-full overflow-hidden">
             <div className="overflow-x-auto scrollbar-hide">
-              <TabsList className="inline-flex h-auto p-1 gap-1 w-max min-w-full">
+          <TabsList className="inline-flex h-auto p-1 gap-1 w-max min-w-full">
+                <TabsTrigger value="orders" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Orders</TabsTrigger>
                 <TabsTrigger value="analytics" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Analytics</TabsTrigger>
                 <TabsTrigger value="news" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">News</TabsTrigger>
                 <TabsTrigger value="products" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Products</TabsTrigger>
-                <TabsTrigger value="orders" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Orders</TabsTrigger>
                 <TabsTrigger value="stock" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Stock</TabsTrigger>
                 <TabsTrigger value="vouchers" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Vouchers</TabsTrigger>
                 <TabsTrigger value="carousel" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Carousel</TabsTrigger>
@@ -124,6 +124,11 @@ const AdminDashboard = () => {
               </TabsList>
             </div>
           </div>
+
+          {/* Orders Tab */}
+          <TabsContent value="orders" className="space-y-3">
+            <AdminOrdersTab />
+          </TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-4">
@@ -138,11 +143,6 @@ const AdminDashboard = () => {
           {/* Products Tab */}
           <TabsContent value="products" className="space-y-3">
             <AdminProductsTab products={products} onToggleActive={toggleProductActive} onDelete={handleDeleteProduct} />
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders" className="space-y-3">
-            <AdminOrdersTab />
           </TabsContent>
 
           {/* Stock Management Tab */}
