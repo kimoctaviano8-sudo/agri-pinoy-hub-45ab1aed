@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Edit, Save, MapPin, Phone, Mail, Calendar, Briefcase, Award, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Heart, Download, Globe, Monitor, Rss, Trash2, History, Loader2, Check, User, Users, Trophy, Menu, Star, Target, DollarSign, Gift, Fingerprint, Smartphone, Crown, Headphones } from "lucide-react";
+import { Camera, Edit, Save, MapPin, Phone, Mail, Calendar, Briefcase, Award, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Heart, Download, Globe, Monitor, Rss, Trash2, History, Loader2, Check, User, Users, Trophy, Menu, Star, Target, DollarSign, Gift, Fingerprint, Smartphone, Crown, Headphones, PhilippinePeso } from "lucide-react";
 import { useNativeBiometric } from "@/hooks/useNativeBiometric";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -649,7 +649,7 @@ Streak</div>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center mb-1">
-                  <div className="w-4 h-4 mr-1 text-emerald-500 flex items-center justify-center text-sm font-bold">₱</div>
+                  <PhilippinePeso className="w-4 h-4 mr-1 text-emerald-500" />
                 </div>
                 <div className="text-2xl font-bold text-foreground">{earnedPoints}</div>
                 <div className="text-xs text-muted-foreground">Earned Points</div>
