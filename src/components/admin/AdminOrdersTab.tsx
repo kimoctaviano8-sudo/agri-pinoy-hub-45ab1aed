@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, Clock, Truck, CheckCircle, XCircle, Loader2, Calendar as CalendarIcon, FileDown, FileSpreadsheet } from "lucide-react";
+import { Package, Clock, Truck, CheckCircle, XCircle, Loader2, Calendar as CalendarIcon, FileDown, FileSpreadsheet, Printer } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,12 +14,24 @@ import { useAuth } from "@/contexts/AuthContext";
 import { jsPDF } from "jspdf";
 import * as XLSX from "xlsx";
 import logo from "@/assets/Gemini_logo_only.png";
+
+interface ShippingAddress {
+  fullName: string;
+  phone: string;
+  streetNumber: string;
+  barangay: string;
+  city: string;
+  province?: string;
+  postalCode?: string;
+}
+
 interface OrderItem {
   id: string;
   name: string;
   quantity: number;
   price: number;
 }
+
 interface Order {
   id: string;
   order_number: string;
@@ -29,16 +41,24 @@ interface Order {
   payment_method: string;
   created_at: string;
   items: any;
+  shipping_address: ShippingAddress;
+  shipping_fee?: number;
+  voucher_discount?: number;
   profiles?: {
     full_name: string;
     email: string;
+    phone?: string;
   } | null;
 }
+
 interface AdminOrdersTabProps {
   onRefresh?: () => void;
+  onNewOrdersCountChange?: (count: number) => void;
 }
+
 export const AdminOrdersTab = ({
-  onRefresh
+  onRefresh,
+  onNewOrdersCountChange
 }: AdminOrdersTabProps) => {
   const {
     toast
@@ -56,6 +76,7 @@ export const AdminOrdersTab = ({
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [generatingWaybill, setGeneratingWaybill] = useState<string | null>(null);
   const fetchOrders = async () => {
     try {
       setLoading(true);
@@ -70,7 +91,10 @@ export const AdminOrdersTab = ({
           status,
           payment_method,
           created_at,
-          items
+          items,
+          shipping_address,
+          shipping_fee,
+          voucher_discount
         `).order('created_at', {
         ascending: false
       });
@@ -81,15 +105,20 @@ export const AdminOrdersTab = ({
         const userIds = [...new Set(data.map(order => order.user_id))];
         const {
           data: profiles
-        } = await supabase.from('profiles').select('id, full_name, email').in('id', userIds);
+        } = await supabase.from('profiles').select('id, full_name, email, phone').in('id', userIds);
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
         const ordersWithProfiles = data.map(order => ({
           ...order,
           profiles: profileMap.get(order.user_id) || null
         }));
         setOrders(ordersWithProfiles as any);
+        
+        // Calculate new orders (to_pay status) and notify parent
+        const newOrdersCount = data.filter(order => order.status === 'to_pay').length;
+        onNewOrdersCountChange?.(newOrdersCount);
       } else {
         setOrders([]);
+        onNewOrdersCountChange?.(0);
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -681,6 +710,233 @@ export const AdminOrdersTab = ({
       setUpdatingOrderId(null);
     }
   };
+
+  // Generate Waybill PDF (5x7 inches)
+  const generateWaybillPdf = async (order: Order) => {
+    try {
+      setGeneratingWaybill(order.id);
+      
+      // Preload logo
+      const logoImage = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = event => reject(event);
+        img.src = logo;
+      });
+
+      // 5x7 inches in mm (1 inch = 25.4mm)
+      const waybillWidth = 5 * 25.4; // 127mm
+      const waybillHeight = 7 * 25.4; // 177.8mm
+
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: [waybillWidth, waybillHeight]
+      });
+
+      const marginLeft = 8;
+      const marginRight = 8;
+      const usableWidth = waybillWidth - marginLeft - marginRight;
+      let y = 10;
+
+      // Logo - scaled to fit
+      const maxLogoHeight = 12;
+      const maxLogoWidth = 20;
+      let logoDisplayWidth = logoImage.width;
+      let logoDisplayHeight = logoImage.height;
+      const heightScale = maxLogoHeight / logoDisplayHeight;
+      const widthScale = maxLogoWidth / logoDisplayWidth;
+      const scale = Math.min(heightScale, widthScale, 1);
+      logoDisplayWidth *= scale;
+      logoDisplayHeight *= scale;
+
+      doc.addImage(logo, "PNG", marginLeft, y, logoDisplayWidth, logoDisplayHeight);
+
+      // Company Name beside logo
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("AgriCares", marginLeft + logoDisplayWidth + 4, y + 7);
+      
+      // Waybill Title
+      doc.setFontSize(10);
+      doc.text("WAYBILL", waybillWidth - marginRight, y + 4, { align: "right" });
+      
+      y += maxLogoHeight + 6;
+
+      // Order Number
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text(`Order #: ${order.order_number}`, marginLeft, y);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.text(format(new Date(order.created_at), "MMM dd, yyyy • h:mm a"), waybillWidth - marginRight, y, { align: "right" });
+      y += 6;
+
+      // Divider line
+      doc.setDrawColor(200);
+      doc.line(marginLeft, y, waybillWidth - marginRight, y);
+      y += 5;
+
+      // Recipient Information Section
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text("RECIPIENT INFORMATION", marginLeft, y);
+      y += 5;
+
+      const shippingAddr = order.shipping_address;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      
+      // Name
+      doc.setFont("helvetica", "bold");
+      doc.text(shippingAddr?.fullName || order.profiles?.full_name || "N/A", marginLeft, y);
+      y += 4;
+      
+      // Phone
+      doc.setFont("helvetica", "normal");
+      doc.text(`Phone: ${shippingAddr?.phone || order.profiles?.phone || "N/A"}`, marginLeft, y);
+      y += 4;
+      
+      // Address
+      const addressParts = [
+        shippingAddr?.streetNumber,
+        shippingAddr?.barangay,
+        shippingAddr?.city,
+        shippingAddr?.province,
+        shippingAddr?.postalCode
+      ].filter(Boolean).join(", ");
+      
+      const addressLines = doc.splitTextToSize(addressParts || "N/A", usableWidth);
+      addressLines.forEach((line: string) => {
+        doc.text(line, marginLeft, y);
+        y += 4;
+      });
+      
+      y += 2;
+
+      // Divider line
+      doc.line(marginLeft, y, waybillWidth - marginRight, y);
+      y += 5;
+
+      // Order Items Section
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text("ORDER ITEMS", marginLeft, y);
+      y += 5;
+
+      // Table Header
+      const colProductX = marginLeft;
+      const colQtyX = marginLeft + usableWidth * 0.55;
+      const colPriceX = marginLeft + usableWidth * 0.75;
+      const colSubtotalX = waybillWidth - marginRight;
+
+      doc.setFontSize(7);
+      doc.text("Product", colProductX, y);
+      doc.text("Qty", colQtyX, y);
+      doc.text("Price", colPriceX, y);
+      doc.text("Subtotal", colSubtotalX, y, { align: "right" });
+      y += 3;
+      
+      doc.setDrawColor(220);
+      doc.line(marginLeft, y, waybillWidth - marginRight, y);
+      y += 3;
+
+      // Items
+      doc.setFont("helvetica", "normal");
+      let itemsSubtotal = 0;
+      
+      if (Array.isArray(order.items)) {
+        (order.items as OrderItem[]).forEach(item => {
+          const subtotal = Number(item.price) * Number(item.quantity);
+          itemsSubtotal += subtotal;
+          
+          // Truncate product name if too long
+          const productName = item.name.length > 22 ? item.name.substring(0, 20) + "..." : item.name;
+          
+          doc.text(productName, colProductX, y);
+          doc.text(String(item.quantity), colQtyX, y);
+          doc.text(`₱${Number(item.price).toFixed(2)}`, colPriceX, y);
+          doc.text(`₱${subtotal.toFixed(2)}`, colSubtotalX, y, { align: "right" });
+          y += 4;
+        });
+      }
+
+      y += 2;
+      doc.line(marginLeft, y, waybillWidth - marginRight, y);
+      y += 4;
+
+      // Totals Section
+      const labelX = marginLeft + usableWidth * 0.5;
+      const valueX = waybillWidth - marginRight;
+
+      doc.setFontSize(7);
+      doc.text("Subtotal:", labelX, y);
+      doc.text(`₱${itemsSubtotal.toFixed(2)}`, valueX, y, { align: "right" });
+      y += 4;
+
+      const shippingFee = Number(order.shipping_fee || 50);
+      doc.text("Shipping Fee:", labelX, y);
+      doc.text(`₱${shippingFee.toFixed(2)}`, valueX, y, { align: "right" });
+      y += 4;
+
+      if (order.voucher_discount && Number(order.voucher_discount) > 0) {
+        doc.text("Discount:", labelX, y);
+        doc.text(`-₱${Number(order.voucher_discount).toFixed(2)}`, valueX, y, { align: "right" });
+        y += 4;
+      }
+
+      // Total Amount
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      y += 2;
+      doc.text("TOTAL AMOUNT:", labelX, y);
+      doc.text(`₱${Number(order.total_amount).toFixed(2)}`, valueX, y, { align: "right" });
+      y += 6;
+
+      // Payment Method
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.text(`Payment: ${order.payment_method.replace('_', ' ').toUpperCase()}`, marginLeft, y);
+      y += 8;
+
+      // Footer
+      doc.setDrawColor(200);
+      doc.line(marginLeft, y, waybillWidth - marginRight, y);
+      y += 4;
+      
+      doc.setFontSize(6);
+      doc.setTextColor(120);
+      doc.text("Thank you for shopping with AgriCares!", waybillWidth / 2, y, { align: "center" });
+      y += 3;
+      doc.text("For inquiries, contact us at support@agricares.com", waybillWidth / 2, y, { align: "center" });
+
+      // Save PDF
+      doc.save(`waybill-${order.order_number}.pdf`);
+      
+      toast({
+        title: "Waybill Generated",
+        description: `Waybill for Order #${order.order_number} has been downloaded.`
+      });
+    } catch (error) {
+      console.error("Error generating waybill:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate waybill",
+        variant: "destructive"
+      });
+    } finally {
+      setGeneratingWaybill(null);
+    }
+  };
+
+  // Handle shipping with waybill generation
+  const handleMarkAsShipping = async (order: Order) => {
+    // First generate waybill
+    await generateWaybillPdf(order);
+    
+    // Then update status
+    await handleUpdateStatus(order.id, 'to_receive', 'Waybill generated and order marked as Shipping.');
+  };
   const metrics = calculateMetrics();
   if (loading) {
     return <div className="flex items-center justify-center py-12">
@@ -860,9 +1116,24 @@ export const AdminOrdersTab = ({
                           Decline
                         </Button>
                       </>}
-                    {order.status === 'to_ship' && <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(order.id, 'to_receive', 'Order marked as Shipping.')} disabled={updatingOrderId === order.id}>
-                        Mark as Shipping
-                      </Button>}
+                    {order.status === 'to_ship' && <>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => generateWaybillPdf(order)} 
+                          disabled={generatingWaybill === order.id}
+                        >
+                          <Printer className="w-3 h-3 mr-1" />
+                          {generatingWaybill === order.id ? "Generating..." : "Print Waybill"}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleMarkAsShipping(order)} 
+                          disabled={updatingOrderId === order.id || generatingWaybill === order.id}
+                        >
+                          {generatingWaybill === order.id ? "Generating Waybill..." : "Ship Order"}
+                        </Button>
+                      </>}
                   </div>
 
                   {/* Order Date */}
