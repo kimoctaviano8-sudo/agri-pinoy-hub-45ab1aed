@@ -955,13 +955,9 @@ export const AdminOrdersTab = ({
     }
   };
 
-  // Handle shipping with waybill generation
+  // Handle shipping without waybill generation
   const handleMarkAsShipping = async (order: Order) => {
-    // First generate waybill
-    await generateWaybillPdf(order);
-    
-    // Then update status
-    await handleUpdateStatus(order.id, 'to_receive', 'Waybill generated and order marked as Shipping.');
+    await handleUpdateStatus(order.id, 'to_receive', 'Order marked as Shipping.');
   };
   const metrics = calculateMetrics();
   if (loading) {
@@ -1155,9 +1151,9 @@ export const AdminOrdersTab = ({
                         <Button 
                           size="sm" 
                           onClick={() => handleMarkAsShipping(order)} 
-                          disabled={updatingOrderId === order.id || generatingWaybill === order.id}
+                          disabled={updatingOrderId === order.id}
                         >
-                          {generatingWaybill === order.id ? "Generating Waybill..." : "Ship Order"}
+                          Ship Order
                         </Button>
                       </>}
                   </div>
