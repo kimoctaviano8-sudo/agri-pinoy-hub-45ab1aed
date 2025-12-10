@@ -158,11 +158,8 @@ const Navigation = ({
         <div className="px-4 py-3 bg-background">
           <div className="flex justify-between items-center">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center">
               <img src="/lovable-uploads/d4bc3992-d18a-4479-947c-c7ef46b32413.png" alt="App Logo" className="w-8 h-8 object-contain" />
-              <span className="text-xs font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                beta
-              </span>
             </Link>
 
             {/* Mobile Actions */}
