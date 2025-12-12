@@ -154,7 +154,7 @@ const Navigation = ({
       <NotificationPanel isOpen={isNotificationPanelOpen} onClose={() => setIsNotificationPanelOpen(false)} onNotificationCountChange={setNotificationCount} />
       
       {/* Mobile-only Header */}
-      <nav className="bg-card border-b border-border shadow-card sticky top-0 z-50">
+      <nav className="bg-card border-b border-border shadow-card sticky top-0 z-50 overscroll-none touch-none">
         <div className="px-4 py-3 bg-background">
           <div className="flex justify-between items-center">
             {/* Logo */}
@@ -169,7 +169,7 @@ const Navigation = ({
       </nav>
 
       {/* Bottom Navigation with safe area and app switcher space */}
-      <div className="fixed bottom-0 left-0 right-0 z-50">
+      <div className="fixed bottom-0 left-0 right-0 z-50 overscroll-none touch-pan-x">
         <div className="bg-card border-t border-border shadow-lg">
           <div className="grid grid-cols-5 h-16">
             {renderNavItem(navItems[0])} {/* News */}
