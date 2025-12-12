@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Search, BookOpen, Users, Sprout, Bug, Droplets, Sun, ChevronRight, Star, Clock, Eye } from "lucide-react";
+import { ArrowLeft, Search, BookOpen, Leaf, Droplets, FlaskConical, Sprout, ChevronRight, Star, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,80 +32,89 @@ const KnowledgeBase = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   const categories: Category[] = [
-    { id: "all", name: "All Topics", icon: BookOpen, count: 24, color: "bg-blue-100 text-blue-700" },
-    { id: "planting", name: "Planting", icon: Sprout, count: 8, color: "bg-green-100 text-green-700" },
-    { id: "pest-control", name: "Pest Control", icon: Bug, count: 6, color: "bg-red-100 text-red-700" },
-    { id: "irrigation", name: "Irrigation", icon: Droplets, count: 5, color: "bg-cyan-100 text-cyan-700" },
-    { id: "weather", name: "Weather", icon: Sun, count: 3, color: "bg-yellow-100 text-yellow-700" },
-    { id: "community", name: "Community", icon: Users, count: 2, color: "bg-purple-100 text-purple-700" }
+    { id: "all", name: "All Products", icon: BookOpen, count: 7, color: "bg-blue-100 text-blue-700" },
+    { id: "herofol-denso", name: "Herofol Denso", icon: Droplets, count: 4, color: "bg-green-100 text-green-700" },
+    { id: "bioestimulantes", name: "Biostimulants", icon: Sprout, count: 2, color: "bg-purple-100 text-purple-700" },
+    { id: "correctores", name: "Correctors", icon: FlaskConical, count: 1, color: "bg-orange-100 text-orange-700" }
   ];
 
   const articles: Article[] = [
     {
       id: "1",
-      title: "Complete Guide to Rice Planting in the Philippines",
-      excerpt: "Learn the best practices for rice cultivation including soil preparation, seed selection, and optimal planting times.",
-      category: "planting",
-      readTime: "8 min read",
-      views: 1250,
-      rating: 4.8,
-      author: "Dr. Maria Santos",
-      date: "Jan 15, 2024"
+      title: "Herofol Denso Equilibrado - Balanced NPK Foliar Fertilizer",
+      excerpt: "A high-concentration NPK foliar fertilizer with chelated micronutrients, enriched with XR47 activator to boost photosynthesis. Recommended for growth, flowering, and fruiting stages.",
+      category: "herofol-denso",
+      readTime: "5 min read",
+      views: 1850,
+      rating: 4.9,
+      author: "Herogra Especiales",
+      date: "Dec 10, 2024"
     },
     {
       id: "2",
-      title: "Natural Pest Control Methods for Organic Farming",
-      excerpt: "Discover eco-friendly ways to protect your crops from pests without harmful chemicals.",
-      category: "pest-control",
+      title: "Herofol Denso Green - Vegetative Growth Enhancer",
+      excerpt: "NPK gel fertilizer with high nitrogen content and chelated micronutrients. Features unique absorption promoters and XR47 activator for enhanced photosynthesis. Patented technology present in 56+ countries.",
+      category: "herofol-denso",
       readTime: "6 min read",
-      views: 980,
-      rating: 4.7,
-      author: "Juan Dela Cruz",
-      date: "Jan 12, 2024"
+      views: 1620,
+      rating: 4.8,
+      author: "Herogra Especiales",
+      date: "Dec 8, 2024"
     },
     {
       id: "3",
-      title: "Water-Efficient Irrigation Techniques",
-      excerpt: "Maximize crop yield while conserving water with these proven irrigation methods.",
-      category: "irrigation",
+      title: "Herofol Denso Amino-K (ECO) - Organic Potassium Solution",
+      excerpt: "High-concentration potassium fertilizer with natural plant amino acids. Promotes sugar translocation from photosynthetic organs to fruits. Certified for Organic Agriculture (CAAE).",
+      category: "herofol-denso",
       readTime: "5 min read",
-      views: 756,
-      rating: 4.6,
-      author: "Ana Reyes",
-      date: "Jan 10, 2024"
+      views: 1480,
+      rating: 4.7,
+      author: "Herogra Especiales",
+      date: "Dec 5, 2024"
     },
     {
       id: "4",
-      title: "Understanding Seasonal Weather Patterns",
-      excerpt: "Plan your farming activities around weather patterns for better crop success.",
-      category: "weather",
-      readTime: "7 min read",
-      views: 643,
-      rating: 4.5,
-      author: "Carlos Miguel",
-      date: "Jan 8, 2024"
+      title: "Herofol Denso Ca-Mg - Calcium & Magnesium Corrector",
+      excerpt: "Advanced foliar fertilizer suspension with specific adjuvants for optimal nutrient absorption. High in nitrogen, calcium, and magnesium complexes with chelated micronutrients and XR47 activator.",
+      category: "correctores",
+      readTime: "4 min read",
+      views: 1340,
+      rating: 4.8,
+      author: "Herogra Especiales",
+      date: "Dec 3, 2024"
     },
     {
       id: "5",
-      title: "Building Strong Farming Communities",
-      excerpt: "How to connect with other farmers and share knowledge for mutual growth.",
-      category: "community",
-      readTime: "4 min read",
-      views: 425,
+      title: "Totem (ECO) - Next-Generation Root Biostimulant",
+      excerpt: "Latest generation biostimulant using Orygin 2.0 technology with Bacillus Velezensis HE05. Promotes root development, regenerates root systems, and extends crop life cycle. CAAE certified organic.",
+      category: "bioestimulantes",
+      readTime: "7 min read",
+      views: 2150,
       rating: 4.9,
-      author: "Rosa Martinez",
-      date: "Jan 5, 2024"
+      author: "Herogra Especiales",
+      date: "Dec 1, 2024"
     },
     {
       id: "6",
-      title: "Soil Health and Nutrient Management",
-      excerpt: "Essential tips for maintaining healthy soil and proper nutrient balance.",
-      category: "planting",
-      readTime: "9 min read",
-      views: 892,
+      title: "Heromar (ECO) - Seaweed-Based Biostimulant",
+      excerpt: "Powerful biostimulant from Ascophyllum nodosum seaweed. Enhances root and vegetative development, fruit quality, and stress tolerance. Rich in polysaccharides, amino acids, and antioxidants.",
+      category: "bioestimulantes",
+      readTime: "6 min read",
+      views: 1890,
+      rating: 4.8,
+      author: "Herogra Especiales",
+      date: "Nov 28, 2024"
+    },
+    {
+      id: "7",
+      title: "Aminofulvat (ECO) - Soil Improver & Biostimulant",
+      excerpt: "NK fertilizer with high biostimulant capacity containing fulvic acids, amino acids, sugars, and betaines. Improves soil structure, releases blocked nutrients, and enhances biological activity. CAAE certified.",
+      category: "bioestimulantes",
+      readTime: "5 min read",
+      views: 1560,
       rating: 4.7,
-      author: "Dr. Roberto Lopez",
-      date: "Jan 3, 2024"
+      author: "Herogra Especiales",
+      date: "Nov 25, 2024"
     }
   ];
 
@@ -136,8 +145,8 @@ const KnowledgeBase = () => {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h1 className="text-base font-bold text-foreground">Knowledge Base</h1>
-              <p className="text-xs text-muted-foreground">Expert farming guides</p>
+              <h1 className="text-base font-bold text-foreground">Foliar Fertilizers</h1>
+              <p className="text-xs text-muted-foreground">Herogra Especiales Products</p>
             </div>
           </div>
           <Badge variant="secondary" className="text-xs px-2 py-0.5">
@@ -151,7 +160,7 @@ const KnowledgeBase = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search articles..."
+            placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-10 text-sm"
@@ -161,7 +170,7 @@ const KnowledgeBase = () => {
         {/* Mobile-Optimized Categories */}
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-foreground px-1">Categories</h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {categories.map((category) => {
               const IconComponent = category.icon;
               return (
@@ -180,7 +189,7 @@ const KnowledgeBase = () => {
                     </div>
                     <div className="text-center">
                       <p className="text-xs font-medium leading-tight">{category.name}</p>
-                      <p className="text-xs text-muted-foreground">{category.count}</p>
+                      <p className="text-xs text-muted-foreground">{category.count} products</p>
                     </div>
                   </div>
                 </button>
@@ -193,11 +202,11 @@ const KnowledgeBase = () => {
         <div className="bg-primary rounded-lg p-3">
           <div className="flex items-center space-x-2">
             <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-              <Star className="w-3 h-3 text-primary" />
+              <Leaf className="w-3 h-3 text-primary" />
             </div>
             <div>
-              <h3 className="text-xs font-bold text-white">Featured Articles</h3>
-              <p className="text-xs text-white/80">Most popular</p>
+              <h3 className="text-xs font-bold text-white">Herogra Especiales</h3>
+              <p className="text-xs text-white/80">100+ years of agricultural expertise</p>
             </div>
           </div>
         </div>
@@ -206,10 +215,10 @@ const KnowledgeBase = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-sm font-semibold">
-              {selectedCategory === "all" ? "All Articles" : 
+              {selectedCategory === "all" ? "All Products" : 
                categories.find(c => c.id === selectedCategory)?.name}
             </h2>
-            <p className="text-xs text-muted-foreground">{filteredArticles.length}</p>
+            <p className="text-xs text-muted-foreground">{filteredArticles.length} articles</p>
           </div>
 
           {filteredArticles.length > 0 ? (
@@ -263,7 +272,7 @@ const KnowledgeBase = () => {
           ) : (
             <div className="bg-card rounded-lg border p-6 text-center">
               <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-base font-semibold mb-2">No articles found</h3>
+              <h3 className="text-base font-semibold mb-2">No products found</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Try different search terms or browse other categories.
               </p>
