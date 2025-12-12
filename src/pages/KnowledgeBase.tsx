@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { ArrowLeft, Search, BookOpen, Leaf, Droplets, FlaskConical, Sprout, ChevronRight, Star, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { KnowledgeArticleSheet } from "@/components/KnowledgeArticleSheet";
 
 interface Article {
   id: string;
@@ -30,6 +30,8 @@ const KnowledgeBase = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const categories: Category[] = [
     { id: "all", name: "All Products", icon: BookOpen, count: 7, color: "bg-blue-100 text-blue-700" },
@@ -125,9 +127,14 @@ const KnowledgeBase = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleArticleClick = (articleId: string) => {
-    // For now, just show a toast. In a real app, this would navigate to the article detail page
-    console.log(`Navigate to article: ${articleId}`);
+  const handleArticleClick = (article: Article) => {
+    setSelectedArticle(article);
+    setSheetOpen(true);
+  };
+
+  const handleSheetClose = () => {
+    setSheetOpen(false);
+    setSelectedArticle(null);
   };
 
   return (
@@ -227,7 +234,7 @@ const KnowledgeBase = () => {
                 <div
                   key={article.id}
                   className="bg-card rounded-lg border p-3 hover:shadow-sm transition-shadow cursor-pointer active:scale-98"
-                  onClick={() => handleArticleClick(article.id)}
+                  onClick={() => handleArticleClick(article)}
                 >
                   <div className="w-full">
                     <div className="flex-1 min-w-0">
@@ -290,6 +297,12 @@ const KnowledgeBase = () => {
           )}
         </div>
       </div>
+
+      <KnowledgeArticleSheet 
+        article={selectedArticle} 
+        open={sheetOpen} 
+        onClose={handleSheetClose} 
+      />
     </div>
   );
 };
