@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor, Trash2, Loader2 } from "lucide-react";
+import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor, Trash2, Loader2, Fingerprint } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useBiometricProtection } from "@/hooks/useBiometricProtection";
+import { Badge } from "@/components/ui/badge";
 
 type ThemeMode = "light" | "dark" | "system";
 
@@ -46,6 +48,7 @@ export const ProfileSettingsSection = () => {
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [notifications, setNotifications] = useState<NotificationSettings>({
     orderUpdates: true,
     promotions: true,
@@ -53,7 +56,18 @@ export const ProfileSettingsSection = () => {
     newsUpdates: true
   });
 
-  const handleDeleteAccount = async () => {
+  // Biometric protection for sensitive actions
+  const { 
+    protectAction, 
+    isVerifying, 
+    isProtectionActive,
+    biometricName 
+  } = useBiometricProtection({ 
+    actionName: 'delete your account',
+    requireEnabled: true 
+  });
+
+  const executeDeleteAccount = async () => {
     setIsDeleting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -93,6 +107,16 @@ export const ProfileSettingsSection = () => {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    // If biometric protection is active, require verification first
+    if (isProtectionActive) {
+      await protectAction(executeDeleteAccount);
+    } else {
+      await executeDeleteAccount();
+    }
+    setShowDeleteDialog(false);
   };
 
   // Load settings from localStorage on mount
@@ -319,6 +343,16 @@ export const ProfileSettingsSection = () => {
             <span className="font-medium text-foreground">{t('password')}:</span> Set
           </div>
           
+          {/* Biometric Protection Status */}
+          {isProtectionActive && (
+            <div className="flex items-center gap-2 py-2 px-3 bg-primary/5 rounded-lg border border-primary/20 mb-3">
+              <Fingerprint className="w-4 h-4 text-primary" />
+              <span className="text-xs text-foreground">
+                Protected by {biometricName}
+              </span>
+            </div>
+          )}
+          
           <div className="pt-3 border-t border-border">
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -326,14 +360,14 @@ export const ProfileSettingsSection = () => {
                   variant="destructive" 
                   size="sm" 
                   className="w-full gap-2"
-                  disabled={isDeleting}
+                  disabled={isDeleting || isVerifying}
                 >
-                  {isDeleting ? (
+                  {isDeleting || isVerifying ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Trash2 className="w-4 h-4" />
                   )}
-                  Delete Account
+                  {isVerifying ? 'Verifying...' : 'Delete Account'}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -341,15 +375,22 @@ export const ProfileSettingsSection = () => {
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
                     This action cannot be undone. This will permanently delete your account and remove all your data from our servers, including your profile, orders, scan history, and achievements.
+                    {isProtectionActive && (
+                      <span className="block mt-2 text-primary font-medium">
+                        You will need to verify with {biometricName} to proceed.
+                      </span>
+                    )}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction 
                     onClick={handleDeleteAccount}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+                    disabled={isVerifying}
                   >
-                    Delete Account
+                    {isProtectionActive && <Fingerprint className="w-4 h-4" />}
+                    {isVerifying ? 'Verifying...' : 'Delete Account'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
