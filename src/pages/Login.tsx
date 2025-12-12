@@ -74,84 +74,100 @@ const Login = ({
     isLoading
   } = useAuth();
 
-  // Native biometric hook
+  // Native biometric hook with enhanced error handling
   const {
     isAvailable: biometricSupported,
     isEnabled: biometricEnabled,
+    isChecking: biometricChecking,
+    isNative,
+    error: biometricError,
     getBiometryTypeName,
     authenticate: nativeAuthenticate,
     getCredentials,
-    setCredentials
+    setCredentials,
+    clearError
   } = useNativeBiometric();
 
-  // Fetch countries on component mount
-  useEffect(() => {
-    fetchCountries();
-  }, []);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
 
-  // Biometric authentication function using native plugin
+  // Biometric authentication function with improved UX
   const handleBiometricAuth = async () => {
+    // Clear any previous errors
+    clearError();
+    
+    // Check if device supports biometrics
     if (!biometricSupported) {
       toast({
         title: "Not Supported",
-        description: `${getBiometryTypeName()} is not available on this device.`,
+        description: "Face ID/Fingerprint is not available on this device. Please use email login.",
         variant: "destructive"
       });
       return;
     }
 
+    // Check if biometric login is set up
     if (!biometricEnabled) {
       toast({
-        title: "Biometric Not Set Up",
-        description: "Please log in with your email first to enable biometric login.",
+        title: "Setup Required",
+        description: "Please log in with email first to enable biometric login.",
         variant: "destructive"
       });
       return;
     }
 
+    setIsBiometricLoading(true);
+
     try {
-      // First authenticate with biometric
-      const authenticated = await nativeAuthenticate(`Use ${getBiometryTypeName()} to log in`);
+      // Authenticate with biometrics
+      const authenticated = await nativeAuthenticate('Verify your identity to log in');
       
       if (!authenticated) {
+        setIsBiometricLoading(false);
         toast({
           title: "Authentication Cancelled",
-          description: `${getBiometryTypeName()} authentication was cancelled.`,
+          description: "Biometric verification was cancelled or failed.",
           variant: "destructive"
         });
         return;
       }
 
-      // Get stored credentials
+      // Get stored credentials after successful biometric verification
       const credentials = await getCredentials();
       
-      if (credentials) {
-        toast({
-          title: `${getBiometryTypeName()} Verified`,
-          description: "Logging you in..."
-        });
-
-        // Use stored credentials to login
-        const success = await login(credentials.username, credentials.password);
-        if (!success) {
-          toast({
-            title: "Login Failed",
-            description: "Please try logging in with your email and password.",
-            variant: "destructive"
-          });
-        }
-      } else {
+      if (!credentials || !credentials.username || !credentials.password) {
+        setIsBiometricLoading(false);
         toast({
           title: "Credentials Not Found",
-          description: "Please log in with your email and password to re-enable biometric login.",
+          description: "Please log in with email and password to re-enable biometric login.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Show success feedback
+      toast({
+        title: "Verified",
+        description: "Logging you in..."
+      });
+
+      // Login with stored credentials
+      const success = await login(credentials.username, credentials.password);
+      
+      setIsBiometricLoading(false);
+      
+      if (!success) {
+        toast({
+          title: "Login Failed",
+          description: "Your session may have expired. Please log in with email and password.",
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Biometric auth error:', error);
+      setIsBiometricLoading(false);
       toast({
         title: "Authentication Error",
-        description: `Failed to authenticate with ${getBiometryTypeName()}.`,
+        description: "Something went wrong. Please try again or use email login.",
         variant: "destructive"
       });
     }
@@ -591,16 +607,26 @@ const Login = ({
                   type="button" 
                   variant="outline" 
                   onClick={handleBiometricAuth}
-                  disabled={!biometricSupported}
-                  className={`w-full h-12 text-sm border-2 rounded-2xl flex items-center justify-center gap-3 transition-colors ${
+                  disabled={!biometricSupported || biometricChecking || isBiometricLoading}
+                  className={`w-full h-12 text-sm border-2 rounded-2xl flex items-center justify-center gap-3 transition-all ${
                     biometricSupported 
-                      ? 'border-primary/50 hover:bg-primary/10 hover:border-primary' 
+                      ? 'border-primary/50 hover:bg-primary/10 hover:border-primary active:scale-[0.98]' 
                       : 'border-border disabled:opacity-50 disabled:cursor-not-allowed'
                   }`}
                 >
-                  <Fingerprint className={`w-5 h-5 ${biometricSupported ? 'text-primary' : 'text-muted-foreground'}`} />
+                  {isBiometricLoading || biometricChecking ? (
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Fingerprint className={`w-5 h-5 ${biometricSupported ? 'text-primary' : 'text-muted-foreground'}`} />
+                  )}
                   <span className={biometricSupported ? 'text-foreground' : 'text-muted-foreground'}>
-                    Use Face ID/Fingerprint
+                    {isBiometricLoading 
+                      ? 'Verifying...' 
+                      : biometricChecking 
+                        ? 'Checking...' 
+                        : biometricEnabled 
+                          ? 'Use Face ID/Fingerprint' 
+                          : 'Face ID/Fingerprint (Setup Required)'}
                   </span>
                 </Button>
               </div>

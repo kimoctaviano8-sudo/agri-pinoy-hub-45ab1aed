@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Fingerprint, Smartphone, X, Shield, CheckCircle2 } from "lucide-react";
+import { Fingerprint, Smartphone, Shield, CheckCircle2, Eye, EyeOff, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNativeBiometric } from "@/hooks/useNativeBiometric";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,11 +17,15 @@ export const BiometricSettingsModal = ({ open, onOpenChange }: BiometricSettings
   const { toast } = useToast();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
+  const [showPasswordField, setShowPasswordField] = useState(false);
   
   const {
     isAvailable,
     isEnabled,
     isNative,
+    isChecking,
     getBiometryTypeName,
     authenticate,
     setCredentials,
@@ -39,10 +45,25 @@ export const BiometricSettingsModal = ({ open, onOpenChange }: BiometricSettings
       return;
     }
 
+    // Show password input to securely store credentials
+    if (!showPasswordInput) {
+      setShowPasswordInput(true);
+      return;
+    }
+
+    if (!password.trim()) {
+      toast({
+        title: "Password Required",
+        description: "Please enter your password to enable biometric login.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true);
     
     try {
-      // First verify the user's identity with biometric
+      // Verify the user's identity with biometric
       const authenticated = await authenticate(`Enable ${biometricName} for quick login`);
       
       if (!authenticated) {
@@ -56,9 +77,8 @@ export const BiometricSettingsModal = ({ open, onOpenChange }: BiometricSettings
       }
 
       // Store credentials for biometric login
-      // Note: In a real app, you'd want to prompt for password or use a secure token
       if (user?.email) {
-        const success = await setCredentials(user.email, user.id || '');
+        const success = await setCredentials(user.email, password);
         
         if (success) {
           // Refresh the biometric state
@@ -68,10 +88,15 @@ export const BiometricSettingsModal = ({ open, onOpenChange }: BiometricSettings
             title: `${biometricName} Enabled`,
             description: `You can now use ${biometricName} to log in.`
           });
+          
+          // Reset state
+          setPassword('');
+          setShowPasswordInput(false);
+          onOpenChange(false);
         } else {
           toast({
             title: "Setup Failed",
-            description: "Could not save biometric credentials.",
+            description: "Could not save biometric credentials. Please try again.",
             variant: "destructive"
           });
         }
@@ -229,19 +254,79 @@ export const BiometricSettingsModal = ({ open, onOpenChange }: BiometricSettings
             </div>
           )}
 
+          {/* Password Input for Setup */}
+          {showPasswordInput && !isEnabled && isAvailable && (
+            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border">
+              <Label htmlFor="biometric-password" className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                Enter your password to enable {biometricName}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="biometric-password"
+                  type={showPasswordField ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Your account password"
+                  className="pr-10"
+                  autoComplete="current-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPasswordField(!showPasswordField)}
+                >
+                  {showPasswordField ? (
+                    <EyeOff className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Your password is stored securely on your device only.
+              </p>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
             {isAvailable ? (
               <>
                 {!isEnabled ? (
-                  <Button 
-                    onClick={handleEnableBiometric} 
-                    disabled={isProcessing}
-                    className="flex-1"
-                  >
-                    <Fingerprint className="w-4 h-4 mr-2" />
-                    {isProcessing ? "Setting up..." : `Enable ${biometricName}`}
-                  </Button>
+                  <div className="flex gap-2 w-full">
+                    {showPasswordInput && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setShowPasswordInput(false);
+                          setPassword('');
+                        }}
+                        disabled={isProcessing}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                    <Button 
+                      onClick={handleEnableBiometric} 
+                      disabled={isProcessing || isChecking}
+                      className="flex-1"
+                    >
+                      {isProcessing ? (
+                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                      ) : (
+                        <Fingerprint className="w-4 h-4 mr-2" />
+                      )}
+                      {isProcessing 
+                        ? "Setting up..." 
+                        : showPasswordInput 
+                          ? "Verify & Enable" 
+                          : `Enable ${biometricName}`}
+                    </Button>
+                  </div>
                 ) : (
                   <>
                     <Button 
