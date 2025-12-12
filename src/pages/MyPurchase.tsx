@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Package, Truck, CheckCircle, XCircle, RotateCcw, Clock } from "lucide-react";
+import { ArrowLeft, Package, Truck, CheckCircle, XCircle, RotateCcw, Clock, Fingerprint, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { supabase } from "@/integrations/supabase/client";
 import CancelOrderModal from "@/components/CancelOrderModal";
+import { useBiometricProtection } from "@/hooks/useBiometricProtection";
 
 interface Order {
   id: string;
@@ -47,6 +48,19 @@ const MyPurchase = () => {
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationAttempted, setVerificationAttempted] = useState(false);
+
+  // Biometric protection for viewing order history
+  const { 
+    protectAction, 
+    isVerifying, 
+    isProtectionActive,
+    biometricName 
+  } = useBiometricProtection({ 
+    actionName: 'view your order history',
+    requireEnabled: true 
+  });
 
   const statusTabs = [
     { value: "to_pay", label: "To Pay", icon: Clock },
@@ -58,8 +72,22 @@ const MyPurchase = () => {
     { value: "cancelled", label: "Cancelled", icon: XCircle },
   ];
 
+  // Verify user identity when protection is active
   useEffect(() => {
-    if (!user) return;
+    if (user && isProtectionActive && !isVerified && !verificationAttempted) {
+      setVerificationAttempted(true);
+      protectAction(
+        () => setIsVerified(true),
+        () => navigate(-1) // Go back if verification is cancelled
+      );
+    } else if (user && !isProtectionActive) {
+      // If biometric protection is not active, automatically verify
+      setIsVerified(true);
+    }
+  }, [user, isProtectionActive, isVerified, verificationAttempted, protectAction, navigate]);
+
+  useEffect(() => {
+    if (!user || !isVerified) return;
 
     fetchOrders();
 
@@ -82,7 +110,7 @@ const MyPurchase = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, isVerified]);
 
   const fetchOrders = async () => {
     if (!user) return;
@@ -231,6 +259,34 @@ const MyPurchase = () => {
   };
 
   const filteredOrders = orders.filter(order => order.status === selectedTab);
+
+  // Show verification screen if biometric protection is active and not yet verified
+  if (isVerifying || (isProtectionActive && !isVerified)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm">
+          <CardContent className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Fingerprint className="w-8 h-8 text-primary animate-pulse" />
+            </div>
+            <h2 className="text-lg font-semibold mb-2">Verification Required</h2>
+            <p className="text-muted-foreground text-sm mb-4">
+              Please verify with {biometricName} to view your order history
+            </p>
+            <Button 
+              onClick={() => {
+                setVerificationAttempted(false);
+              }}
+              className="gap-2"
+            >
+              <Fingerprint className="w-4 h-4" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
