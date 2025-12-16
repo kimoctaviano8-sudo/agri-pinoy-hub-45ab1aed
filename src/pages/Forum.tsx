@@ -168,6 +168,9 @@ const Forum = () => {
   };
 
   // Check if user is admin
+  // NOTE: This isAdmin state is for UI visibility ONLY (e.g., showing delete buttons).
+  // Real authorization is enforced server-side via RLS policies using has_role() function.
+  // Never rely on this client state for actual authorization decisions.
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user) {
@@ -179,6 +182,7 @@ const Forum = () => {
           data,
           error
         } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').single();
+        // UI only - real authorization enforced by RLS policies
         setIsAdmin(!!data && !error);
       } catch (error) {
         setIsAdmin(false);
