@@ -57,6 +57,7 @@ const Checkout = () => {
     phone: ''
   });
   const [voucherCode, setVoucherCode] = useState('');
+  const MAX_VOUCHER_LENGTH = 50;
   const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
   const [paymentSubMethod, setPaymentSubMethod] = useState('');
   const [notes, setNotes] = useState('');
@@ -147,8 +148,14 @@ const Checkout = () => {
     fetchData();
   }, [initialDataLoaded, productId, isFromCart, user, navigate, toast, quantity]);
 
+  // Sanitize voucher code: alphanumeric, dots, and hyphens only, max 50 chars
+  const sanitizeVoucherCode = (code: string): string => {
+    return code.replace(/[^a-zA-Z0-9.-]/g, '').slice(0, MAX_VOUCHER_LENGTH).toUpperCase();
+  };
+
   const handleVoucherApply = async () => {
-    if (!voucherCode.trim()) return;
+    const sanitizedCode = sanitizeVoucherCode(voucherCode);
+    if (!sanitizedCode.trim()) return;
 
     const subtotal = checkoutItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const currentDate = new Date();
@@ -158,7 +165,7 @@ const Checkout = () => {
       const { data: monthlySale, error: saleError } = await supabase
         .from('monthly_sales')
         .select('*')
-        .eq('event_code', voucherCode)
+        .eq('event_code', sanitizedCode)
         .eq('active', true)
         .single();
 
@@ -188,7 +195,7 @@ const Checkout = () => {
       const { data: voucher, error: voucherError } = await supabase
         .from('vouchers')
         .select('*')
-        .eq('code', voucherCode)
+        .eq('code', sanitizedCode)
         .eq('active', true)
         .single();
 
@@ -506,8 +513,13 @@ const Checkout = () => {
             <div className="flex gap-2">
               <Input
                 value={voucherCode}
-                onChange={(e) => setVoucherCode(e.target.value)}
+                onChange={(e) => {
+                  // Sanitize input: alphanumeric, dots, hyphens only, max length
+                  const sanitized = e.target.value.replace(/[^a-zA-Z0-9.-]/g, '').slice(0, MAX_VOUCHER_LENGTH);
+                  setVoucherCode(sanitized.toUpperCase());
+                }}
                 placeholder="Enter voucher code (e.g., 1.1, 2.2, WELCOME10)"
+                maxLength={MAX_VOUCHER_LENGTH}
               />
               <Button onClick={handleVoucherApply} variant="outline">
                 Apply
