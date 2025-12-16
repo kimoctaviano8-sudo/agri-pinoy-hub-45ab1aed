@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const paymongoSecretKey = Deno.env.get("PAYMONGO_SECRET_KEY")!;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -35,18 +36,96 @@ serve(async (req) => {
     console.log("Event type:", eventType);
     console.log("Resource data:", JSON.stringify(resourceData, null, 2));
 
-    // Handle different event types
-    if (eventType === "payment.paid" || eventType === "source.chargeable") {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Handle source.chargeable - Create payment from the chargeable source
+    if (eventType === "source.chargeable") {
+      const sourceId = resourceData?.id;
+      const amount = resourceData?.attributes?.amount;
+      const metadata = resourceData?.attributes?.metadata;
+      const orderId = metadata?.order_id;
       
-      // Extract order ID from metadata
+      console.log("Source chargeable - sourceId:", sourceId, "amount:", amount, "orderId:", orderId);
+      
+      if (sourceId && amount) {
+        // Create a payment using the chargeable source
+        const paymongoBaseUrl = "https://api.paymongo.com/v1";
+        const authString = btoa(`${paymongoSecretKey}:`);
+        
+        const paymentPayload = {
+          data: {
+            attributes: {
+              amount: amount,
+              currency: "PHP",
+              source: {
+                id: sourceId,
+                type: "source",
+              },
+              description: `Order payment`,
+              metadata: metadata,
+            },
+          },
+        };
+
+        console.log("Creating payment from source:", JSON.stringify(paymentPayload, null, 2));
+
+        try {
+          const paymentResponse = await fetch(`${paymongoBaseUrl}/payments`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Basic ${authString}`,
+            },
+            body: JSON.stringify(paymentPayload),
+          });
+
+          const paymentData = await paymentResponse.json();
+          console.log("Payment creation response:", JSON.stringify(paymentData, null, 2));
+
+          if (paymentResponse.ok && paymentData.data?.attributes?.status === "paid") {
+            // Payment successful, update order
+            if (orderId) {
+              const { error: updateError } = await supabase
+                .from("orders")
+                .update({ 
+                  status: "paid",
+                  updated_at: new Date().toISOString()
+                })
+                .eq("id", orderId);
+              
+              if (updateError) {
+                console.error("Error updating order:", updateError);
+              } else {
+                console.log("Order status updated to paid via source.chargeable");
+              }
+            }
+          } else if (!paymentResponse.ok) {
+            console.error("Payment creation failed:", paymentData);
+            // Update order to payment_failed
+            if (orderId) {
+              await supabase
+                .from("orders")
+                .update({ 
+                  status: "payment_failed",
+                  updated_at: new Date().toISOString()
+                })
+                .eq("id", orderId);
+            }
+          }
+        } catch (paymentError) {
+          console.error("Error creating payment:", paymentError);
+        }
+      }
+    }
+    
+    // Handle payment.paid - Direct payment success
+    if (eventType === "payment.paid") {
       const metadata = resourceData?.attributes?.metadata;
       const orderId = metadata?.order_id;
       
       if (orderId) {
-        console.log("Updating order status for order:", orderId);
+        console.log("Payment paid - updating order:", orderId);
         
-        // Update order status to 'paid'
         const { error: updateError } = await supabase
           .from("orders")
           .update({ 
@@ -58,21 +137,19 @@ serve(async (req) => {
         if (updateError) {
           console.error("Error updating order:", updateError);
         } else {
-          console.log("Order status updated to paid successfully");
+          console.log("Order status updated to paid via payment.paid");
         }
-      } else {
-        console.log("No order_id found in metadata");
       }
-    } else if (eventType === "payment.failed") {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
+    }
+    
+    // Handle payment.failed
+    if (eventType === "payment.failed") {
       const metadata = resourceData?.attributes?.metadata;
       const orderId = metadata?.order_id;
       
       if (orderId) {
         console.log("Payment failed for order:", orderId);
         
-        // Update order status to 'payment_failed'
         const { error: updateError } = await supabase
           .from("orders")
           .update({ 
