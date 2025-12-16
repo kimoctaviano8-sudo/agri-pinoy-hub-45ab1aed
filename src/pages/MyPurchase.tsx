@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { supabase } from "@/integrations/supabase/client";
 import CancelOrderModal from "@/components/CancelOrderModal";
+import OrderDetailsSheet from "@/components/OrderDetailsSheet";
 import { useBiometricProtection } from "@/hooks/useBiometricProtection";
 
 interface Order {
@@ -49,6 +50,8 @@ const MyPurchase = () => {
   const [cancelling, setCancelling] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(false);
+  const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [verificationAttempted, setVerificationAttempted] = useState(false);
 
   // Biometric protection for viewing order history
@@ -415,7 +418,15 @@ const MyPurchase = () => {
                                 {confirmingId === order.id ? 'Confirming...' : 'Confirm Received'}
                               </Button>
                             )}
-                            <Button variant="outline" size="sm" className="min-w-[100px]">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="min-w-[100px]"
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setDetailsSheetOpen(true);
+                              }}
+                            >
                               View Details
                             </Button>
                             {order.status === 'completed' && (
@@ -440,6 +451,12 @@ const MyPurchase = () => {
           onConfirm={handleCancelOrderConfirm}
           orderNumber={orderToCancel?.order_number || ""}
           loading={cancelling}
+        />
+
+        <OrderDetailsSheet
+          order={selectedOrder}
+          open={detailsSheetOpen}
+          onOpenChange={setDetailsSheetOpen}
         />
       </div>
     </div>
