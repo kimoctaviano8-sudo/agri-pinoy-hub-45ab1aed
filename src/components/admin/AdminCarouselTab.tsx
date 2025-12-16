@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Upload, Trash2, GripVertical, Plus } from "lucide-react";
+import { Upload, Trash2, Plus, Pencil, X, Check, Image } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface CarouselItem {
@@ -24,6 +24,8 @@ export const AdminCarouselTab = () => {
   const [carouselItems, setCarouselItems] = useState<CarouselItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", subtitle: "", image: null as File | null });
   const [newItem, setNewItem] = useState({
     title: "",
     subtitle: "",
@@ -120,6 +122,59 @@ export const AdminCarouselTab = () => {
       });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleStartEdit = (item: CarouselItem) => {
+    setEditingId(item.id);
+    setEditForm({
+      title: item.title || "",
+      subtitle: item.subtitle || "",
+      image: null,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditForm({ title: "", subtitle: "", image: null });
+  };
+
+  const handleSaveEdit = async (item: CarouselItem) => {
+    try {
+      let imageUrl = item.image_url;
+      
+      // Upload new image if selected
+      if (editForm.image) {
+        imageUrl = await uploadImage(editForm.image);
+      }
+
+      const { error } = await supabase
+        .from('promotional_carousel')
+        .update({
+          title: editForm.title || null,
+          subtitle: editForm.subtitle || null,
+          image_url: imageUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Carousel item updated successfully",
+      });
+
+      setEditingId(null);
+      setEditForm({ title: "", subtitle: "", image: null });
+      fetchCarouselItems();
+    } catch (error) {
+      console.error('Error updating carousel item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update carousel item",
+        variant: "destructive",
+      });
     }
   };
 
@@ -228,30 +283,30 @@ export const AdminCarouselTab = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5" />
-            Add New Carousel Item
+            Add New Carousel Slide
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">Title (Main Text)</Label>
             <Input
               id="title"
               value={newItem.title}
               onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
-              placeholder="Enter title"
+              placeholder="e.g., Welcome to Gemini"
             />
           </div>
           <div>
-            <Label htmlFor="subtitle">Subtitle</Label>
+            <Label htmlFor="subtitle">Subtitle (Description)</Label>
             <Input
               id="subtitle"
               value={newItem.subtitle}
               onChange={(e) => setNewItem({ ...newItem, subtitle: e.target.value })}
-              placeholder="Enter subtitle"
+              placeholder="e.g., Latest news and insights for Filipino farmers"
             />
           </div>
           <div>
-            <Label htmlFor="image">Image</Label>
+            <Label htmlFor="image">Background Image</Label>
             <Input
               id="image"
               type="file"
@@ -261,7 +316,7 @@ export const AdminCarouselTab = () => {
           </div>
           <Button onClick={handleAddItem} disabled={uploading} className="w-full">
             <Upload className="w-4 h-4 mr-2" />
-            {uploading ? "Uploading..." : "Add Carousel Item"}
+            {uploading ? "Uploading..." : "Add Carousel Slide"}
           </Button>
         </CardContent>
       </Card>
@@ -269,61 +324,121 @@ export const AdminCarouselTab = () => {
       {/* Existing Carousel Items */}
       <Card>
         <CardHeader>
-          <CardTitle>Manage Carousel Items ({carouselItems.length})</CardTitle>
+          <CardTitle>Manage Carousel Slides ({carouselItems.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {carouselItems.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">No carousel items yet</p>
+            <p className="text-center text-muted-foreground py-4">No carousel slides yet. Add one above!</p>
           ) : (
             carouselItems.map((item, index) => (
-              <Card key={item.id}>
+              <Card key={item.id} className={!item.active ? "opacity-60" : ""}>
                 <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <img
-                      src={item.image_url}
-                      alt={item.title || "Carousel"}
-                      className="w-full sm:w-32 h-24 object-cover rounded"
-                    />
-                    <div className="flex-1 space-y-2">
-                      <h4 className="font-semibold">{item.title || "No Title"}</h4>
-                      <p className="text-sm text-muted-foreground">{item.subtitle || "No Subtitle"}</p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Order: {item.display_order}</span>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={item.active}
-                            onCheckedChange={() => handleToggleActive(item.id, item.active)}
-                          />
-                          <span className="text-xs">{item.active ? 'Active' : 'Inactive'}</span>
+                  {editingId === item.id ? (
+                    // Edit Mode
+                    <div className="space-y-4">
+                      <div className="flex gap-4">
+                        <img
+                          src={item.image_url}
+                          alt={item.title || "Carousel"}
+                          className="w-32 h-24 object-cover rounded"
+                        />
+                        <div className="flex-1 space-y-2">
+                          <div>
+                            <Label>Title</Label>
+                            <Input
+                              value={editForm.title}
+                              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                              placeholder="Enter title"
+                            />
+                          </div>
+                          <div>
+                            <Label>Subtitle</Label>
+                            <Input
+                              value={editForm.subtitle}
+                              onChange={(e) => setEditForm({ ...editForm, subtitle: e.target.value })}
+                              placeholder="Enter subtitle"
+                            />
+                          </div>
                         </div>
                       </div>
+                      <div>
+                        <Label className="flex items-center gap-2">
+                          <Image className="w-4 h-4" />
+                          Replace Image (optional)
+                        </Label>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setEditForm({ ...editForm, image: e.target.files?.[0] || null })}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => handleSaveEdit(item)} className="flex-1">
+                          <Check className="w-4 h-4 mr-2" />
+                          Save Changes
+                        </Button>
+                        <Button variant="outline" onClick={handleCancelEdit}>
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex sm:flex-col gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => moveItem(index, 'up')}
-                        disabled={index === 0}
-                      >
-                        ↑
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => moveItem(index, 'down')}
-                        disabled={index === carouselItems.length - 1}
-                      >
-                        ↓
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(item.id, item.image_url)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                  ) : (
+                    // View Mode
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <img
+                        src={item.image_url}
+                        alt={item.title || "Carousel"}
+                        className="w-full sm:w-32 h-24 object-cover rounded"
+                      />
+                      <div className="flex-1 space-y-2">
+                        <h4 className="font-semibold">{item.title || "(No Title)"}</h4>
+                        <p className="text-sm text-muted-foreground">{item.subtitle || "(No Subtitle)"}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Order: {item.display_order}</span>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={item.active}
+                              onCheckedChange={() => handleToggleActive(item.id, item.active)}
+                            />
+                            <span className="text-xs">{item.active ? 'Active' : 'Inactive'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex sm:flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStartEdit(item)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => moveItem(index, 'up')}
+                          disabled={index === 0}
+                        >
+                          ↑
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => moveItem(index, 'down')}
+                          disabled={index === carouselItems.length - 1}
+                        >
+                          ↓
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(item.id, item.image_url)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             ))
