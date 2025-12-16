@@ -292,8 +292,8 @@ const Home = () => {
                       alt={item.title || "Promotional"} 
                       className="w-full h-full object-cover" 
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
-                    <div className="absolute inset-0 flex items-end justify-center pb-6 sm:pb-8 animate-fade-in">
+                    <div className="absolute inset-0 bg-black/10"></div>
+                    <div className="absolute inset-0 flex items-center justify-center animate-fade-in">
                       <div className="text-center text-white px-6 max-w-md">
                         <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 drop-shadow-lg leading-tight">
                           {item.title || "Welcome To Gemini"}
@@ -310,8 +310,8 @@ const Home = () => {
               <CarouselItem className="h-48 sm:h-56 md:h-64">
                 <div className="relative h-full w-full">
                   <img src={heroImage} alt="Philippine Agriculture" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
-                  <div className="absolute inset-0 flex items-end justify-center pb-6 sm:pb-8">
+                  <div className="absolute inset-0 bg-black/10"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center text-white px-6 max-w-md">
                       <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 drop-shadow-lg leading-tight">
                         Welcome To Gemini
