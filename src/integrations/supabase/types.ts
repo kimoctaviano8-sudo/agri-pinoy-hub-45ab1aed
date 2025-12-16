@@ -44,6 +44,56 @@ export type Database = {
         }
         Relationships: []
       }
+      discount_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          free_product_id: string | null
+          free_product_quantity: number | null
+          id: string
+          min_quantity: number
+          name: string
+          priority: number
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          free_product_id?: string | null
+          free_product_quantity?: number | null
+          id?: string
+          min_quantity?: number
+          name: string
+          priority?: number
+          rule_type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          free_product_id?: string | null
+          free_product_quantity?: number | null
+          id?: string
+          min_quantity?: number
+          name?: string
+          priority?: number
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_rules_free_product_id_fkey"
+            columns: ["free_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disease_reports: {
         Row: {
           anonymous: boolean

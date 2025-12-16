@@ -10,9 +10,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, Calendar as CalendarIcon, Tag, TrendingUp, Percent } from "lucide-react";
+import { Loader2, Plus, Trash2, Calendar as CalendarIcon, Tag, TrendingUp, Percent, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { AdminDiscountRulesTab } from "./AdminDiscountRulesTab";
 
 interface Voucher {
   id: string;
@@ -810,21 +811,7 @@ export const AdminVouchersTab = () => {
 
         {/* Discounts Module */}
         <TabsContent value="discounts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Discount Rules</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Configure automatic discounts and special offers
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground py-8 text-center">
-                Discount rules feature coming soon. This will allow you to set up
-                automatic discounts based on cart value, product categories, or
-                customer segments.
-              </p>
-            </CardContent>
-          </Card>
+          <AdminDiscountRulesTab />
         </TabsContent>
       </Tabs>
     </div>
