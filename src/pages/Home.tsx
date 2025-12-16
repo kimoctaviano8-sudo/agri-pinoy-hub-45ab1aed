@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, TrendingUp, Calendar, MapPin, CalendarIcon, X } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,9 @@ const Home = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const [carouselItems, setCarouselItems] = useState<any[]>([]);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [slideCount, setSlideCount] = useState(0);
   const [weather, setWeather] = useState({
     location: "Loading...",
     temperature: "--",
@@ -45,6 +48,17 @@ const Home = () => {
     const interval = setInterval(fetchNews, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+
+    setSlideCount(carouselApi.scrollSnapList().length);
+    setCurrentSlide(carouselApi.selectedScrollSnap());
+
+    carouselApi.on("select", () => {
+      setCurrentSlide(carouselApi.selectedScrollSnap());
+    });
+  }, [carouselApi]);
 
   const fetchCarouselItems = async () => {
     try {
@@ -280,6 +294,7 @@ const Home = () => {
               stopOnInteraction: false,
             }),
           ]}
+          setApi={setCarouselApi}
           className="w-full h-full"
         >
           <CarouselContent className="h-48 sm:h-56 md:h-64">
@@ -326,6 +341,24 @@ const Home = () => {
             )}
           </CarouselContent>
         </Carousel>
+        {/* Carousel Dot Indicators */}
+        {slideCount > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            {Array.from({ length: slideCount }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => carouselApi?.scrollTo(index)}
+                className={cn(
+                  "w-2 h-2 rounded-full transition-all duration-300",
+                  currentSlide === index
+                    ? "bg-white w-4"
+                    : "bg-white/50 hover:bg-white/75"
+                )}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="px-4 py-4 bg-background">
