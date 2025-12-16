@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.csc-location]
 verify_jwt = false
+
+[functions.paymongo-webhook]
+verify_jwt = false
