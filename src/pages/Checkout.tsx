@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { ArrowLeft, MapPin, CreditCard, Truck, Percent } from "lucide-react";
+import { ArrowLeft, MapPin, CreditCard, Truck, Percent, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,7 @@ const Checkout = () => {
   const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [processingPayment, setProcessingPayment] = useState(false);
   
   // Form states
   const [address, setAddress] = useState({
@@ -288,6 +289,28 @@ const Checkout = () => {
       return;
     }
 
+    // Validate PayMongo sub-method selection
+    if (paymentMethod === 'paymongo' && !paymentSubMethod) {
+      toast({
+        title: "Select Payment Option",
+        description: "Please select a payment option (GCash, Maya, or Card)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate bank transfer selection
+    if (paymentMethod === 'bank_transfer' && !paymentSubMethod) {
+      toast({
+        title: "Select Bank",
+        description: "Please select a bank for transfer",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setProcessingPayment(true);
+
     try {
       // Check stock availability for all items before placing order
       const stockChecks = await Promise.all(
@@ -324,14 +347,18 @@ const Checkout = () => {
           description: `Not enough stock for: ${itemNames}`,
           variant: "destructive"
         });
+        setProcessingPayment(false);
         return;
       }
 
       // Generate order number
       const orderNumber = `ORD${Date.now()}`;
       
-      // Save order to database - this will trigger stock deduction via database trigger
-      const { error } = await supabase
+      // Determine initial order status based on payment method
+      const initialStatus = paymentMethod === 'cash_on_delivery' ? 'to_pay' : 'pending_payment';
+      
+      // Save order to database
+      const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user?.id,
@@ -339,21 +366,82 @@ const Checkout = () => {
           items: JSON.parse(JSON.stringify(checkoutItems)),
           total_amount: finalAmount,
           shipping_address: JSON.parse(JSON.stringify(address)),
-          payment_method: paymentMethod,
+          payment_method: paymentMethod === 'paymongo' ? paymentSubMethod : paymentMethod,
           voucher_code: voucherCode || null,
           voucher_discount: voucherDiscount,
           shipping_fee: shippingFee,
           notes: notes || null,
-          status: 'to_pay'
-        });
+          status: initialStatus
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (orderError) throw orderError;
 
+      // Handle PayMongo payments
+      if (paymentMethod === 'paymongo') {
+        const paymongoMethod = paymentSubMethod === 'credit_debit' ? 'card' : paymentSubMethod;
+        
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+
+        const response = await fetch(
+          `https://bywimfvrbcjcktqzdvmk.supabase.co/functions/v1/create-payment`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              amount: finalAmount,
+              paymentMethod: paymongoMethod,
+              orderId: orderData.id,
+              description: `Order ${orderNumber}`,
+              redirectUrl: `${window.location.origin}/order-success`,
+            }),
+          }
+        );
+
+        const paymentResult = await response.json();
+
+        if (!response.ok) {
+          // Update order status to payment_failed
+          await supabase
+            .from('orders')
+            .update({ status: 'payment_failed' })
+            .eq('id', orderData.id);
+
+          toast({
+            title: "Payment Error",
+            description: paymentResult.error || "Failed to initiate payment",
+            variant: "destructive"
+          });
+          setProcessingPayment(false);
+          return;
+        }
+
+        // Redirect to PayMongo checkout
+        if (paymentResult.checkoutUrl) {
+          window.location.href = paymentResult.checkoutUrl;
+          return;
+        }
+      }
+
+      // For COD and bank transfer, show success
       const itemNames = checkoutItems.map(item => item.name).join(', ');
-      toast({
-        title: "Order Placed Successfully!",
-        description: `Your order for ${itemNames} has been placed`,
-      });
+      
+      if (paymentMethod === 'bank_transfer') {
+        toast({
+          title: "Order Placed!",
+          description: `Please transfer ₱${finalAmount.toFixed(2)} to complete your order. Bank details will be sent to your email.`,
+        });
+      } else {
+        toast({
+          title: "Order Placed Successfully!",
+          description: `Your order for ${itemNames} has been placed`,
+        });
+      }
       
       // Navigate to Order Success page
       navigate('/order-success');
@@ -364,6 +452,8 @@ const Checkout = () => {
         description: "There was an error placing your order. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
@@ -640,8 +730,16 @@ const Checkout = () => {
           onClick={handlePlaceOrder}
           className="w-full h-12 text-base font-medium"
           size="lg"
+          disabled={processingPayment}
         >
-          Place Order - ₱{finalAmount.toFixed(2)}
+          {processingPayment ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            `Place Order - ₱${finalAmount.toFixed(2)}`
+          )}
         </Button>
       </div>
     </div>
