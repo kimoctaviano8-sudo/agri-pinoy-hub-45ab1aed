@@ -355,7 +355,21 @@ const Checkout = () => {
       const orderNumber = `ORD${Date.now()}`;
       
       // Determine initial order status based on payment method
-      const initialStatus = paymentMethod === 'cash_on_delivery' ? 'to_pay' : 'pending_payment';
+      // COD: 'to_pay' - order confirmed, payment on delivery
+      // PayMongo: 'pending_payment' - waiting for online payment
+      // Bank Transfer: 'pending_payment' - waiting for bank transfer verification
+      let initialStatus = 'pending_payment';
+      if (paymentMethod === 'cash_on_delivery') {
+        initialStatus = 'to_pay';
+      }
+      
+      // Determine the stored payment method name
+      let storedPaymentMethod = paymentMethod;
+      if (paymentMethod === 'paymongo') {
+        storedPaymentMethod = `paymongo_${paymentSubMethod}`;
+      } else if (paymentMethod === 'bank_transfer') {
+        storedPaymentMethod = `bank_transfer_${paymentSubMethod}`;
+      }
       
       // Save order to database
       const { data: orderData, error: orderError } = await supabase
@@ -366,7 +380,7 @@ const Checkout = () => {
           items: JSON.parse(JSON.stringify(checkoutItems)),
           total_amount: finalAmount,
           shipping_address: JSON.parse(JSON.stringify(address)),
-          payment_method: paymentMethod === 'paymongo' ? paymentSubMethod : paymentMethod,
+          payment_method: storedPaymentMethod,
           voucher_code: voucherCode || null,
           voucher_discount: voucherDiscount,
           shipping_fee: shippingFee,
@@ -428,18 +442,19 @@ const Checkout = () => {
         }
       }
 
-      // For COD and bank transfer, show success
-      const itemNames = checkoutItems.map(item => item.name).join(', ');
-      
+      // For COD and bank transfer, show success with appropriate message
       if (paymentMethod === 'bank_transfer') {
+        const bankName = paymentSubMethod === 'bdo' ? 'BDO' : 
+                         paymentSubMethod === 'bpi' ? 'BPI' : 
+                         paymentSubMethod === 'landbank' ? 'Landbank' : 'Metrobank';
         toast({
           title: "Order Placed!",
-          description: `Please transfer ₱${finalAmount.toFixed(2)} to complete your order. Bank details will be sent to your email.`,
+          description: `Please transfer ₱${finalAmount.toFixed(2)} to ${bankName}. Send your receipt to geminicares@geminiagri.com for verification.`,
         });
-      } else {
+      } else if (paymentMethod === 'cash_on_delivery') {
         toast({
           title: "Order Placed Successfully!",
-          description: `Your order for ${itemNames} has been placed`,
+          description: `Total: ₱${finalAmount.toFixed(2)} - Pay when you receive your order.`,
         });
       }
       
@@ -676,7 +691,7 @@ const Checkout = () => {
                     <RadioGroupItem value="bank_transfer" id="bank" />
                   </div>
                   {paymentMethod === 'bank_transfer' && (
-                    <div className="px-3 pb-3 border-t">
+                    <div className="px-3 pb-3 border-t space-y-3">
                       <Select value={paymentSubMethod} onValueChange={setPaymentSubMethod}>
                         <SelectTrigger className="mt-2">
                           <SelectValue placeholder="Select bank" />
@@ -688,6 +703,44 @@ const Checkout = () => {
                           <SelectItem value="metrobank">Metrobank</SelectItem>
                         </SelectContent>
                       </Select>
+                      
+                      {/* Bank Details Display */}
+                      {paymentSubMethod && (
+                        <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2">
+                          <p className="font-medium text-foreground">Bank Account Details:</p>
+                          {paymentSubMethod === 'bdo' && (
+                            <>
+                              <p><span className="text-muted-foreground">Bank:</span> BDO Unibank</p>
+                              <p><span className="text-muted-foreground">Account Name:</span> Gemini Agri Trading</p>
+                              <p><span className="text-muted-foreground">Account Number:</span> 0012-3456-7890</p>
+                            </>
+                          )}
+                          {paymentSubMethod === 'bpi' && (
+                            <>
+                              <p><span className="text-muted-foreground">Bank:</span> Bank of the Philippine Islands</p>
+                              <p><span className="text-muted-foreground">Account Name:</span> Gemini Agri Trading</p>
+                              <p><span className="text-muted-foreground">Account Number:</span> 1234-5678-90</p>
+                            </>
+                          )}
+                          {paymentSubMethod === 'landbank' && (
+                            <>
+                              <p><span className="text-muted-foreground">Bank:</span> Land Bank of the Philippines</p>
+                              <p><span className="text-muted-foreground">Account Name:</span> Gemini Agri Trading</p>
+                              <p><span className="text-muted-foreground">Account Number:</span> 0987-6543-21</p>
+                            </>
+                          )}
+                          {paymentSubMethod === 'metrobank' && (
+                            <>
+                              <p><span className="text-muted-foreground">Bank:</span> Metropolitan Bank & Trust Co.</p>
+                              <p><span className="text-muted-foreground">Account Name:</span> Gemini Agri Trading</p>
+                              <p><span className="text-muted-foreground">Account Number:</span> 5678-1234-90</p>
+                            </>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                            Please send your payment receipt to geminicares@geminiagri.com for faster verification.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
