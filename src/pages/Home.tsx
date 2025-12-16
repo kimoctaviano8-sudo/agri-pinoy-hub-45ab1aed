@@ -343,16 +343,16 @@ const Home = () => {
         </Carousel>
         {/* Carousel Dot Indicators */}
         {slideCount > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2.5 z-20 bg-black/30 px-3 py-2 rounded-full">
             {Array.from({ length: slideCount }).map((_, index) => (
               <button
                 key={index}
                 onClick={() => carouselApi?.scrollTo(index)}
                 className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-300",
+                  "w-3 h-3 rounded-full transition-all duration-300 shadow-md",
                   currentSlide === index
-                    ? "bg-white w-4"
-                    : "bg-white/50 hover:bg-white/75"
+                    ? "bg-white w-6 shadow-lg"
+                    : "bg-white/60 hover:bg-white/90"
                 )}
                 aria-label={`Go to slide ${index + 1}`}
               />
