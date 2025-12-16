@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,110 +11,24 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
-
-    // Get user from authorization header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Authentication required' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+  // SECURITY FIX: Endpoint disabled until payment gateway integration is implemented
+  // This prevents users from obtaining free credits without payment verification
+  // 
+  // To enable this endpoint:
+  // 1. Integrate with Stripe or another payment gateway
+  // 2. Create payment intent before granting credits
+  // 3. Verify payment completion via webhook
+  // 4. Only call add_credits RPC after successful payment confirmation
+  console.log('Purchase credits endpoint called but disabled - payment integration required');
+  
+  return new Response(
+    JSON.stringify({ 
+      error: 'Credit purchase is temporarily unavailable',
+      message: 'Payment processing is being configured. Please try again later.'
+    }),
+    { 
+      status: 503, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     }
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    const body: { creditPackage?: string } = await req.json();
-    const creditPackage = body.creditPackage;
-
-    // Define credit packages matching frontend values (credit amounts as strings)
-    const packages: Record<string, { credits: number; price: number; name: string }> = {
-      '100': { credits: 100, price: 299, name: '100 Credits' },
-      '200': { credits: 200, price: 499, name: '200 Credits' },
-      '300': { credits: 300, price: 699, name: '300 Credits' },
-      '500': { credits: 500, price: 999, name: '500 Credits' },
-      // Legacy package names for backwards compatibility
-      'small': { credits: 10, price: 50, name: '10 Credits' },
-      'medium': { credits: 25, price: 100, name: '25 Credits' },
-      'large': { credits: 50, price: 180, name: '50 Credits' },
-      'xlarge': { credits: 100, price: 300, name: '100 Credits' },
-    };
-
-    if (!creditPackage || !(creditPackage in packages)) {
-      console.log('Invalid package received:', creditPackage);
-      return new Response(
-        JSON.stringify({ error: 'Invalid credit package', received: creditPackage }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        },
-      );
-    }
-
-    const selectedPackage = packages[creditPackage];
-
-    // For now, simulate a successful purchase
-    // In a real implementation, you would integrate with Stripe or another payment processor
-    console.log(`Processing credit purchase for user ${user.id}: ${selectedPackage.name}`);
-
-    // Add credits to user's account
-    const { error: addCreditsError } = await supabaseClient
-      .rpc('add_credits', { 
-        user_id_param: user.id, 
-        credits_to_add: selectedPackage.credits 
-      });
-
-    if (addCreditsError) {
-      console.error('Error adding credits:', addCreditsError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to add credits' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: `Successfully added ${selectedPackage.credits} credits to your account`,
-        creditsAdded: selectedPackage.credits,
-        packageName: selectedPackage.name
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
-
-  } catch (error) {
-    console.error('Purchase credits error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Purchase failed' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  }
+  );
 });
