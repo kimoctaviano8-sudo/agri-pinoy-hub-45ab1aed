@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { ArrowLeft, MapPin, CreditCard, Truck, Percent, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, CreditCard, Truck, Percent, Loader2, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,13 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useOffers } from "@/hooks/useOffers";
+import { AppliedOffersDisplay } from "@/components/AppliedOffersDisplay";
 
 interface Product {
   id: string;
@@ -28,6 +31,7 @@ interface CartItem {
   image_url: string;
   quantity: number;
   category?: string;
+  isFreeItem?: boolean;
 }
 
 const Checkout = () => {
@@ -65,8 +69,11 @@ const Checkout = () => {
 
   // Pricing states
   const [voucherDiscount, setVoucherDiscount] = useState(0);
-  const shippingFee = 50; // Fixed shipping fee
+  const baseShippingFee = 50; // Fixed shipping fee
 
+  // Get offers based on checkout items
+  const offers = useOffers(checkoutItems);
+  const effectiveShippingFee = offers.hasFreeShipping ? 0 : baseShippingFee;
   // Use refs to track if initial data has been loaded to prevent re-fetching
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
@@ -371,19 +378,32 @@ const Checkout = () => {
         storedPaymentMethod = `bank_transfer_${paymentSubMethod}`;
       }
       
+      // Combine checkout items with free products for the order
+      const allOrderItems = [
+        ...checkoutItems,
+        ...offers.freeProducts.map(fp => ({
+          id: fp.id,
+          name: fp.name,
+          price: 0, // Free item
+          image_url: fp.image_url,
+          quantity: fp.quantity,
+          isFreeItem: true
+        }))
+      ];
+      
       // Save order to database
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user?.id,
           order_number: orderNumber,
-          items: JSON.parse(JSON.stringify(checkoutItems)),
+          items: JSON.parse(JSON.stringify(allOrderItems)),
           total_amount: finalAmount,
           shipping_address: JSON.parse(JSON.stringify(address)),
           payment_method: storedPaymentMethod,
           voucher_code: voucherCode || null,
           voucher_discount: voucherDiscount,
-          shipping_fee: shippingFee,
+          shipping_fee: effectiveShippingFee,
           notes: notes || null,
           status: initialStatus
         })
@@ -490,7 +510,7 @@ const Checkout = () => {
 
   const subtotal = checkoutItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const totalQuantity = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
-  const finalAmount = subtotal + shippingFee - voucherDiscount;
+  const finalAmount = subtotal + effectiveShippingFee - voucherDiscount;
 
   return (
     <div className="min-h-screen bg-background p-4 pb-24">
@@ -533,6 +553,37 @@ const Checkout = () => {
                   </div>
                 </div>
               ))}
+              
+              {/* Show Free Products */}
+              {offers.freeProducts.length > 0 && (
+                <>
+                  <div className="border-t pt-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Gift className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium text-primary">Free Items Included</span>
+                    </div>
+                    {offers.freeProducts.map((freeItem) => (
+                      <div key={`free-${freeItem.id}`} className="flex gap-4 mb-3">
+                        <img
+                          src={freeItem.image_url || "/placeholder.svg"}
+                          alt={freeItem.name}
+                          className="w-16 h-16 object-cover rounded-md border-2 border-primary/30"
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-medium text-sm">{freeItem.name}</h3>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-sm text-muted-foreground">Qty: {freeItem.quantity}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm line-through text-muted-foreground">₱{freeItem.price.toFixed(2)}</span>
+                              <Badge variant="secondary" className="bg-primary/10 text-primary">FREE</Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -761,12 +812,33 @@ const Checkout = () => {
             </div>
             <div className="flex justify-between">
               <span>Shipping Fee</span>
-              <span>₱{shippingFee.toFixed(2)}</span>
+              {offers.hasFreeShipping ? (
+                <span className="flex items-center gap-1">
+                  <span className="line-through text-muted-foreground">₱{baseShippingFee.toFixed(2)}</span>
+                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">FREE</Badge>
+                </span>
+              ) : (
+                <span>₱{baseShippingFee.toFixed(2)}</span>
+              )}
             </div>
+            {offers.freeProducts.length > 0 && (
+              <div className="flex justify-between text-primary">
+                <span className="flex items-center gap-1">
+                  <Gift className="w-4 h-4" />
+                  Free Product{offers.freeProducts.length > 1 ? 's' : ''}
+                </span>
+                <span>+{offers.freeProducts.length} item{offers.freeProducts.length > 1 ? 's' : ''}</span>
+              </div>
+            )}
             {voucherDiscount > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Voucher Discount</span>
                 <span>-₱{voucherDiscount.toFixed(2)}</span>
+              </div>
+            )}
+            {offers.appliedOffers.length > 0 && (
+              <div className="pt-2">
+                <AppliedOffersDisplay appliedOffers={offers.appliedOffers} showDetails={false} />
               </div>
             )}
             <div className="border-t pt-3">

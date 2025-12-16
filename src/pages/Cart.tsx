@@ -1,17 +1,19 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, CreditCard } from "lucide-react";
+import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, CreditCard, Truck, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useOffers, getOfferProgress } from "@/hooks/useOffers";
+import { AppliedOffersDisplay, OfferProgressDisplay } from "@/components/AppliedOffersDisplay";
+
 const Cart = () => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const {
     items,
     itemCount,
@@ -33,6 +35,10 @@ const Cart = () => {
       items: selected
     };
   }, [items, selectedItems]);
+
+  // Get offers for selected items
+  const offers = useOffers(selectedStats.items);
+  const offerProgress = getOfferProgress(selectedStats.count, offers.discountRules);
   const handleSelectItem = (itemId: string, checked: boolean) => {
     setSelectedItems(prev => checked ? [...prev, itemId] : prev.filter(id => id !== itemId));
   };
@@ -141,6 +147,20 @@ const Cart = () => {
             </Card>)}
         </div>
 
+        {/* Applied Offers */}
+        {offers.appliedOffers.length > 0 && (
+          <AppliedOffersDisplay 
+            appliedOffers={offers.appliedOffers} 
+            showDetails={true}
+            className="mb-4"
+          />
+        )}
+
+        {/* Offer Progress */}
+        {offerProgress.length > 0 && (
+          <OfferProgressDisplay progress={offerProgress} className="mb-4" />
+        )}
+
         {/* Cart Summary */}
         <Card className="shadow-sm mb-4">
           <CardContent className="p-3">
@@ -151,12 +171,28 @@ const Cart = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span>Shipping</span>
-                <span>Free</span>
+                {offers.hasFreeShipping ? (
+                  <span className="flex items-center gap-1">
+                    <span className="line-through text-muted-foreground">₱{offers.originalShippingFee.toFixed(2)}</span>
+                    <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">FREE</Badge>
+                  </span>
+                ) : (
+                  <span>₱{offers.originalShippingFee.toFixed(2)}</span>
+                )}
               </div>
+              {offers.freeProducts.length > 0 && (
+                <div className="flex justify-between text-sm text-primary">
+                  <span className="flex items-center gap-1">
+                    <Gift className="w-3 h-3" />
+                    Free Product{offers.freeProducts.length > 1 ? 's' : ''}
+                  </span>
+                  <span>+{offers.freeProducts.length}</span>
+                </div>
+              )}
               <div className="border-t pt-2">
                 <div className="flex justify-between font-bold">
                   <span>Total</span>
-                  <span className="text-primary">₱{selectedStats.total.toFixed(2)}</span>
+                  <span className="text-primary">₱{(selectedStats.total + offers.finalShippingFee).toFixed(2)}</span>
                 </div>
               </div>
             </div>
