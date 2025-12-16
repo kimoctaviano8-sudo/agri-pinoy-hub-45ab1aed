@@ -268,7 +268,7 @@ const Home = () => {
   };
   return <div className="min-h-screen bg-background pb-20">
       {/* Mobile Hero Carousel Section */}
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
         <Carousel
           opts={{
             loop: true,
@@ -282,21 +282,23 @@ const Home = () => {
           ]}
           className="w-full h-full"
         >
-          <CarouselContent className="h-48">
+          <CarouselContent className="h-48 sm:h-56 md:h-64">
             {carouselItems.length > 0 ? (
               carouselItems.map((item) => (
-                <CarouselItem key={item.id} className="h-48">
-                  <div className="relative h-48 w-full">
+                <CarouselItem key={item.id} className="h-48 sm:h-56 md:h-64">
+                  <div className="relative h-full w-full">
                     <img 
                       src={item.image_url} 
                       alt={item.title || "Promotional"} 
                       className="w-full h-full object-cover" 
                     />
-                    <div className="absolute inset-0 bg-black/40"></div>
-                    <div className="absolute inset-0 flex items-center justify-center animate-fade-in">
-                      <div className="text-center text-white px-4">
-                        <h1 className="text-xl font-bold mb-2">{item.title || "Welcome To Gemini"}</h1>
-                        <p className="text-xs text-white/90">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
+                    <div className="absolute inset-0 flex items-end justify-center pb-6 sm:pb-8 animate-fade-in">
+                      <div className="text-center text-white px-6 max-w-md">
+                        <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 drop-shadow-lg leading-tight">
+                          {item.title || "Welcome To Gemini"}
+                        </h1>
+                        <p className="text-xs sm:text-sm text-white/90 drop-shadow-md leading-relaxed">
                           {item.subtitle || "Latest news and insights for Filipino farmers"}
                         </p>
                       </div>
@@ -305,14 +307,16 @@ const Home = () => {
                 </CarouselItem>
               ))
             ) : (
-              <CarouselItem className="h-48">
-                <div className="relative h-48 w-full">
+              <CarouselItem className="h-48 sm:h-56 md:h-64">
+                <div className="relative h-full w-full">
                   <img src={heroImage} alt="Philippine Agriculture" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center text-white px-4">
-                      <h1 className="text-xl font-bold mb-2">Welcome To Gemini</h1>
-                      <p className="text-xs text-white/90">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
+                  <div className="absolute inset-0 flex items-end justify-center pb-6 sm:pb-8">
+                    <div className="text-center text-white px-6 max-w-md">
+                      <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 drop-shadow-lg leading-tight">
+                        Welcome To Gemini
+                      </h1>
+                      <p className="text-xs sm:text-sm text-white/90 drop-shadow-md leading-relaxed">
                         Latest news and insights for Filipino farmers
                       </p>
                     </div>
