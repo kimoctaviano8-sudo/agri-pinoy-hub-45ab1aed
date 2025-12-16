@@ -307,7 +307,7 @@ const Home = () => {
                       alt={item.title || "Promotional"} 
                       className="w-full h-full object-cover" 
                     />
-                    <div className="absolute inset-0 bg-black/10"></div>
+                    <div className="absolute inset-0 bg-black/30"></div>
                     <div className="absolute inset-0 flex items-center justify-center animate-fade-in">
                       <div className="text-center text-white px-6 max-w-md">
                         <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 leading-tight [text-shadow:_0_2px_8px_rgba(0,0,0,0.8),_0_1px_3px_rgba(0,0,0,0.9)]">
