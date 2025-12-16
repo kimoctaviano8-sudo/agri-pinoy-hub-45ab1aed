@@ -298,7 +298,7 @@ const Home = () => {
                         <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 drop-shadow-lg leading-tight">
                           {item.title || "Welcome To Gemini"}
                         </h1>
-                        <p className="text-xs sm:text-sm text-white/90 drop-shadow-md leading-relaxed">
+                        <p className="text-xs sm:text-sm text-white drop-shadow-md leading-relaxed">
                           {item.subtitle || "Latest news and insights for Filipino farmers"}
                         </p>
                       </div>
@@ -316,7 +316,7 @@ const Home = () => {
                       <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 drop-shadow-lg leading-tight">
                         Welcome To Gemini
                       </h1>
-                      <p className="text-xs sm:text-sm text-white/90 drop-shadow-md leading-relaxed">
+                      <p className="text-xs sm:text-sm text-white drop-shadow-md leading-relaxed">
                         Latest news and insights for Filipino farmers
                       </p>
                     </div>
