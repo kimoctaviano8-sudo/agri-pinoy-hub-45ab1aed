@@ -795,7 +795,6 @@ const Checkout = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="bdo">BDO</SelectItem>
-                          <SelectItem value="bpi">BPI</SelectItem>
                           <SelectItem value="landbank">Landbank</SelectItem>
                           <SelectItem value="metrobank">Metrobank</SelectItem>
                         </SelectContent>

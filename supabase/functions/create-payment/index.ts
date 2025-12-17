@@ -10,16 +10,8 @@ const paymongoSecretKey = Deno.env.get("PAYMONGO_SECRET_KEY")!;
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-// Map bank codes to PayMongo DOB bank codes
-const bankCodeMap: Record<string, string> = {
-  "bdo": "bdo",
-  "bpi": "bpi",
-  "landbank": "landbank",
-  "metrobank": "metrobank",
-  "unionbank": "unionbank",
-  "rcbc": "rcbc",
-  "chinabank": "chinabank",
-};
+// Map bank codes to PayMongo DOB bank codes (only BDO, Landbank, Metrobank are supported)
+const validBankCodes = ["bdo", "landbank", "metrobank"];
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -122,24 +114,33 @@ serve(async (req) => {
       paymentId = sourceData.data.id;
 
     } else if (paymentMethod === "bank_transfer") {
-      // Create Payment Intent for Direct Online Banking (DOB)
-      const mappedBankCode = bankCodeMap[bankCode] || bankCode;
+      // Create Payment Intent for Direct Online Banking (DOB) using Brankas
+      const normalizedBankCode = bankCode?.toLowerCase();
       
-      console.log("Creating bank transfer payment intent for bank:", mappedBankCode);
+      if (!normalizedBankCode || !validBankCodes.includes(normalizedBankCode)) {
+        return new Response(JSON.stringify({ 
+          error: `Invalid bank code. Supported banks: BDO, Landbank, Metrobank` 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      console.log("Creating bank transfer payment intent for bank:", normalizedBankCode);
 
-      // First, create a payment intent
+      // First, create a payment intent with brankas as allowed method
       const paymentIntentPayload = {
         data: {
           attributes: {
             amount: amountInCentavos,
             currency: "PHP",
-            payment_method_allowed: ["dob"],
+            payment_method_allowed: ["brankas"],
             description: description || `Order ${orderId}`,
             statement_descriptor: "GEMINIAGRI",
             metadata: {
               order_id: orderId,
               user_id: user.id,
-              bank_code: mappedBankCode,
+              bank_code: normalizedBankCode,
             },
           },
         },
@@ -172,13 +173,13 @@ serve(async (req) => {
       const paymentIntentId = intentData.data.id;
       const clientKey = intentData.data.attributes.client_key;
 
-      // Create a payment method for DOB
+      // Create a payment method for brankas (DOB)
       const paymentMethodPayload = {
         data: {
           attributes: {
-            type: "dob",
+            type: "brankas",
             details: {
-              bank_code: mappedBankCode,
+              bank_code: normalizedBankCode,
             },
             billing: {
               name: user.user_metadata?.full_name || user.email,
