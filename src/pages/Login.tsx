@@ -293,9 +293,7 @@ const Login = ({
     } else if (name === 'city') {
       // For Philippines, use local barangay data
       if (formData.country === 'Philippines') {
-        console.log('Selected city:', value);
         const barangays = getBarangaysByCity(value);
-        console.log('Found barangays:', barangays.length, barangays);
         setAvailableBarangays(barangays);
       }
       setFormData(prev => ({

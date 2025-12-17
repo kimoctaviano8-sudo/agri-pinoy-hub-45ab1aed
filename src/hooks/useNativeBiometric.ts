@@ -179,7 +179,7 @@ export const useNativeBiometric = () => {
       setState(prev => ({ ...prev, isEnabled: true, error: null }));
       return true;
     } catch (error) {
-      console.log('Failed to set credentials:', error);
+      // Don't log error details as they may contain sensitive credential information
       setState(prev => ({ ...prev, error: 'Failed to save biometric credentials' }));
       return false;
     }
@@ -198,7 +198,7 @@ export const useNativeBiometric = () => {
       }
       return null;
     } catch (error) {
-      console.log('Failed to get credentials:', error);
+      // Don't log error details as they may contain sensitive credential information
       return null;
     }
   }, []);
@@ -213,7 +213,7 @@ export const useNativeBiometric = () => {
       setState(prev => ({ ...prev, isEnabled: false, error: null }));
       return true;
     } catch (error) {
-      console.log('Failed to delete credentials:', error);
+      // Don't log error details as they may contain sensitive credential information
       return false;
     }
   }, []);

@@ -30,16 +30,6 @@ const NewsCard = ({
 }: NewsCardProps) => {
   const navigate = useNavigate();
 
-  // Debug logging to see exactly what we're getting
-  console.log('NewsCard render:', {
-    id,
-    title: title.substring(0, 50) + '...',
-    hasImage: !!image,
-    imageUrl: image,
-    imageLength: image?.length,
-    isExternalImage: image?.startsWith('http')
-  });
-
   const handleClick = () => {
     navigate(`/news/${id}`);
   };
@@ -52,13 +42,10 @@ const NewsCard = ({
               src={image}
               alt={title}
               className="w-full h-32 object-cover transition-smooth group-hover:scale-105 rounded-t-lg"
-              onLoad={() => console.log('Image loaded successfully:', image)}
               onError={(e) => {
-                console.error('Image failed to load:', image, e);
-                // Try to load the image with a proxy or different approach
+                // Hide image container on load failure
                 const img = e.currentTarget;
                 if (img.src && img.src.includes('geminiagri.com')) {
-                  // Set a fallback image or hide the container
                   const parent = img.parentElement;
                   if (parent) {
                     parent.style.display = 'none';

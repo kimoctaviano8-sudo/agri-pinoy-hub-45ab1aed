@@ -151,8 +151,6 @@ const Home = () => {
   };
   const fetchNews = async () => {
     try {
-      console.log('Fetching news with timestamp:', new Date().toISOString());
-
       // Add cache busting to ensure fresh data
       const {
         data,
@@ -160,9 +158,7 @@ const Home = () => {
       } = await supabase.from('news').select('*').eq('published', true).order('created_at', {
         ascending: false
       });
-      console.log('Raw data from database:', data?.length ? data.slice(0, 2) : 'No data');
       if (error) {
-        console.error('Error fetching news:', error);
         // Fall back to static data
         setNewsData([{
           id: 1,
@@ -226,13 +222,6 @@ const Home = () => {
           image: item.image_url && item.image_url.trim() !== '' ? item.image_url : heroImage,
           featured: false
         }));
-        console.log('Mapped news data sample:', mappedData.slice(0, 2).map(item => ({
-          id: item.id,
-          title: item.title,
-          image: item.image,
-          hasImage: !!item.image,
-          imageIsExternal: item.image?.startsWith('http')
-        })));
         setNewsData(mappedData);
       }
     } catch (error) {

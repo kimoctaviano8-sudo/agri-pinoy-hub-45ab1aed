@@ -20,9 +20,9 @@ export const cleanupAuthState = () => {
       }
     });
 
-    console.log('Auth state cleaned up successfully');
+    // Auth state cleanup completed silently
   } catch (error) {
-    console.error('Error cleaning up auth state:', error);
+    // Silently handle cleanup errors
   }
 };
 
@@ -43,9 +43,9 @@ export const clearApplicationCache = async (): Promise<void> => {
       await Promise.all(registrations.map(registration => registration.unregister()));
     }
 
-    console.log('Application cache cleared successfully');
+    // Application cache cleared silently
   } catch (error) {
-    console.error('Error clearing application cache:', error);
+    // Silently handle cache clearing errors
     throw error;
   }
 };
@@ -105,9 +105,8 @@ export const clearAllCache = async (options: {
       });
     }
 
-    console.log('All cache cleared successfully');
+    // All cache cleared silently
   } catch (error) {
-    console.error('Error clearing cache:', error);
     if (showToast) {
       toast({
         title: "Clear Failed",
@@ -158,9 +157,8 @@ export const clearUserDataCache = async (): Promise<void> => {
       description: "User data cache has been cleared while preserving auth state."
     });
 
-    console.log('User data cache cleared successfully');
+    // User data cache cleared silently
   } catch (error) {
-    console.error('Error clearing user data cache:', error);
     toast({
       title: "Clear Failed",
       description: "Failed to clear user data cache. Please try again.",
