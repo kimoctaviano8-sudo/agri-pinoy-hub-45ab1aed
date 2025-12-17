@@ -117,24 +117,25 @@ const ProtectedApp = () => {
     setShowAuthPage(true);
   }} />;
 };
-const App = () => <QueryClientProvider client={queryClient}>
+const App = () => (
+  <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-        <AuthProvider>
-          <TranslationProvider>
-            <CartProvider>
-              <OnboardingProvider>
-            <Routes>
-              {/* Standalone email confirmation page - accessible without authentication */}
-              <Route path="/email-confirmed" element={<EmailConfirmed />} />
-              {/* All other routes go through ProtectedApp */}
-              <Route path="/*" element={<ProtectedApp />} />
-            </Routes>
-              </OnboardingProvider>
-            </CartProvider>
-          </TranslationProvider>
-        </AuthProvider>
+      <AuthProvider>
+        <TranslationProvider>
+          <CartProvider>
+            <OnboardingProvider>
+              <Routes>
+                <Route path="/email-confirmed" element={<EmailConfirmed />} />
+                <Route path="/*" element={<ProtectedApp />} />
+              </Routes>
+            </OnboardingProvider>
+          </CartProvider>
+        </TranslationProvider>
+      </AuthProvider>
     </TooltipProvider>
-  </QueryClientProvider>;
+  </QueryClientProvider>
+);
+
 export default App;
