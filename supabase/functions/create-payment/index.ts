@@ -12,7 +12,7 @@ const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Map bank codes to PayMongo DOB bank codes (only BDO, Landbank, Metrobank are supported)
 const validBankCodes = ["bdo", "landbank", "metrobank"];
-const validPaymentMethods = ["gcash", "grab_pay", "maya", "bank_transfer", "card"];
+const validPaymentMethods = ["gcash", "grab_pay", "maya", "bank_transfer", "card", "qrph"];
 
 // Input validation helper
 function validatePaymentInput(body: Record<string, unknown>): { valid: boolean; error?: string } {
@@ -143,6 +143,161 @@ serve(async (req) => {
 
       checkoutUrl = sourceData.data.attributes.redirect.checkout_url;
       paymentId = sourceData.data.id;
+
+    } else if (paymentMethod === "qrph") {
+      // Create a Payment Intent for QR Ph payments
+      console.log("Creating QR Ph payment intent for order:", orderId);
+      
+      const paymentIntentPayload = {
+        data: {
+          attributes: {
+            amount: amountInCentavos,
+            currency: "PHP",
+            payment_method_allowed: ["qrph"],
+            description: description || `Order ${orderId}`,
+            statement_descriptor: "GEMINIAGRI",
+            metadata: {
+              order_id: orderId,
+              user_id: user.id,
+            },
+          },
+        },
+      };
+
+      const intentResponse = await fetch(`${paymongoBaseUrl}/payment_intents`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${authString}`,
+        },
+        body: JSON.stringify(paymentIntentPayload),
+      });
+
+      const intentData = await intentResponse.json();
+      console.log("QR Ph payment intent response:", JSON.stringify(intentData));
+
+      if (!intentResponse.ok) {
+        const errorDetail = intentData.errors?.[0]?.detail || "Failed to create QR Ph payment";
+        const isAccountIssue = errorDetail.toLowerCase().includes("not allowed") || 
+                               errorDetail.toLowerCase().includes("organization");
+        return new Response(JSON.stringify({ 
+          error: isAccountIssue 
+            ? "QR Ph payments are currently unavailable. Please try another payment method or contact support."
+            : errorDetail
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const paymentIntentId = intentData.data.id;
+      const clientKey = intentData.data.attributes.client_key;
+
+      // Create a payment method for QR Ph
+      const paymentMethodPayload = {
+        data: {
+          attributes: {
+            type: "qrph",
+            billing: {
+              name: user.user_metadata?.full_name || user.email,
+              email: user.email,
+            },
+            metadata: {
+              order_id: orderId,
+              user_id: user.id,
+            },
+          },
+        },
+      };
+
+      const methodResponse = await fetch(`${paymongoBaseUrl}/payment_methods`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${authString}`,
+        },
+        body: JSON.stringify(paymentMethodPayload),
+      });
+
+      const methodData = await methodResponse.json();
+      console.log("QR Ph payment method response:", JSON.stringify(methodData));
+
+      if (!methodResponse.ok) {
+        const errorDetail = methodData.errors?.[0]?.detail || "Failed to create QR Ph payment method";
+        const isAccountIssue = errorDetail.toLowerCase().includes("not allowed") || 
+                               errorDetail.toLowerCase().includes("organization");
+        return new Response(JSON.stringify({ 
+          error: isAccountIssue 
+            ? "QR Ph payments are currently unavailable. Please try another payment method or contact support."
+            : errorDetail
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const paymentMethodId = methodData.data.id;
+
+      // Attach payment method to payment intent
+      const attachPayload = {
+        data: {
+          attributes: {
+            payment_method: paymentMethodId,
+            client_key: clientKey,
+            return_url: `${redirectUrl}?status=success&order_id=${orderId}`,
+          },
+        },
+      };
+
+      const attachResponse = await fetch(`${paymongoBaseUrl}/payment_intents/${paymentIntentId}/attach`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${authString}`,
+        },
+        body: JSON.stringify(attachPayload),
+      });
+
+      const attachData = await attachResponse.json();
+      console.log("QR Ph attach response:", JSON.stringify(attachData));
+
+      if (!attachResponse.ok) {
+        return new Response(JSON.stringify({ 
+          error: attachData.errors?.[0]?.detail || "Failed to attach QR Ph payment method" 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get the redirect URL for QR code display
+      const status = attachData.data.attributes.status;
+      const nextAction = attachData.data.attributes.next_action;
+
+      if (status === "awaiting_next_action" && nextAction?.type === "redirect") {
+        checkoutUrl = nextAction.redirect.url;
+        paymentId = paymentIntentId;
+        console.log("QR Ph checkout URL:", checkoutUrl);
+      } else if (status === "succeeded") {
+        // Payment already succeeded (rare case)
+        return new Response(JSON.stringify({
+          success: true,
+          paymentId: paymentIntentId,
+          status: "paid",
+          type: "qrph",
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } else {
+        console.log("Unexpected QR Ph payment status:", status, "nextAction:", JSON.stringify(nextAction));
+        return new Response(JSON.stringify({ 
+          error: `Unexpected payment status: ${status}` 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
     } else if (paymentMethod === "bank_transfer") {
       // Create Payment Intent for Direct Online Banking (DOB) using Brankas
@@ -349,7 +504,7 @@ serve(async (req) => {
       success: true,
       checkoutUrl,
       paymentId,
-      type: paymentMethod === "bank_transfer" ? "bank_transfer" : "source",
+      type: paymentMethod === "bank_transfer" ? "bank_transfer" : paymentMethod === "qrph" ? "qrph" : "source",
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
