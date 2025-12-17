@@ -127,8 +127,14 @@ serve(async (req) => {
       const sourceData = await sourceResponse.json();
 
       if (!sourceResponse.ok) {
+        const errorDetail = sourceData.errors?.[0]?.detail || "Failed to create payment source";
+        // Check if it's an account permission issue for e-wallets
+        const isAccountIssue = errorDetail.toLowerCase().includes("not allowed") || 
+                               errorDetail.toLowerCase().includes("organization");
         return new Response(JSON.stringify({ 
-          error: sourceData.errors?.[0]?.detail || "Failed to create payment source" 
+          error: isAccountIssue 
+            ? `${paymentMethod.toUpperCase()} payments are currently unavailable. Please try another payment method or contact support.`
+            : errorDetail
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
