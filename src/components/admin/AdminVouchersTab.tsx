@@ -10,10 +10,21 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, Calendar as CalendarIcon, Tag, TrendingUp, Percent, Gift } from "lucide-react";
+import { Loader2, Plus, Trash2, Calendar as CalendarIcon, Tag, TrendingUp, Percent, Gift, Truck, Save, Edit2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { AdminDiscountRulesTab } from "./AdminDiscountRulesTab";
+
+interface Fee {
+  id: string;
+  fee_type: string;
+  fee_name: string;
+  fee_value: number;
+  description: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 interface Voucher {
   id: string;
@@ -46,9 +57,12 @@ export const AdminVouchersTab = () => {
   const { toast } = useToast();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [monthlySales, setMonthlySales] = useState<MonthlySale[]>([]);
+  const [fees, setFees] = useState<Fee[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [editingSale, setEditingSale] = useState<string | null>(null);
+  const [editingFee, setEditingFee] = useState<string | null>(null);
+  const [savingFee, setSavingFee] = useState(false);
 
   // New voucher form state
   const [newVoucher, setNewVoucher] = useState({
@@ -67,6 +81,7 @@ export const AdminVouchersTab = () => {
   useEffect(() => {
     fetchVouchers();
     fetchMonthlySales();
+    fetchFees();
   }, []);
 
   const fetchVouchers = async () => {
@@ -111,6 +126,52 @@ export const AdminVouchersTab = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchFees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("fees")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      setFees((data as Fee[]) || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateFee = async (id: string, updates: Partial<Fee>) => {
+    setSavingFee(true);
+    try {
+      const { error } = await supabase
+        .from("fees")
+        .update(updates)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Fee updated successfully",
+      });
+
+      fetchFees();
+      setEditingFee(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSavingFee(false);
     }
   };
 
@@ -308,21 +369,26 @@ export const AdminVouchersTab = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="voucher-code" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="voucher-code" className="text-xs sm:text-sm">
-            <Tag className="w-4 h-4 mr-2" />
+            <Tag className="w-4 h-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Voucher Code</span>
             <span className="sm:hidden">Codes</span>
           </TabsTrigger>
           <TabsTrigger value="monthly-sale" className="text-xs sm:text-sm">
-            <TrendingUp className="w-4 h-4 mr-2" />
+            <TrendingUp className="w-4 h-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Monthly Sale</span>
             <span className="sm:hidden">Sales</span>
           </TabsTrigger>
           <TabsTrigger value="discounts" className="text-xs sm:text-sm">
-            <Percent className="w-4 h-4 mr-2" />
+            <Percent className="w-4 h-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Discounts</span>
             <span className="sm:hidden">Offers</span>
+          </TabsTrigger>
+          <TabsTrigger value="fees" className="text-xs sm:text-sm">
+            <Truck className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Fees</span>
+            <span className="sm:hidden">Fees</span>
           </TabsTrigger>
         </TabsList>
 
@@ -812,6 +878,157 @@ export const AdminVouchersTab = () => {
         {/* Discounts Module */}
         <TabsContent value="discounts" className="space-y-4">
           <AdminDiscountRulesTab />
+        </TabsContent>
+
+        {/* Fees Module */}
+        <TabsContent value="fees" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                <Truck className="w-5 h-5" />
+                Shipping & Fees Management
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Configure shipping fees and other charges for orders
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {fees.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No fees configured</p>
+              ) : (
+                <div className="space-y-4">
+                  {fees.map((fee) => (
+                    <Card key={fee.id} className={cn(
+                      "border",
+                      fee.active ? "border-primary/20" : "border-muted opacity-60"
+                    )}>
+                      <CardContent className="pt-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Truck className="w-4 h-4 text-primary" />
+                              <h4 className="font-semibold">{fee.fee_name}</h4>
+                              <Badge variant={fee.active ? "default" : "secondary"}>
+                                {fee.active ? "Active" : "Inactive"}
+                              </Badge>
+                            </div>
+                            {fee.description && (
+                              <p className="text-sm text-muted-foreground">{fee.description}</p>
+                            )}
+                            
+                            {editingFee === fee.id ? (
+                              <div className="space-y-3 mt-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Fee Name</Label>
+                                    <Input
+                                      defaultValue={fee.fee_name}
+                                      onChange={(e) => {
+                                        const updatedFees = fees.map(f => 
+                                          f.id === fee.id ? { ...f, fee_name: e.target.value } : f
+                                        );
+                                        setFees(updatedFees);
+                                      }}
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Fee Amount (₱)</Label>
+                                    <Input
+                                      type="number"
+                                      defaultValue={fee.fee_value}
+                                      onChange={(e) => {
+                                        const updatedFees = fees.map(f => 
+                                          f.id === fee.id ? { ...f, fee_value: parseFloat(e.target.value) || 0 } : f
+                                        );
+                                        setFees(updatedFees);
+                                      }}
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Description</Label>
+                                  <Input
+                                    defaultValue={fee.description || ""}
+                                    onChange={(e) => {
+                                      const updatedFees = fees.map(f => 
+                                        f.id === fee.id ? { ...f, description: e.target.value } : f
+                                      );
+                                      setFees(updatedFees);
+                                    }}
+                                    placeholder="Optional description"
+                                    className="text-sm"
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      const currentFee = fees.find(f => f.id === fee.id);
+                                      if (currentFee) {
+                                        handleUpdateFee(fee.id, {
+                                          fee_name: currentFee.fee_name,
+                                          fee_value: currentFee.fee_value,
+                                          description: currentFee.description,
+                                        });
+                                      }
+                                    }}
+                                    disabled={savingFee}
+                                  >
+                                    {savingFee ? (
+                                      <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                    ) : (
+                                      <Save className="w-4 h-4 mr-1" />
+                                    )}
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingFee(null);
+                                      fetchFees(); // Reset to original values
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="text-2xl font-bold text-primary">₱{fee.fee_value.toFixed(2)}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {editingFee !== fee.id && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingFee(fee.id)}
+                              >
+                                <Edit2 className="w-4 h-4 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={fee.active ? "secondary" : "default"}
+                                onClick={() => handleUpdateFee(fee.id, { active: !fee.active })}
+                              >
+                                {fee.active ? "Deactivate" : "Activate"}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
