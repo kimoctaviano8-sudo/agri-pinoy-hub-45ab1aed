@@ -319,9 +319,15 @@ const Checkout = () => {
     setProcessingPayment(true);
 
     try {
-      // Check stock availability for all items before placing order
+      // Combine all items to check (including free products)
+      const allItemsToCheck = [
+        ...checkoutItems.map(item => ({ id: item.id, name: item.name, quantity: item.quantity })),
+        ...offers.freeProducts.map(fp => ({ id: fp.id, name: fp.name, quantity: fp.quantity }))
+      ];
+
+      // Check stock availability for all items (including free products) before placing order
       const stockChecks = await Promise.all(
-        checkoutItems.map(async (item) => {
+        allItemsToCheck.map(async (item) => {
           const { data: product, error } = await supabase
             .from('products')
             .select('stock_quantity')
@@ -334,7 +340,7 @@ const Checkout = () => {
             id: item.id,
             name: item.name,
             requestedQuantity: item.quantity,
-            availableStock: product.stock_quantity
+            availableStock: product?.stock_quantity || 0
           };
         })
       );
@@ -516,15 +522,18 @@ const Checkout = () => {
         }
       }
 
-      // For COD, show success with appropriate message
+      // For COD, show success with appropriate message and pass order ID for cart clearing
       if (paymentMethod === 'cash_on_delivery') {
         toast({
           title: "Order Placed Successfully!",
           description: `Total: ₱${finalAmount.toFixed(2)} - Pay when you receive your order.`,
         });
+        // Navigate to Order Success page with order ID so cart can be cleared
+        navigate(`/order-success?order_id=${orderData.id}`);
+        return;
       }
       
-      // Navigate to Order Success page
+      // Navigate to Order Success page (fallback for any other case)
       navigate('/order-success');
     } catch (error) {
       console.error('Error placing order:', error);

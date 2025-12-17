@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useCart } from "@/contexts/CartContext";
 
 type PaymentStatus = 'success' | 'failed' | 'pending' | 'cancelled' | 'default';
 
@@ -20,45 +21,115 @@ const OrderSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { clearCart } = useCart();
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('default');
   const [isLoading, setIsLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 5;
 
   const status = searchParams.get('status');
   const orderId = searchParams.get('order_id');
 
+  // Verify order status from database (source of truth)
+  const verifyOrderStatus = useCallback(async (orderIdToCheck: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', orderIdToCheck)
+        .single();
+
+      if (error) {
+        console.error('Error fetching order status:', error);
+        return null;
+      }
+
+      return data?.status || null;
+    } catch (error) {
+      console.error('Error verifying order status:', error);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     const processPaymentResult = async () => {
-      // If we have status from PayMongo redirect
-      if (status && orderId) {
-        if (status === 'success') {
-          // Payment was successful, update order status
-          try {
-            const { error } = await supabase
-              .from('orders')
-              .update({ status: 'paid' })
-              .eq('id', orderId);
+      // If we have orderId, verify status from database (webhook is source of truth)
+      if (orderId) {
+        // Wait a bit for webhook to process
+        const delay = retryCount * 1000; // Increasing delay: 0s, 1s, 2s, 3s, 4s
+        if (retryCount > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
 
-            if (error) {
+        const dbStatus = await verifyOrderStatus(orderId);
+        
+        if (dbStatus === 'paid') {
+          setPaymentStatus('success');
+          clearCart(); // Clear cart after successful payment
+          toast({
+            title: "Payment Successful",
+            description: "Your payment has been processed successfully.",
+          });
+          setIsLoading(false);
+          return;
+        } else if (dbStatus === 'payment_failed') {
+          setPaymentStatus('failed');
+          toast({
+            title: "Payment Failed",
+            description: "Your payment could not be processed. Please try again.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        } else if (dbStatus === 'to_pay') {
+          // COD order - successful
+          setPaymentStatus('default');
+          clearCart();
+          setIsLoading(false);
+          return;
+        } else if (dbStatus === 'pending_payment' || dbStatus === 'pending') {
+          // Still pending - check if we got success from redirect
+          if (status === 'success' && retryCount < maxRetries) {
+            // Webhook hasn't processed yet, retry
+            setRetryCount(prev => prev + 1);
+            return;
+          } else if (status === 'success') {
+            // Max retries reached but redirect said success - optimistically update
+            try {
+              const { error } = await supabase
+                .from('orders')
+                .update({ status: 'paid', updated_at: new Date().toISOString() })
+                .eq('id', orderId)
+                .eq('status', 'pending_payment'); // Only update if still pending
+
+              if (!error) {
+                setPaymentStatus('success');
+                clearCart();
+                toast({
+                  title: "Payment Successful",
+                  description: "Your payment has been processed successfully.",
+                });
+              } else {
+                setPaymentStatus('pending');
+              }
+            } catch (error) {
               console.error('Error updating order:', error);
               setPaymentStatus('pending');
-            } else {
-              setPaymentStatus('success');
-              toast({
-                title: "Payment Successful",
-                description: "Your payment has been processed successfully.",
-              });
             }
-          } catch (error) {
-            console.error('Error processing payment result:', error);
+            setIsLoading(false);
+            return;
+          } else {
             setPaymentStatus('pending');
+            setIsLoading(false);
+            return;
           }
         } else if (status === 'failed') {
           setPaymentStatus('failed');
-          // Update order status to failed
+          // Update order status to failed if not already
           try {
             await supabase
               .from('orders')
-              .update({ status: 'payment_failed' })
+              .update({ status: 'payment_failed', updated_at: new Date().toISOString() })
               .eq('id', orderId);
           } catch (error) {
             console.error('Error updating failed order:', error);
@@ -68,6 +139,8 @@ const OrderSuccess = () => {
             description: "Your payment could not be processed. Please try again.",
             variant: "destructive",
           });
+          setIsLoading(false);
+          return;
         } else if (status === 'cancelled') {
           setPaymentStatus('cancelled');
           toast({
@@ -75,16 +148,19 @@ const OrderSuccess = () => {
             description: "Your payment was cancelled.",
             variant: "destructive",
           });
+          setIsLoading(false);
+          return;
         }
       } else {
-        // No status params - this is a COD or Bank Transfer order
+        // No orderId - this is a COD or direct navigation
         setPaymentStatus('default');
+        clearCart(); // Clear cart for COD orders
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     processPaymentResult();
-  }, [status, orderId, toast]);
+  }, [status, orderId, toast, clearCart, verifyOrderStatus, retryCount]);
 
   const handleCheckStatus = () => {
     navigate("/my-purchase");
@@ -145,7 +221,9 @@ const OrderSuccess = () => {
             <div className="flex justify-center">
               <div className="h-24 w-24 rounded-full border-4 border-primary border-t-transparent animate-spin" />
             </div>
-            <p className="text-lg text-muted-foreground">Processing your order...</p>
+            <p className="text-lg text-muted-foreground">
+              {retryCount > 0 ? "Verifying payment status..." : "Processing your order..."}
+            </p>
           </div>
         </div>
       </div>
