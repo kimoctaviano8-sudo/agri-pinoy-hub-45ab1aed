@@ -10,6 +10,17 @@ const paymongoSecretKey = Deno.env.get("PAYMONGO_SECRET_KEY")!;
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// Map bank codes to PayMongo DOB bank codes
+const bankCodeMap: Record<string, string> = {
+  "bdo": "bdo",
+  "bpi": "bpi",
+  "landbank": "landbank",
+  "metrobank": "metrobank",
+  "unionbank": "unionbank",
+  "rcbc": "rcbc",
+  "chinabank": "chinabank",
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -38,9 +49,9 @@ serve(async (req) => {
       });
     }
 
-    const { amount, paymentMethod, orderId, description, redirectUrl } = await req.json();
+    const { amount, paymentMethod, orderId, description, redirectUrl, bankCode } = await req.json();
 
-    console.log("Creating payment:", { amount, paymentMethod, orderId, description });
+    console.log("Creating payment:", { amount, paymentMethod, orderId, description, bankCode });
 
     if (!amount || !paymentMethod || !orderId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -110,6 +121,165 @@ serve(async (req) => {
       checkoutUrl = sourceData.data.attributes.redirect.checkout_url;
       paymentId = sourceData.data.id;
 
+    } else if (paymentMethod === "bank_transfer") {
+      // Create Payment Intent for Direct Online Banking (DOB)
+      const mappedBankCode = bankCodeMap[bankCode] || bankCode;
+      
+      console.log("Creating bank transfer payment intent for bank:", mappedBankCode);
+
+      // First, create a payment intent
+      const paymentIntentPayload = {
+        data: {
+          attributes: {
+            amount: amountInCentavos,
+            currency: "PHP",
+            payment_method_allowed: ["dob"],
+            description: description || `Order ${orderId}`,
+            statement_descriptor: "GEMINIAGRI",
+            metadata: {
+              order_id: orderId,
+              user_id: user.id,
+              bank_code: mappedBankCode,
+            },
+          },
+        },
+      };
+
+      console.log("Creating PayMongo payment intent for DOB:", JSON.stringify(paymentIntentPayload, null, 2));
+
+      const intentResponse = await fetch(`${paymongoBaseUrl}/payment_intents`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${authString}`,
+        },
+        body: JSON.stringify(paymentIntentPayload),
+      });
+
+      const intentData = await intentResponse.json();
+      console.log("PayMongo intent response:", JSON.stringify(intentData, null, 2));
+
+      if (!intentResponse.ok) {
+        console.error("PayMongo error:", intentData);
+        return new Response(JSON.stringify({ 
+          error: intentData.errors?.[0]?.detail || "Failed to create payment intent" 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const paymentIntentId = intentData.data.id;
+      const clientKey = intentData.data.attributes.client_key;
+
+      // Create a payment method for DOB
+      const paymentMethodPayload = {
+        data: {
+          attributes: {
+            type: "dob",
+            details: {
+              bank_code: mappedBankCode,
+            },
+            billing: {
+              name: user.user_metadata?.full_name || user.email,
+              email: user.email,
+            },
+            metadata: {
+              order_id: orderId,
+              user_id: user.id,
+            },
+          },
+        },
+      };
+
+      console.log("Creating PayMongo payment method:", JSON.stringify(paymentMethodPayload, null, 2));
+
+      const methodResponse = await fetch(`${paymongoBaseUrl}/payment_methods`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${authString}`,
+        },
+        body: JSON.stringify(paymentMethodPayload),
+      });
+
+      const methodData = await methodResponse.json();
+      console.log("PayMongo method response:", JSON.stringify(methodData, null, 2));
+
+      if (!methodResponse.ok) {
+        console.error("PayMongo payment method error:", methodData);
+        return new Response(JSON.stringify({ 
+          error: methodData.errors?.[0]?.detail || "Failed to create payment method" 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const paymentMethodId = methodData.data.id;
+
+      // Attach payment method to payment intent
+      const attachPayload = {
+        data: {
+          attributes: {
+            payment_method: paymentMethodId,
+            client_key: clientKey,
+            return_url: `${redirectUrl}?status=success&order_id=${orderId}`,
+          },
+        },
+      };
+
+      console.log("Attaching payment method to intent:", JSON.stringify(attachPayload, null, 2));
+
+      const attachResponse = await fetch(`${paymongoBaseUrl}/payment_intents/${paymentIntentId}/attach`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${authString}`,
+        },
+        body: JSON.stringify(attachPayload),
+      });
+
+      const attachData = await attachResponse.json();
+      console.log("PayMongo attach response:", JSON.stringify(attachData, null, 2));
+
+      if (!attachResponse.ok) {
+        console.error("PayMongo attach error:", attachData);
+        return new Response(JSON.stringify({ 
+          error: attachData.errors?.[0]?.detail || "Failed to attach payment method" 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get the redirect URL for bank authentication
+      const status = attachData.data.attributes.status;
+      const nextAction = attachData.data.attributes.next_action;
+
+      if (status === "awaiting_next_action" && nextAction?.type === "redirect") {
+        checkoutUrl = nextAction.redirect.url;
+        paymentId = paymentIntentId;
+      } else if (status === "succeeded") {
+        // Payment already succeeded (rare case)
+        return new Response(JSON.stringify({
+          success: true,
+          paymentId: paymentIntentId,
+          status: "paid",
+          type: "bank_transfer",
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } else {
+        return new Response(JSON.stringify({ 
+          error: `Unexpected payment status: ${status}` 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
     } else if (paymentMethod === "card") {
       // Create a Payment Intent for card payments
       const paymentIntentPayload = {
@@ -169,7 +339,7 @@ serve(async (req) => {
       success: true,
       checkoutUrl,
       paymentId,
-      type: "source",
+      type: paymentMethod === "bank_transfer" ? "bank_transfer" : "source",
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

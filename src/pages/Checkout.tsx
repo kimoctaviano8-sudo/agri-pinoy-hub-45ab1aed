@@ -462,16 +462,62 @@ const Checkout = () => {
         }
       }
 
-      // For COD and bank transfer, show success with appropriate message
+      // Handle Bank Transfer via PayMongo DOB
       if (paymentMethod === 'bank_transfer') {
-        const bankName = paymentSubMethod === 'bdo' ? 'BDO' : 
-                         paymentSubMethod === 'bpi' ? 'BPI' : 
-                         paymentSubMethod === 'landbank' ? 'Landbank' : 'Metrobank';
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+
         toast({
-          title: "Order Placed!",
-          description: `Please transfer ₱${finalAmount.toFixed(2)} to ${bankName}. Send your receipt to geminicares@geminiagri.com for verification.`,
+          title: "Processing Payment",
+          description: "Redirecting to bank authentication...",
         });
-      } else if (paymentMethod === 'cash_on_delivery') {
+
+        const response = await fetch(
+          `https://bywimfvrbcjcktqzdvmk.supabase.co/functions/v1/create-payment`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              amount: finalAmount,
+              paymentMethod: 'bank_transfer',
+              bankCode: paymentSubMethod,
+              orderId: orderData.id,
+              description: `Order ${orderNumber}`,
+              redirectUrl: `${window.location.origin}/order-success`,
+            }),
+          }
+        );
+
+        const paymentResult = await response.json();
+
+        if (!response.ok) {
+          // Update order status to payment_failed
+          await supabase
+            .from('orders')
+            .update({ status: 'payment_failed' })
+            .eq('id', orderData.id);
+
+          toast({
+            title: "Payment Error",
+            description: paymentResult.error || "Failed to initiate bank transfer",
+            variant: "destructive"
+          });
+          setProcessingPayment(false);
+          return;
+        }
+
+        // Redirect to PayMongo bank authentication
+        if (paymentResult.checkoutUrl) {
+          window.location.href = paymentResult.checkoutUrl;
+          return;
+        }
+      }
+
+      // For COD, show success with appropriate message
+      if (paymentMethod === 'cash_on_delivery') {
         toast({
           title: "Order Placed Successfully!",
           description: `Total: ₱${finalAmount.toFixed(2)} - Pay when you receive your order.`,
@@ -755,41 +801,23 @@ const Checkout = () => {
                         </SelectContent>
                       </Select>
                       
-                      {/* Bank Details Display */}
+                      {/* Bank Transfer Info */}
                       {paymentSubMethod && (
                         <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2">
-                          <p className="font-medium text-foreground">Bank Account Details:</p>
-                          {paymentSubMethod === 'bdo' && (
-                            <>
-                              <p><span className="text-muted-foreground">Bank:</span> BDO Unibank</p>
-                              <p><span className="text-muted-foreground">Account Name:</span> Gemini Agri Trading</p>
-                              <p><span className="text-muted-foreground">Account Number:</span> 0012-3456-7890</p>
-                            </>
-                          )}
-                          {paymentSubMethod === 'bpi' && (
-                            <>
-                              <p><span className="text-muted-foreground">Bank:</span> Bank of the Philippine Islands</p>
-                              <p><span className="text-muted-foreground">Account Name:</span> Gemini Agri Trading</p>
-                              <p><span className="text-muted-foreground">Account Number:</span> 1234-5678-90</p>
-                            </>
-                          )}
-                          {paymentSubMethod === 'landbank' && (
-                            <>
-                              <p><span className="text-muted-foreground">Bank:</span> Land Bank of the Philippines</p>
-                              <p><span className="text-muted-foreground">Account Name:</span> Gemini Agri Trading</p>
-                              <p><span className="text-muted-foreground">Account Number:</span> 0987-6543-21</p>
-                            </>
-                          )}
-                          {paymentSubMethod === 'metrobank' && (
-                            <>
-                              <p><span className="text-muted-foreground">Bank:</span> Metropolitan Bank & Trust Co.</p>
-                              <p><span className="text-muted-foreground">Account Name:</span> Gemini Agri Trading</p>
-                              <p><span className="text-muted-foreground">Account Number:</span> 5678-1234-90</p>
-                            </>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
-                            Please send your payment receipt to geminicares@geminiagri.com for faster verification.
+                          <p className="font-medium text-foreground flex items-center gap-2">
+                            <CreditCard className="w-4 h-4" />
+                            Secure Online Banking
                           </p>
+                          <p className="text-muted-foreground">
+                            You will be redirected to {paymentSubMethod === 'bdo' ? 'BDO' : 
+                              paymentSubMethod === 'bpi' ? 'BPI' : 
+                              paymentSubMethod === 'landbank' ? 'Landbank' : 'Metrobank'}'s 
+                            secure online banking portal to complete your payment.
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
+                            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded">PayMongo Secured</span>
+                            <span>Fast • Secure • Real-time confirmation</span>
+                          </div>
                         </div>
                       )}
                     </div>
