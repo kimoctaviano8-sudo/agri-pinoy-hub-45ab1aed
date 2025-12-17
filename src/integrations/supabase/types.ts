@@ -148,6 +148,39 @@ export type Database = {
         }
         Relationships: []
       }
+      fees: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          fee_name: string
+          fee_type: string
+          fee_value: number
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          fee_name: string
+          fee_type: string
+          fee_value?: number
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          fee_name?: string
+          fee_type?: string
+          fee_value?: number
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       forum_comments: {
         Row: {
           author_id: string
