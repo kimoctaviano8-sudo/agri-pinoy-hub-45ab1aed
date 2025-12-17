@@ -18,6 +18,8 @@ async function updateOrderStatus(
   eventType: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    console.log(`[Webhook] Updating order ${orderId} to status: ${newStatus} (event: ${eventType})`);
+    
     // First, get current order status
     const { data: currentOrder, error: fetchError } = await supabase
       .from("orders")
@@ -26,22 +28,23 @@ async function updateOrderStatus(
       .single();
 
     if (fetchError) {
+      console.error(`[Webhook] Error fetching order ${orderId}:`, fetchError.message);
       return { success: false, error: fetchError.message };
     }
 
     const currentStatus = currentOrder?.status as string;
+    console.log(`[Webhook] Current status for order ${orderId}: ${currentStatus}`);
 
     // Prevent invalid status transitions - don't go backwards from final states
-    const finalStatuses = ['paid', 'completed', 'cancelled'];
+    const finalStatuses = ['to_ship', 'to_receive', 'completed', 'cancelled'];
     if (finalStatuses.includes(currentStatus) && currentStatus !== newStatus) {
-      // Allow payment_failed to override pending states, but not final states
-      if (currentStatus === 'paid' && newStatus === 'payment_failed') {
-        return { success: true };
-      }
+      console.log(`[Webhook] Skipping update - order ${orderId} already in final state: ${currentStatus}`);
+      return { success: true };
     }
 
     // Skip if already in target status
     if (currentStatus === newStatus) {
+      console.log(`[Webhook] Skipping update - order ${orderId} already has status: ${newStatus}`);
       return { success: true };
     }
 
@@ -55,11 +58,14 @@ async function updateOrderStatus(
       .eq("id", orderId);
 
     if (updateError) {
+      console.error(`[Webhook] Error updating order ${orderId}:`, updateError.message);
       return { success: false, error: updateError.message };
     }
 
+    console.log(`[Webhook] Successfully updated order ${orderId} to status: ${newStatus}`);
     return { success: true };
   } catch (error) {
+    console.error(`[Webhook] Exception updating order ${orderId}:`, String(error));
     return { success: false, error: String(error) };
   }
 }
@@ -72,9 +78,12 @@ serve(async (req) => {
 
   try {
     const payload = await req.json();
+    console.log("[Webhook] Received PayMongo webhook:", JSON.stringify(payload, null, 2));
+    
     const { data } = payload;
     
     if (!data) {
+      console.log("[Webhook] No data in payload, acknowledging");
       return new Response(JSON.stringify({ received: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -83,6 +92,9 @@ serve(async (req) => {
 
     const eventType = data.attributes?.type;
     const resourceData = data.attributes?.data;
+    
+    console.log(`[Webhook] Event type: ${eventType}`);
+    console.log(`[Webhook] Resource data:`, JSON.stringify(resourceData, null, 2));
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -126,9 +138,9 @@ serve(async (req) => {
           const paymentData = await paymentResponse.json();
 
           if (paymentResponse.ok && paymentData.data?.attributes?.status === "paid") {
-            // Payment successful, update order
+            // Payment successful, update order to "to_ship"
             if (orderId) {
-              await updateOrderStatus(supabase, orderId, "paid", "source.chargeable");
+              await updateOrderStatus(supabase, orderId, "to_ship", "source.chargeable");
             }
           } else if (!paymentResponse.ok) {
             // Update order to payment_failed
@@ -148,9 +160,10 @@ serve(async (req) => {
     if (eventType === "payment.paid") {
       const metadata = resourceData?.attributes?.metadata;
       const orderId = metadata?.order_id;
+      console.log(`[Webhook] payment.paid - order_id: ${orderId}`);
       
       if (orderId) {
-        await updateOrderStatus(supabase, orderId, "paid", "payment.paid");
+        await updateOrderStatus(supabase, orderId, "to_ship", "payment.paid");
       }
     }
     
@@ -158,6 +171,7 @@ serve(async (req) => {
     if (eventType === "payment.failed") {
       const metadata = resourceData?.attributes?.metadata;
       const orderId = metadata?.order_id;
+      console.log(`[Webhook] payment.failed - order_id: ${orderId}`);
       
       if (orderId) {
         await updateOrderStatus(supabase, orderId, "payment_failed", "payment.failed");
@@ -168,9 +182,10 @@ serve(async (req) => {
     if (eventType === "payment_intent.succeeded") {
       const metadata = resourceData?.attributes?.metadata;
       const orderId = metadata?.order_id;
+      console.log(`[Webhook] payment_intent.succeeded - order_id: ${orderId}`);
       
       if (orderId) {
-        await updateOrderStatus(supabase, orderId, "paid", "payment_intent.succeeded");
+        await updateOrderStatus(supabase, orderId, "to_ship", "payment_intent.succeeded");
       }
     }
 
@@ -178,19 +193,21 @@ serve(async (req) => {
     if (eventType === "payment_intent.payment_failed") {
       const metadata = resourceData?.attributes?.metadata;
       const orderId = metadata?.order_id;
+      console.log(`[Webhook] payment_intent.payment_failed - order_id: ${orderId}`);
       
       if (orderId) {
         await updateOrderStatus(supabase, orderId, "payment_failed", "payment_intent.payment_failed");
       }
     }
 
-    // Handle checkout_session.payment.paid (for Checkout Sessions)
+    // Handle checkout_session.payment.paid (for Checkout Sessions - QRPh)
     if (eventType === "checkout_session.payment.paid") {
       const metadata = resourceData?.attributes?.metadata;
       const orderId = metadata?.order_id;
+      console.log(`[Webhook] checkout_session.payment.paid - order_id: ${orderId}`);
       
       if (orderId) {
-        await updateOrderStatus(supabase, orderId, "paid", "checkout_session.payment.paid");
+        await updateOrderStatus(supabase, orderId, "to_ship", "checkout_session.payment.paid");
       }
     }
 
