@@ -145,17 +145,27 @@ serve(async (req) => {
       paymentId = sourceData.data.id;
 
     } else if (paymentMethod === "qrph") {
-      // Create a Payment Intent for QR Ph payments
-      console.log("Creating QR Ph payment intent for order:", orderId);
+      // Use Checkout Sessions API for QR Ph payments (provides hosted checkout page with QR display)
+      console.log("Creating QR Ph checkout session for order:", orderId);
       
-      const paymentIntentPayload = {
+      const checkoutSessionPayload = {
         data: {
           attributes: {
-            amount: amountInCentavos,
-            currency: "PHP",
-            payment_method_allowed: ["qrph"],
+            send_email_receipt: true,
+            show_description: true,
+            show_line_items: true,
             description: description || `Order ${orderId}`,
-            statement_descriptor: "GEMINIAGRI",
+            line_items: [
+              {
+                currency: "PHP",
+                amount: amountInCentavos,
+                name: `Order ${orderId}`,
+                quantity: 1,
+              },
+            ],
+            payment_method_types: ["qrph"],
+            success_url: `${redirectUrl}?status=success&order_id=${orderId}`,
+            cancel_url: `${redirectUrl}?status=cancelled&order_id=${orderId}`,
             metadata: {
               order_id: orderId,
               user_id: user.id,
@@ -164,20 +174,20 @@ serve(async (req) => {
         },
       };
 
-      const intentResponse = await fetch(`${paymongoBaseUrl}/payment_intents`, {
+      const checkoutResponse = await fetch(`${paymongoBaseUrl}/checkout_sessions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Basic ${authString}`,
         },
-        body: JSON.stringify(paymentIntentPayload),
+        body: JSON.stringify(checkoutSessionPayload),
       });
 
-      const intentData = await intentResponse.json();
-      console.log("QR Ph payment intent response:", JSON.stringify(intentData));
+      const checkoutData = await checkoutResponse.json();
+      console.log("QR Ph checkout session response:", JSON.stringify(checkoutData));
 
-      if (!intentResponse.ok) {
-        const errorDetail = intentData.errors?.[0]?.detail || "Failed to create QR Ph payment";
+      if (!checkoutResponse.ok) {
+        const errorDetail = checkoutData.errors?.[0]?.detail || "Failed to create QR Ph checkout";
         const isAccountIssue = errorDetail.toLowerCase().includes("not allowed") || 
                                errorDetail.toLowerCase().includes("organization");
         return new Response(JSON.stringify({ 
@@ -190,114 +200,9 @@ serve(async (req) => {
         });
       }
 
-      const paymentIntentId = intentData.data.id;
-      const clientKey = intentData.data.attributes.client_key;
-
-      // Create a payment method for QR Ph
-      const paymentMethodPayload = {
-        data: {
-          attributes: {
-            type: "qrph",
-            billing: {
-              name: user.user_metadata?.full_name || user.email,
-              email: user.email,
-            },
-            metadata: {
-              order_id: orderId,
-              user_id: user.id,
-            },
-          },
-        },
-      };
-
-      const methodResponse = await fetch(`${paymongoBaseUrl}/payment_methods`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${authString}`,
-        },
-        body: JSON.stringify(paymentMethodPayload),
-      });
-
-      const methodData = await methodResponse.json();
-      console.log("QR Ph payment method response:", JSON.stringify(methodData));
-
-      if (!methodResponse.ok) {
-        const errorDetail = methodData.errors?.[0]?.detail || "Failed to create QR Ph payment method";
-        const isAccountIssue = errorDetail.toLowerCase().includes("not allowed") || 
-                               errorDetail.toLowerCase().includes("organization");
-        return new Response(JSON.stringify({ 
-          error: isAccountIssue 
-            ? "QR Ph payments are currently unavailable. Please try another payment method or contact support."
-            : errorDetail
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const paymentMethodId = methodData.data.id;
-
-      // Attach payment method to payment intent
-      const attachPayload = {
-        data: {
-          attributes: {
-            payment_method: paymentMethodId,
-            client_key: clientKey,
-            return_url: `${redirectUrl}?status=success&order_id=${orderId}`,
-          },
-        },
-      };
-
-      const attachResponse = await fetch(`${paymongoBaseUrl}/payment_intents/${paymentIntentId}/attach`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${authString}`,
-        },
-        body: JSON.stringify(attachPayload),
-      });
-
-      const attachData = await attachResponse.json();
-      console.log("QR Ph attach response:", JSON.stringify(attachData));
-
-      if (!attachResponse.ok) {
-        return new Response(JSON.stringify({ 
-          error: attachData.errors?.[0]?.detail || "Failed to attach QR Ph payment method" 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Get the redirect URL for QR code display
-      const status = attachData.data.attributes.status;
-      const nextAction = attachData.data.attributes.next_action;
-
-      if (status === "awaiting_next_action" && nextAction?.type === "redirect") {
-        checkoutUrl = nextAction.redirect.url;
-        paymentId = paymentIntentId;
-        console.log("QR Ph checkout URL:", checkoutUrl);
-      } else if (status === "succeeded") {
-        // Payment already succeeded (rare case)
-        return new Response(JSON.stringify({
-          success: true,
-          paymentId: paymentIntentId,
-          status: "paid",
-          type: "qrph",
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } else {
-        console.log("Unexpected QR Ph payment status:", status, "nextAction:", JSON.stringify(nextAction));
-        return new Response(JSON.stringify({ 
-          error: `Unexpected payment status: ${status}` 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      checkoutUrl = checkoutData.data.attributes.checkout_url;
+      paymentId = checkoutData.data.id;
+      console.log("QR Ph checkout URL:", checkoutUrl);
 
     } else if (paymentMethod === "bank_transfer") {
       // Create Payment Intent for Direct Online Banking (DOB) using Brankas
