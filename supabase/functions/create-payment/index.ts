@@ -209,8 +209,13 @@ serve(async (req) => {
 
       if (!methodResponse.ok) {
         console.error("PayMongo payment method error:", methodData);
+        const errorDetail = methodData.errors?.[0]?.detail || "Failed to create payment method";
+        // Check if it's an account permission issue
+        const isAccountIssue = errorDetail.toLowerCase().includes("not allowed for your account");
         return new Response(JSON.stringify({ 
-          error: methodData.errors?.[0]?.detail || "Failed to create payment method" 
+          error: isAccountIssue 
+            ? "Bank transfer payments are currently unavailable. Please try another payment method."
+            : errorDetail
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
