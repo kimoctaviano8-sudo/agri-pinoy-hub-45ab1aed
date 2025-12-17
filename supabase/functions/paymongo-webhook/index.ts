@@ -10,6 +10,66 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const paymongoSecretKey = Deno.env.get("PAYMONGO_SECRET_KEY")!;
 
+// Helper to safely update order status with conflict prevention
+async function updateOrderStatus(
+  supabase: any,
+  orderId: string,
+  newStatus: string,
+  eventType: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // First, get current order status
+    const { data: currentOrder, error: fetchError } = await supabase
+      .from("orders")
+      .select("status")
+      .eq("id", orderId)
+      .single();
+
+    if (fetchError) {
+      console.error(`Error fetching order ${orderId}:`, fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentStatus = currentOrder?.status as string;
+
+    // Prevent invalid status transitions - don't go backwards from final states
+    const finalStatuses = ['paid', 'completed', 'cancelled'];
+    if (finalStatuses.includes(currentStatus) && currentStatus !== newStatus) {
+      // Allow payment_failed to override pending states, but not final states
+      if (currentStatus === 'paid' && newStatus === 'payment_failed') {
+        console.log(`Skipping status update for order ${orderId}: ${currentStatus} cannot become ${newStatus}`);
+        return { success: true };
+      }
+    }
+
+    // Skip if already in target status
+    if (currentStatus === newStatus) {
+      console.log(`Order ${orderId} already has status ${newStatus}, skipping update`);
+      return { success: true };
+    }
+
+    // Update order status
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({ 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", orderId);
+
+    if (updateError) {
+      console.error(`Error updating order ${orderId}:`, updateError);
+      return { success: false, error: updateError.message };
+    }
+
+    console.log(`Order ${orderId} status updated: ${currentStatus} -> ${newStatus} (via ${eventType})`);
+    return { success: true };
+  } catch (error) {
+    console.error(`Exception updating order ${orderId}:`, error);
+    return { success: false, error: String(error) };
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -85,35 +145,20 @@ serve(async (req) => {
           if (paymentResponse.ok && paymentData.data?.attributes?.status === "paid") {
             // Payment successful, update order
             if (orderId) {
-              const { error: updateError } = await supabase
-                .from("orders")
-                .update({ 
-                  status: "paid",
-                  updated_at: new Date().toISOString()
-                })
-                .eq("id", orderId);
-              
-              if (updateError) {
-                console.error("Error updating order:", updateError);
-              } else {
-                console.log("Order status updated to paid via source.chargeable");
-              }
+              await updateOrderStatus(supabase, orderId, "paid", "source.chargeable");
             }
           } else if (!paymentResponse.ok) {
             console.error("Payment creation failed:", paymentData);
             // Update order to payment_failed
             if (orderId) {
-              await supabase
-                .from("orders")
-                .update({ 
-                  status: "payment_failed",
-                  updated_at: new Date().toISOString()
-                })
-                .eq("id", orderId);
+              await updateOrderStatus(supabase, orderId, "payment_failed", "source.chargeable");
             }
           }
         } catch (paymentError) {
           console.error("Error creating payment:", paymentError);
+          if (orderId) {
+            await updateOrderStatus(supabase, orderId, "payment_failed", "source.chargeable_error");
+          }
         }
       }
     }
@@ -125,20 +170,9 @@ serve(async (req) => {
       
       if (orderId) {
         console.log("Payment paid - updating order:", orderId);
-        
-        const { error: updateError } = await supabase
-          .from("orders")
-          .update({ 
-            status: "paid",
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", orderId);
-        
-        if (updateError) {
-          console.error("Error updating order:", updateError);
-        } else {
-          console.log("Order status updated to paid via payment.paid");
-        }
+        await updateOrderStatus(supabase, orderId, "paid", "payment.paid");
+      } else {
+        console.log("payment.paid event received but no order_id in metadata");
       }
     }
     
@@ -149,20 +183,9 @@ serve(async (req) => {
       
       if (orderId) {
         console.log("Payment failed for order:", orderId);
-        
-        const { error: updateError } = await supabase
-          .from("orders")
-          .update({ 
-            status: "payment_failed",
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", orderId);
-        
-        if (updateError) {
-          console.error("Error updating order:", updateError);
-        } else {
-          console.log("Order status updated to payment_failed");
-        }
+        await updateOrderStatus(supabase, orderId, "payment_failed", "payment.failed");
+      } else {
+        console.log("payment.failed event received but no order_id in metadata");
       }
     }
 
@@ -173,20 +196,9 @@ serve(async (req) => {
       
       if (orderId) {
         console.log("Payment intent succeeded - updating order:", orderId);
-        
-        const { error: updateError } = await supabase
-          .from("orders")
-          .update({ 
-            status: "paid",
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", orderId);
-        
-        if (updateError) {
-          console.error("Error updating order:", updateError);
-        } else {
-          console.log("Order status updated to paid via payment_intent.succeeded");
-        }
+        await updateOrderStatus(supabase, orderId, "paid", "payment_intent.succeeded");
+      } else {
+        console.log("payment_intent.succeeded event received but no order_id in metadata");
       }
     }
 
@@ -197,20 +209,20 @@ serve(async (req) => {
       
       if (orderId) {
         console.log("Payment intent failed for order:", orderId);
-        
-        const { error: updateError } = await supabase
-          .from("orders")
-          .update({ 
-            status: "payment_failed",
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", orderId);
-        
-        if (updateError) {
-          console.error("Error updating order:", updateError);
-        } else {
-          console.log("Order status updated to payment_failed via payment_intent.payment_failed");
-        }
+        await updateOrderStatus(supabase, orderId, "payment_failed", "payment_intent.payment_failed");
+      } else {
+        console.log("payment_intent.payment_failed event received but no order_id in metadata");
+      }
+    }
+
+    // Handle checkout_session.payment.paid (for Checkout Sessions)
+    if (eventType === "checkout_session.payment.paid") {
+      const metadata = resourceData?.attributes?.metadata;
+      const orderId = metadata?.order_id;
+      
+      if (orderId) {
+        console.log("Checkout session payment paid - updating order:", orderId);
+        await updateOrderStatus(supabase, orderId, "paid", "checkout_session.payment.paid");
       }
     }
 

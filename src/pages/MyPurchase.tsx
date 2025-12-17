@@ -210,6 +210,9 @@ const MyPurchase = () => {
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'to_pay': return 'destructive';
+      case 'pending_payment': return 'destructive';
+      case 'payment_failed': return 'destructive';
+      case 'paid': return 'default';
       case 'to_ship': return 'secondary';
       case 'to_receive': return 'default';
       case 'completed': return 'default';
@@ -222,6 +225,9 @@ const MyPurchase = () => {
   const getStatusDisplayName = (status: string) => {
     switch (status) {
       case 'to_pay': return 'To Pay';
+      case 'pending_payment': return 'Pending Payment';
+      case 'payment_failed': return 'Payment Failed';
+      case 'paid': return 'Paid';
       case 'to_ship': return 'To Ship';
       case 'to_receive': return 'To Receive';
       case 'completed': return 'Completed';
@@ -249,6 +255,9 @@ const MyPurchase = () => {
         title: "Order Completed",
         description: "Thank you for confirming you received your items.",
       });
+      
+      // Refresh orders to reflect the change
+      fetchOrders();
     } catch (error) {
       console.error('Error confirming order receipt:', error);
       toast({
@@ -261,7 +270,18 @@ const MyPurchase = () => {
     }
   };
 
-  const filteredOrders = orders.filter(order => order.status === selectedTab);
+  // Filter orders based on selected tab
+  // Map 'paid' and 'pending_payment' to appropriate tabs
+  const filteredOrders = orders.filter(order => {
+    const status = order.status;
+    if (selectedTab === 'to_pay') {
+      return status === 'to_pay' || status === 'pending_payment' || status === 'payment_failed';
+    }
+    if (selectedTab === 'to_ship') {
+      return status === 'to_ship' || status === 'paid';
+    }
+    return status === selectedTab;
+  });
 
   // Show verification screen if biometric protection is active and not yet verified
   if (isVerifying || (isProtectionActive && !isVerified)) {
