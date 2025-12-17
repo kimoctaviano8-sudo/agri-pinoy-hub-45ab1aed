@@ -166,6 +166,54 @@ serve(async (req) => {
       }
     }
 
+    // Handle payment_intent.succeeded - For bank transfer and card payments
+    if (eventType === "payment_intent.succeeded") {
+      const metadata = resourceData?.attributes?.metadata;
+      const orderId = metadata?.order_id;
+      
+      if (orderId) {
+        console.log("Payment intent succeeded - updating order:", orderId);
+        
+        const { error: updateError } = await supabase
+          .from("orders")
+          .update({ 
+            status: "paid",
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", orderId);
+        
+        if (updateError) {
+          console.error("Error updating order:", updateError);
+        } else {
+          console.log("Order status updated to paid via payment_intent.succeeded");
+        }
+      }
+    }
+
+    // Handle payment_intent.payment_failed
+    if (eventType === "payment_intent.payment_failed") {
+      const metadata = resourceData?.attributes?.metadata;
+      const orderId = metadata?.order_id;
+      
+      if (orderId) {
+        console.log("Payment intent failed for order:", orderId);
+        
+        const { error: updateError } = await supabase
+          .from("orders")
+          .update({ 
+            status: "payment_failed",
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", orderId);
+        
+        if (updateError) {
+          console.error("Error updating order:", updateError);
+        } else {
+          console.log("Order status updated to payment_failed via payment_intent.payment_failed");
+        }
+      }
+    }
+
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
