@@ -310,8 +310,6 @@ const PlantScanner = () => {
         throw new Error('Please log in to use the scanner');
       }
 
-      console.log(`Image compressed in ${Date.now() - startTime}ms`);
-
       // Call edge function with compressed image
       const response = await supabase.functions.invoke('plant-disease-analyzer', {
         body: { image: compressedImage },
@@ -320,10 +318,7 @@ const PlantScanner = () => {
         }
       });
 
-      console.log(`Total analysis time: ${Date.now() - startTime}ms`);
-
       if (response.error) {
-        console.error('Edge function error:', response.error);
         
         const isCreditsError = 
           response.error.message?.includes('Insufficient credits') || 

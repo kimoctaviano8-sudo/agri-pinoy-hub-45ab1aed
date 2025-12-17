@@ -12,6 +12,33 @@ const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Map bank codes to PayMongo DOB bank codes (only BDO, Landbank, Metrobank are supported)
 const validBankCodes = ["bdo", "landbank", "metrobank"];
+const validPaymentMethods = ["gcash", "grab_pay", "maya", "bank_transfer", "card"];
+
+// Input validation helper
+function validatePaymentInput(body: Record<string, unknown>): { valid: boolean; error?: string } {
+  const { amount, paymentMethod, orderId, bankCode } = body;
+  
+  if (!amount || typeof amount !== 'number' || amount <= 0 || amount > 1000000) {
+    return { valid: false, error: "Invalid amount. Must be a positive number up to 1,000,000" };
+  }
+  
+  if (!paymentMethod || typeof paymentMethod !== 'string' || !validPaymentMethods.includes(paymentMethod)) {
+    return { valid: false, error: "Invalid payment method" };
+  }
+  
+  if (!orderId || typeof orderId !== 'string' || orderId.length < 10 || orderId.length > 100) {
+    return { valid: false, error: "Invalid order ID" };
+  }
+  
+  if (paymentMethod === 'bank_transfer') {
+    const normalizedBankCode = String(bankCode || '').toLowerCase();
+    if (!validBankCodes.includes(normalizedBankCode)) {
+      return { valid: false, error: `Invalid bank code. Supported banks: BDO, Landbank, Metrobank` };
+    }
+  }
+  
+  return { valid: true };
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -41,16 +68,18 @@ serve(async (req) => {
       });
     }
 
-    const { amount, paymentMethod, orderId, description, redirectUrl, bankCode } = await req.json();
-
-    console.log("Creating payment:", { amount, paymentMethod, orderId, description, bankCode });
-
-    if (!amount || !paymentMethod || !orderId) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+    const body = await req.json();
+    
+    // Validate input
+    const validation = validatePaymentInput(body);
+    if (!validation.valid) {
+      return new Response(JSON.stringify({ error: validation.error }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { amount, paymentMethod, orderId, description, redirectUrl, bankCode } = body;
 
     // Convert amount to centavos (PayMongo uses smallest currency unit)
     const amountInCentavos = Math.round(amount * 100);
@@ -86,8 +115,6 @@ serve(async (req) => {
         },
       };
 
-      console.log("Creating PayMongo source:", JSON.stringify(sourcePayload, null, 2));
-
       const sourceResponse = await fetch(`${paymongoBaseUrl}/sources`, {
         method: "POST",
         headers: {
@@ -98,10 +125,8 @@ serve(async (req) => {
       });
 
       const sourceData = await sourceResponse.json();
-      console.log("PayMongo source response:", JSON.stringify(sourceData, null, 2));
 
       if (!sourceResponse.ok) {
-        console.error("PayMongo error:", sourceData);
         return new Response(JSON.stringify({ 
           error: sourceData.errors?.[0]?.detail || "Failed to create payment source" 
         }), {
@@ -115,18 +140,7 @@ serve(async (req) => {
 
     } else if (paymentMethod === "bank_transfer") {
       // Create Payment Intent for Direct Online Banking (DOB) using Brankas
-      const normalizedBankCode = bankCode?.toLowerCase();
-      
-      if (!normalizedBankCode || !validBankCodes.includes(normalizedBankCode)) {
-        return new Response(JSON.stringify({ 
-          error: `Invalid bank code. Supported banks: BDO, Landbank, Metrobank` 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      console.log("Creating bank transfer payment intent for bank:", normalizedBankCode);
+      const normalizedBankCode = String(bankCode).toLowerCase();
 
       // First, create a payment intent with brankas as allowed method
       const paymentIntentPayload = {
@@ -146,8 +160,6 @@ serve(async (req) => {
         },
       };
 
-      console.log("Creating PayMongo payment intent for DOB:", JSON.stringify(paymentIntentPayload, null, 2));
-
       const intentResponse = await fetch(`${paymongoBaseUrl}/payment_intents`, {
         method: "POST",
         headers: {
@@ -158,10 +170,8 @@ serve(async (req) => {
       });
 
       const intentData = await intentResponse.json();
-      console.log("PayMongo intent response:", JSON.stringify(intentData, null, 2));
 
       if (!intentResponse.ok) {
-        console.error("PayMongo error:", intentData);
         return new Response(JSON.stringify({ 
           error: intentData.errors?.[0]?.detail || "Failed to create payment intent" 
         }), {
@@ -193,8 +203,6 @@ serve(async (req) => {
         },
       };
 
-      console.log("Creating PayMongo payment method:", JSON.stringify(paymentMethodPayload, null, 2));
-
       const methodResponse = await fetch(`${paymongoBaseUrl}/payment_methods`, {
         method: "POST",
         headers: {
@@ -205,10 +213,8 @@ serve(async (req) => {
       });
 
       const methodData = await methodResponse.json();
-      console.log("PayMongo method response:", JSON.stringify(methodData, null, 2));
 
       if (!methodResponse.ok) {
-        console.error("PayMongo payment method error:", methodData);
         const errorDetail = methodData.errors?.[0]?.detail || "Failed to create payment method";
         // Check if it's an account permission issue
         const isAccountIssue = errorDetail.toLowerCase().includes("not allowed for your account");
@@ -235,8 +241,6 @@ serve(async (req) => {
         },
       };
 
-      console.log("Attaching payment method to intent:", JSON.stringify(attachPayload, null, 2));
-
       const attachResponse = await fetch(`${paymongoBaseUrl}/payment_intents/${paymentIntentId}/attach`, {
         method: "POST",
         headers: {
@@ -247,10 +251,8 @@ serve(async (req) => {
       });
 
       const attachData = await attachResponse.json();
-      console.log("PayMongo attach response:", JSON.stringify(attachData, null, 2));
 
       if (!attachResponse.ok) {
-        console.error("PayMongo attach error:", attachData);
         return new Response(JSON.stringify({ 
           error: attachData.errors?.[0]?.detail || "Failed to attach payment method" 
         }), {
@@ -304,8 +306,6 @@ serve(async (req) => {
         },
       };
 
-      console.log("Creating PayMongo payment intent:", JSON.stringify(paymentIntentPayload, null, 2));
-
       const intentResponse = await fetch(`${paymongoBaseUrl}/payment_intents`, {
         method: "POST",
         headers: {
@@ -316,10 +316,8 @@ serve(async (req) => {
       });
 
       const intentData = await intentResponse.json();
-      console.log("PayMongo intent response:", JSON.stringify(intentData, null, 2));
 
       if (!intentResponse.ok) {
-        console.error("PayMongo error:", intentData);
         return new Response(JSON.stringify({ 
           error: intentData.errors?.[0]?.detail || "Failed to create payment intent" 
         }), {
@@ -352,7 +350,6 @@ serve(async (req) => {
     });
 
   } catch (error: unknown) {
-    console.error("Payment creation error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,

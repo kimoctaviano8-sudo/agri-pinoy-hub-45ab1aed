@@ -31,9 +31,7 @@ export function RatingModal({ open, onOpenChange }: RatingModalProps) {
   };
 
   const handleSubmit = () => {
-    // Here you would typically send the rating data to your backend
-    console.log("Rating submitted:", { categories, feedback });
-    
+    // Rating data is processed locally - no sensitive data logged
     toast({
       title: "Thank you!",
       description: "Your rating has been submitted successfully."

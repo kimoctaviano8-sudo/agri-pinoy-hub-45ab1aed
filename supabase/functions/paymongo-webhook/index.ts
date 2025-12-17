@@ -26,7 +26,6 @@ async function updateOrderStatus(
       .single();
 
     if (fetchError) {
-      console.error(`Error fetching order ${orderId}:`, fetchError);
       return { success: false, error: fetchError.message };
     }
 
@@ -37,14 +36,12 @@ async function updateOrderStatus(
     if (finalStatuses.includes(currentStatus) && currentStatus !== newStatus) {
       // Allow payment_failed to override pending states, but not final states
       if (currentStatus === 'paid' && newStatus === 'payment_failed') {
-        console.log(`Skipping status update for order ${orderId}: ${currentStatus} cannot become ${newStatus}`);
         return { success: true };
       }
     }
 
     // Skip if already in target status
     if (currentStatus === newStatus) {
-      console.log(`Order ${orderId} already has status ${newStatus}, skipping update`);
       return { success: true };
     }
 
@@ -58,14 +55,11 @@ async function updateOrderStatus(
       .eq("id", orderId);
 
     if (updateError) {
-      console.error(`Error updating order ${orderId}:`, updateError);
       return { success: false, error: updateError.message };
     }
 
-    console.log(`Order ${orderId} status updated: ${currentStatus} -> ${newStatus} (via ${eventType})`);
     return { success: true };
   } catch (error) {
-    console.error(`Exception updating order ${orderId}:`, error);
     return { success: false, error: String(error) };
   }
 }
@@ -78,12 +72,9 @@ serve(async (req) => {
 
   try {
     const payload = await req.json();
-    console.log("PayMongo webhook received:", JSON.stringify(payload, null, 2));
-
     const { data } = payload;
     
     if (!data) {
-      console.log("No data in webhook payload");
       return new Response(JSON.stringify({ received: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -92,9 +83,6 @@ serve(async (req) => {
 
     const eventType = data.attributes?.type;
     const resourceData = data.attributes?.data;
-    
-    console.log("Event type:", eventType);
-    console.log("Resource data:", JSON.stringify(resourceData, null, 2));
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -104,8 +92,6 @@ serve(async (req) => {
       const amount = resourceData?.attributes?.amount;
       const metadata = resourceData?.attributes?.metadata;
       const orderId = metadata?.order_id;
-      
-      console.log("Source chargeable - sourceId:", sourceId, "amount:", amount, "orderId:", orderId);
       
       if (sourceId && amount) {
         // Create a payment using the chargeable source
@@ -127,8 +113,6 @@ serve(async (req) => {
           },
         };
 
-        console.log("Creating payment from source:", JSON.stringify(paymentPayload, null, 2));
-
         try {
           const paymentResponse = await fetch(`${paymongoBaseUrl}/payments`, {
             method: "POST",
@@ -140,7 +124,6 @@ serve(async (req) => {
           });
 
           const paymentData = await paymentResponse.json();
-          console.log("Payment creation response:", JSON.stringify(paymentData, null, 2));
 
           if (paymentResponse.ok && paymentData.data?.attributes?.status === "paid") {
             // Payment successful, update order
@@ -148,14 +131,12 @@ serve(async (req) => {
               await updateOrderStatus(supabase, orderId, "paid", "source.chargeable");
             }
           } else if (!paymentResponse.ok) {
-            console.error("Payment creation failed:", paymentData);
             // Update order to payment_failed
             if (orderId) {
               await updateOrderStatus(supabase, orderId, "payment_failed", "source.chargeable");
             }
           }
         } catch (paymentError) {
-          console.error("Error creating payment:", paymentError);
           if (orderId) {
             await updateOrderStatus(supabase, orderId, "payment_failed", "source.chargeable_error");
           }
@@ -169,10 +150,7 @@ serve(async (req) => {
       const orderId = metadata?.order_id;
       
       if (orderId) {
-        console.log("Payment paid - updating order:", orderId);
         await updateOrderStatus(supabase, orderId, "paid", "payment.paid");
-      } else {
-        console.log("payment.paid event received but no order_id in metadata");
       }
     }
     
@@ -182,10 +160,7 @@ serve(async (req) => {
       const orderId = metadata?.order_id;
       
       if (orderId) {
-        console.log("Payment failed for order:", orderId);
         await updateOrderStatus(supabase, orderId, "payment_failed", "payment.failed");
-      } else {
-        console.log("payment.failed event received but no order_id in metadata");
       }
     }
 
@@ -195,10 +170,7 @@ serve(async (req) => {
       const orderId = metadata?.order_id;
       
       if (orderId) {
-        console.log("Payment intent succeeded - updating order:", orderId);
         await updateOrderStatus(supabase, orderId, "paid", "payment_intent.succeeded");
-      } else {
-        console.log("payment_intent.succeeded event received but no order_id in metadata");
       }
     }
 
@@ -208,10 +180,7 @@ serve(async (req) => {
       const orderId = metadata?.order_id;
       
       if (orderId) {
-        console.log("Payment intent failed for order:", orderId);
         await updateOrderStatus(supabase, orderId, "payment_failed", "payment_intent.payment_failed");
-      } else {
-        console.log("payment_intent.payment_failed event received but no order_id in metadata");
       }
     }
 
@@ -221,7 +190,6 @@ serve(async (req) => {
       const orderId = metadata?.order_id;
       
       if (orderId) {
-        console.log("Checkout session payment paid - updating order:", orderId);
         await updateOrderStatus(supabase, orderId, "paid", "checkout_session.payment.paid");
       }
     }
@@ -231,7 +199,6 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
-    console.error("Webhook error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
