@@ -69,7 +69,7 @@ const Checkout = () => {
 
   // Pricing states
   const [voucherDiscount, setVoucherDiscount] = useState(0);
-  const baseShippingFee = 50; // Fixed shipping fee
+  const [baseShippingFee, setBaseShippingFee] = useState(50); // Default, will be fetched from DB
 
   // Get offers based on checkout items
   const offers = useOffers(checkoutItems);
@@ -81,6 +81,22 @@ const Checkout = () => {
     if (initialDataLoaded) return;
 
     const fetchData = async () => {
+      // Fetch shipping fee from fees table
+      try {
+        const { data: feeData } = await supabase
+          .from('fees')
+          .select('fee_value')
+          .eq('fee_type', 'shipping')
+          .eq('active', true)
+          .single();
+        
+        if (feeData) {
+          setBaseShippingFee(feeData.fee_value);
+        }
+      } catch (error) {
+        console.error('Error fetching shipping fee:', error);
+      }
+
       // Handle cart checkout
       if (isFromCart) {
         if (cartItems.length === 0) {
