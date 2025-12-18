@@ -622,6 +622,7 @@ export const AdminOrdersTab = ({
       return;
     }
     const dateRangeLabel = getDateFilterLabel();
+    const metrics = calculateMetrics();
     const breakdownOrders = filteredOrders;
     if (breakdownOrders.length === 0) {
       toast({
@@ -633,48 +634,135 @@ export const AdminOrdersTab = ({
     }
     try {
       setExportingExcel(true);
-      const rows: any[] = [];
+      
+      // Create worksheet data with header section
+      const wsData: any[][] = [];
+      
+      // Header section - Company branding
+      wsData.push(["GEMINI AGRI"]);
+      wsData.push(["Helping Filipino farmers for a sustainable agriculture"]);
+      wsData.push([]);
+      wsData.push(["ORDER SUMMARY REPORT"]);
+      wsData.push([`Report Period: ${dateRangeLabel}`]);
+      wsData.push([`Generated: ${format(new Date(), "MMMM dd, yyyy 'at' hh:mm a")}`]);
+      wsData.push([]);
+      
+      // Summary metrics section
+      wsData.push(["REPORT SUMMARY"]);
+      wsData.push(["Total Sales:", `PHP ${metrics.totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`]);
+      wsData.push(["Total Orders:", metrics.totalOrders]);
+      wsData.push(["Total Products Ordered:", metrics.totalProductsOrdered]);
+      wsData.push([]);
+      
+      // Table headers
+      const headers = ["Order No", "Customer", "Product Name", "Unit Price (PHP)", "Qty", "Subtotal (PHP)", "Status", "Payment Method", "Order Date"];
+      wsData.push(headers);
+      
+      // Data rows
       breakdownOrders.forEach(order => {
         const orderNo = order.order_number || order.id;
         const customerName = order.profiles?.full_name || order.profiles?.email || "N/A";
-        const orderDate = format(new Date(order.created_at), "yyyy-MM-dd HH:mm");
+        const orderDate = format(new Date(order.created_at), "MMM dd, yyyy hh:mm a");
         if (Array.isArray(order.items) && order.items.length > 0) {
           (order.items as OrderItem[]).forEach(item => {
             const subtotalValue = Number(item.price) * Number(item.quantity || 0);
-            rows.push({
-              "Order No": orderNo,
-              Customer: customerName,
-              "Product Name": item.name,
-              "Product Price": Number(item.price),
-              Quantity: Number(item.quantity || 0),
-              Subtotal: subtotalValue,
-              Status: getStatusLabel(order.status),
-              "Payment Method": order.payment_method.replace("_", " "),
-              "Order Date": orderDate
-            });
+            wsData.push([
+              orderNo,
+              customerName,
+              item.name,
+              Number(item.price),
+              Number(item.quantity || 0),
+              subtotalValue,
+              getStatusLabel(order.status),
+              order.payment_method.replace("_", " ").toUpperCase(),
+              orderDate
+            ]);
           });
         } else {
-          rows.push({
-            "Order No": orderNo,
-            Customer: customerName,
-            "Product Name": "-",
-            "Product Price": null,
-            Quantity: null,
-            Subtotal: Number(order.total_amount || 0),
-            Status: getStatusLabel(order.status),
-            "Payment Method": order.payment_method.replace("_", " "),
-            "Order Date": orderDate
-          });
+          wsData.push([
+            orderNo,
+            customerName,
+            "-",
+            "",
+            "",
+            Number(order.total_amount || 0),
+            getStatusLabel(order.status),
+            order.payment_method.replace("_", " ").toUpperCase(),
+            orderDate
+          ]);
         }
       });
-      const worksheet = XLSX.utils.json_to_sheet(rows);
+      
+      // Add footer
+      wsData.push([]);
+      wsData.push(["--- End of Report ---"]);
+      wsData.push([]);
+      wsData.push(["For inquiries, contact: geminicares@geminiagri.com"]);
+      
+      // Create worksheet
+      const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+      
+      // Set column widths based on content (auto-fit simulation)
+      const colWidths = [
+        { wch: 20 },  // Order No
+        { wch: 25 },  // Customer
+        { wch: 35 },  // Product Name
+        { wch: 15 },  // Unit Price
+        { wch: 8 },   // Qty
+        { wch: 15 },  // Subtotal
+        { wch: 18 },  // Status
+        { wch: 18 },  // Payment Method
+        { wch: 22 },  // Order Date
+      ];
+      worksheet['!cols'] = colWidths;
+      
+      // Merge cells for header section
+      const headerRowIndex = 13; // Row where table headers start (0-indexed)
+      worksheet['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },  // Company name
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },  // Tagline
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 8 } },  // Report title
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 8 } },  // Report period
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 8 } },  // Generated date
+        { s: { r: 7, c: 0 }, e: { r: 7, c: 8 } },  // Summary header
+        { s: { r: wsData.length - 3, c: 0 }, e: { r: wsData.length - 3, c: 8 } }, // End of report
+        { s: { r: wsData.length - 1, c: 0 }, e: { r: wsData.length - 1, c: 8 } }, // Contact
+      ];
+      
+      // Set row heights for better readability
+      worksheet['!rows'] = [
+        { hpt: 28 },  // Company name - taller
+        { hpt: 18 },  // Tagline
+        { hpt: 12 },  // Empty row
+        { hpt: 24 },  // Report title
+        { hpt: 18 },  // Report period
+        { hpt: 18 },  // Generated date
+        { hpt: 12 },  // Empty row
+        { hpt: 20 },  // Summary header
+        { hpt: 18 },  // Total Sales
+        { hpt: 18 },  // Total Orders
+        { hpt: 18 },  // Total Products
+        { hpt: 12 },  // Empty row
+        { hpt: 22 },  // Table headers
+      ];
+      
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Order Summary");
-      const fileName = `order-summary-${format(new Date(), "yyyyMMdd-HHmmss")}.xlsx`;
+      
+      // Add document properties
+      workbook.Props = {
+        Title: "Gemini Agri Order Summary Report",
+        Subject: `Order Summary for ${dateRangeLabel}`,
+        Author: "Gemini Agri Admin",
+        Company: "Gemini Agri",
+        CreatedDate: new Date()
+      };
+      
+      const fileName = `GeminiAgri-OrderReport-${format(new Date(), "yyyyMMdd-HHmmss")}.xlsx`;
       XLSX.writeFile(workbook, fileName);
       toast({
         title: "Excel Exported",
-        description: `Excel file downloaded for ${dateRangeLabel}.`
+        description: `Professional report downloaded for ${dateRangeLabel}.`
       });
     } catch (error) {
       console.error("Error exporting Excel:", error);
