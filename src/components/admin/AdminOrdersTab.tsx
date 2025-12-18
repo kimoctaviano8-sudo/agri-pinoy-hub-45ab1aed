@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { jsPDF } from "jspdf";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import JsBarcode from "jsbarcode";
 import logo from "@/assets/Gemini_logo_only.png";
 
@@ -635,38 +635,151 @@ export const AdminOrdersTab = ({
     try {
       setExportingExcel(true);
       
-      // Create worksheet data with header section
-      const wsData: any[][] = [];
+      // Create workbook and worksheet
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Gemini Agri Admin";
+      workbook.created = new Date();
+      workbook.properties.date1904 = true;
       
-      // Header section - Company branding
-      wsData.push(["GEMINI AGRI"]);
-      wsData.push(["Helping Filipino farmers for a sustainable agriculture"]);
-      wsData.push([]);
-      wsData.push(["ORDER SUMMARY REPORT"]);
-      wsData.push([`Report Period: ${dateRangeLabel}`]);
-      wsData.push([`Generated: ${format(new Date(), "MMMM dd, yyyy 'at' hh:mm a")}`]);
-      wsData.push([]);
+      const worksheet = workbook.addWorksheet("Order Summary", {
+        properties: { tabColor: { argb: "4CAF50" } },
+        pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true }
+      });
       
-      // Summary metrics section
-      wsData.push(["REPORT SUMMARY"]);
-      wsData.push(["Total Sales:", `PHP ${metrics.totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`]);
-      wsData.push(["Total Orders:", metrics.totalOrders]);
-      wsData.push(["Total Products Ordered:", metrics.totalProductsOrdered]);
-      wsData.push([]);
+      // Define colors - Light green theme
+      const darkGreen = "2E7D32";
+      const lightGreen = "C8E6C9";
+      const mediumGreen = "81C784";
+      const white = "FFFFFF";
+      const black = "000000";
+      const lightGray = "F5F5F5";
       
-      // Table headers
+      // Set column widths
+      worksheet.columns = [
+        { width: 18 },  // Order No
+        { width: 22 },  // Customer
+        { width: 32 },  // Product Name
+        { width: 14 },  // Unit Price
+        { width: 8 },   // Qty
+        { width: 14 },  // Subtotal
+        { width: 14 },  // Status
+        { width: 16 },  // Payment Method
+        { width: 20 },  // Order Date
+      ];
+      
+      // Row 1: Company Name
+      worksheet.mergeCells("A1:I1");
+      const companyCell = worksheet.getCell("A1");
+      companyCell.value = "GEMINI AGRI";
+      companyCell.font = { name: "Arial", size: 22, bold: true, color: { argb: white } };
+      companyCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: darkGreen } };
+      companyCell.alignment = { horizontal: "center", vertical: "middle" };
+      worksheet.getRow(1).height = 35;
+      
+      // Row 2: Tagline
+      worksheet.mergeCells("A2:I2");
+      const taglineCell = worksheet.getCell("A2");
+      taglineCell.value = "Helping Filipino farmers for a sustainable agriculture";
+      taglineCell.font = { name: "Arial", size: 11, italic: true, color: { argb: white } };
+      taglineCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: darkGreen } };
+      taglineCell.alignment = { horizontal: "center", vertical: "middle" };
+      worksheet.getRow(2).height = 22;
+      
+      // Row 3: Empty spacer
+      worksheet.getRow(3).height = 10;
+      
+      // Row 4: Report Title
+      worksheet.mergeCells("A4:I4");
+      const titleCell = worksheet.getCell("A4");
+      titleCell.value = "ORDER SUMMARY REPORT";
+      titleCell.font = { name: "Arial", size: 16, bold: true, color: { argb: darkGreen } };
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
+      worksheet.getRow(4).height = 28;
+      
+      // Row 5: Report Period
+      worksheet.mergeCells("A5:I5");
+      const periodCell = worksheet.getCell("A5");
+      periodCell.value = `Report Period: ${dateRangeLabel}`;
+      periodCell.font = { name: "Arial", size: 11, color: { argb: black } };
+      periodCell.alignment = { horizontal: "center", vertical: "middle" };
+      worksheet.getRow(5).height = 20;
+      
+      // Row 6: Generated Date
+      worksheet.mergeCells("A6:I6");
+      const dateCell = worksheet.getCell("A6");
+      dateCell.value = `Generated: ${format(new Date(), "MMMM dd, yyyy 'at' hh:mm a")}`;
+      dateCell.font = { name: "Arial", size: 10, color: { argb: "666666" } };
+      dateCell.alignment = { horizontal: "center", vertical: "middle" };
+      worksheet.getRow(6).height = 18;
+      
+      // Row 7: Empty spacer
+      worksheet.getRow(7).height = 12;
+      
+      // Row 8: Summary Header
+      worksheet.mergeCells("A8:I8");
+      const summaryHeader = worksheet.getCell("A8");
+      summaryHeader.value = "REPORT SUMMARY";
+      summaryHeader.font = { name: "Arial", size: 12, bold: true, color: { argb: white } };
+      summaryHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: mediumGreen } };
+      summaryHeader.alignment = { horizontal: "center", vertical: "middle" };
+      worksheet.getRow(8).height = 24;
+      
+      // Row 9-11: Summary metrics with light green background
+      const summaryData = [
+        ["Total Sales:", `PHP ${metrics.totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+        ["Total Orders:", metrics.totalOrders.toString()],
+        ["Total Products Ordered:", metrics.totalProductsOrdered.toString()]
+      ];
+      
+      summaryData.forEach((row, index) => {
+        const rowNum = 9 + index;
+        worksheet.getCell(`A${rowNum}`).value = row[0];
+        worksheet.getCell(`A${rowNum}`).font = { name: "Arial", size: 11, bold: true };
+        worksheet.getCell(`A${rowNum}`).alignment = { horizontal: "left", vertical: "middle" };
+        worksheet.getCell(`B${rowNum}`).value = row[1];
+        worksheet.getCell(`B${rowNum}`).font = { name: "Arial", size: 11 };
+        worksheet.getCell(`B${rowNum}`).alignment = { horizontal: "left", vertical: "middle" };
+        
+        // Apply light green background to summary rows
+        for (let col = 1; col <= 9; col++) {
+          worksheet.getCell(rowNum, col).fill = { type: "pattern", pattern: "solid", fgColor: { argb: lightGreen } };
+        }
+        worksheet.getRow(rowNum).height = 20;
+      });
+      
+      // Row 12: Empty spacer
+      worksheet.getRow(12).height = 12;
+      
+      // Row 13: Table Headers
       const headers = ["Order No", "Customer", "Product Name", "Unit Price (PHP)", "Qty", "Subtotal (PHP)", "Status", "Payment Method", "Order Date"];
-      wsData.push(headers);
+      const headerRow = worksheet.getRow(13);
+      headerRow.values = headers;
+      headerRow.height = 26;
       
-      // Data rows
-      breakdownOrders.forEach(order => {
+      headerRow.eachCell((cell, colNumber) => {
+        cell.font = { name: "Arial", size: 11, bold: true, color: { argb: white } };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: darkGreen } };
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.border = {
+          top: { style: "thin", color: { argb: darkGreen } },
+          bottom: { style: "thin", color: { argb: darkGreen } },
+          left: { style: "thin", color: { argb: darkGreen } },
+          right: { style: "thin", color: { argb: darkGreen } }
+        };
+      });
+      
+      // Data rows starting from row 14
+      let currentRow = 14;
+      breakdownOrders.forEach((order, orderIndex) => {
         const orderNo = order.order_number || order.id;
         const customerName = order.profiles?.full_name || order.profiles?.email || "N/A";
         const orderDate = format(new Date(order.created_at), "MMM dd, yyyy hh:mm a");
+        
         if (Array.isArray(order.items) && order.items.length > 0) {
-          (order.items as OrderItem[]).forEach(item => {
+          (order.items as OrderItem[]).forEach((item, itemIndex) => {
             const subtotalValue = Number(item.price) * Number(item.quantity || 0);
-            wsData.push([
+            const row = worksheet.getRow(currentRow);
+            row.values = [
               orderNo,
               customerName,
               item.name,
@@ -676,10 +789,37 @@ export const AdminOrdersTab = ({
               getStatusLabel(order.status),
               order.payment_method.replace("_", " ").toUpperCase(),
               orderDate
-            ]);
+            ];
+            
+            // Apply alternating row colors
+            const bgColor = (currentRow - 14) % 2 === 0 ? white : lightGray;
+            row.eachCell((cell, colNumber) => {
+              cell.font = { name: "Arial", size: 10 };
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgColor } };
+              cell.border = {
+                top: { style: "thin", color: { argb: "E0E0E0" } },
+                bottom: { style: "thin", color: { argb: "E0E0E0" } },
+                left: { style: "thin", color: { argb: "E0E0E0" } },
+                right: { style: "thin", color: { argb: "E0E0E0" } }
+              };
+              
+              // Align numbers to right, text to left
+              if (colNumber === 4 || colNumber === 5 || colNumber === 6) {
+                cell.alignment = { horizontal: "right", vertical: "middle" };
+                if (colNumber === 4 || colNumber === 6) {
+                  cell.numFmt = "#,##0.00";
+                }
+              } else {
+                cell.alignment = { horizontal: "left", vertical: "middle" };
+              }
+            });
+            
+            row.height = 20;
+            currentRow++;
           });
         } else {
-          wsData.push([
+          const row = worksheet.getRow(currentRow);
+          row.values = [
             orderNo,
             customerName,
             "-",
@@ -689,77 +829,59 @@ export const AdminOrdersTab = ({
             getStatusLabel(order.status),
             order.payment_method.replace("_", " ").toUpperCase(),
             orderDate
-          ]);
+          ];
+          
+          const bgColor = (currentRow - 14) % 2 === 0 ? white : lightGray;
+          row.eachCell((cell, colNumber) => {
+            cell.font = { name: "Arial", size: 10 };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgColor } };
+            cell.border = {
+              top: { style: "thin", color: { argb: "E0E0E0" } },
+              bottom: { style: "thin", color: { argb: "E0E0E0" } },
+              left: { style: "thin", color: { argb: "E0E0E0" } },
+              right: { style: "thin", color: { argb: "E0E0E0" } }
+            };
+            cell.alignment = { horizontal: colNumber >= 4 && colNumber <= 6 ? "right" : "left", vertical: "middle" };
+          });
+          
+          row.height = 20;
+          currentRow++;
         }
       });
       
-      // Add footer
-      wsData.push([]);
-      wsData.push(["--- End of Report ---"]);
-      wsData.push([]);
-      wsData.push(["For inquiries, contact: geminicares@geminiagri.com"]);
+      // Add empty row
+      currentRow++;
       
-      // Create worksheet
-      const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+      // Footer: End of Report
+      worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+      const endCell = worksheet.getCell(`A${currentRow}`);
+      endCell.value = "--- End of Report ---";
+      endCell.font = { name: "Arial", size: 10, italic: true, color: { argb: "999999" } };
+      endCell.alignment = { horizontal: "center", vertical: "middle" };
+      worksheet.getRow(currentRow).height = 20;
+      currentRow++;
       
-      // Set column widths based on content (auto-fit simulation)
-      const colWidths = [
-        { wch: 20 },  // Order No
-        { wch: 25 },  // Customer
-        { wch: 35 },  // Product Name
-        { wch: 15 },  // Unit Price
-        { wch: 8 },   // Qty
-        { wch: 15 },  // Subtotal
-        { wch: 18 },  // Status
-        { wch: 18 },  // Payment Method
-        { wch: 22 },  // Order Date
-      ];
-      worksheet['!cols'] = colWidths;
+      // Empty row
+      currentRow++;
       
-      // Merge cells for header section
-      const headerRowIndex = 13; // Row where table headers start (0-indexed)
-      worksheet['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },  // Company name
-        { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },  // Tagline
-        { s: { r: 3, c: 0 }, e: { r: 3, c: 8 } },  // Report title
-        { s: { r: 4, c: 0 }, e: { r: 4, c: 8 } },  // Report period
-        { s: { r: 5, c: 0 }, e: { r: 5, c: 8 } },  // Generated date
-        { s: { r: 7, c: 0 }, e: { r: 7, c: 8 } },  // Summary header
-        { s: { r: wsData.length - 3, c: 0 }, e: { r: wsData.length - 3, c: 8 } }, // End of report
-        { s: { r: wsData.length - 1, c: 0 }, e: { r: wsData.length - 1, c: 8 } }, // Contact
-      ];
+      // Contact info
+      worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+      const contactCell = worksheet.getCell(`A${currentRow}`);
+      contactCell.value = "For inquiries, contact: geminicares@geminiagri.com";
+      contactCell.font = { name: "Arial", size: 10, color: { argb: darkGreen } };
+      contactCell.alignment = { horizontal: "center", vertical: "middle" };
+      worksheet.getRow(currentRow).height = 20;
       
-      // Set row heights for better readability
-      worksheet['!rows'] = [
-        { hpt: 28 },  // Company name - taller
-        { hpt: 18 },  // Tagline
-        { hpt: 12 },  // Empty row
-        { hpt: 24 },  // Report title
-        { hpt: 18 },  // Report period
-        { hpt: 18 },  // Generated date
-        { hpt: 12 },  // Empty row
-        { hpt: 20 },  // Summary header
-        { hpt: 18 },  // Total Sales
-        { hpt: 18 },  // Total Orders
-        { hpt: 18 },  // Total Products
-        { hpt: 12 },  // Empty row
-        { hpt: 22 },  // Table headers
-      ];
+      // Generate and download file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `GeminiAgri-OrderReport-${format(new Date(), "yyyyMMdd-HHmmss")}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
       
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Order Summary");
-      
-      // Add document properties
-      workbook.Props = {
-        Title: "Gemini Agri Order Summary Report",
-        Subject: `Order Summary for ${dateRangeLabel}`,
-        Author: "Gemini Agri Admin",
-        Company: "Gemini Agri",
-        CreatedDate: new Date()
-      };
-      
-      const fileName = `GeminiAgri-OrderReport-${format(new Date(), "yyyyMMdd-HHmmss")}.xlsx`;
-      XLSX.writeFile(workbook, fileName);
       toast({
         title: "Excel Exported",
         description: `Professional report downloaded for ${dateRangeLabel}.`
