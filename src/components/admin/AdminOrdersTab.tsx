@@ -635,20 +635,24 @@ export const AdminOrdersTab = ({
     try {
       setExportingExcel(true);
       
-      // Helper function to convert image to base64
-      const getImageBase64 = async (imgSrc: string): Promise<string> => {
+      // Helper function to convert image to base64 and get dimensions
+      const getImageData = async (imgSrc: string): Promise<{ base64: string; width: number; height: number }> => {
         return new Promise((resolve, reject) => {
           const img = new Image();
           img.crossOrigin = "anonymous";
           img.onload = () => {
             const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
             const ctx = canvas.getContext("2d");
             if (ctx) {
               ctx.drawImage(img, 0, 0);
               const dataURL = canvas.toDataURL("image/png");
-              resolve(dataURL.split(",")[1]); // Return only base64 part
+              resolve({
+                base64: dataURL.split(",")[1],
+                width: img.naturalWidth,
+                height: img.naturalHeight
+              });
             } else {
               reject(new Error("Could not get canvas context"));
             }
@@ -690,18 +694,25 @@ export const AdminOrdersTab = ({
         { width: 20 },  // Order Date
       ];
       
-      // Add company logo
+      // Add company logo with proper aspect ratio
       try {
-        const logoBase64 = await getImageBase64(logo);
+        const logoData = await getImageData(logo);
         const logoImageId = workbook.addImage({
-          base64: logoBase64,
+          base64: logoData.base64,
           extension: "png",
         });
         
-        // Position logo in the header area (columns A-B, rows 1-2)
+        // Calculate scaled dimensions maintaining aspect ratio
+        const maxHeight = 50; // Target height in pixels
+        const aspectRatio = logoData.width / logoData.height;
+        const scaledWidth = maxHeight * aspectRatio;
+        const scaledHeight = maxHeight;
+        
+        // Position logo centered in column A, spanning rows 1-2
+        // Using margins to center the logo within the cell area
         worksheet.addImage(logoImageId, {
-          tl: { col: 0, row: 0 },
-          ext: { width: 60, height: 60 },
+          tl: { col: 0.15, row: 0.1 },
+          ext: { width: scaledWidth, height: scaledHeight },
         });
       } catch (logoError) {
         console.warn("Could not add logo to Excel:", logoError);
