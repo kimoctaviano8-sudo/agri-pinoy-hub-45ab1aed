@@ -90,6 +90,13 @@ const Login = ({
 
   const [isBiometricLoading, setIsBiometricLoading] = useState(false);
 
+  // Fetch countries when in signup mode
+  useEffect(() => {
+    if (!isLogin) {
+      fetchCountries();
+    }
+  }, [isLogin]);
+
   // Biometric authentication function with improved UX
   const handleBiometricAuth = async () => {
     // Clear any previous errors
