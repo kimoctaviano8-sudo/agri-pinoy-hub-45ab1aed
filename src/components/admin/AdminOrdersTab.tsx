@@ -635,6 +635,29 @@ export const AdminOrdersTab = ({
     try {
       setExportingExcel(true);
       
+      // Helper function to convert image to base64
+      const getImageBase64 = async (imgSrc: string): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(img, 0, 0);
+              const dataURL = canvas.toDataURL("image/png");
+              resolve(dataURL.split(",")[1]); // Return only base64 part
+            } else {
+              reject(new Error("Could not get canvas context"));
+            }
+          };
+          img.onerror = reject;
+          img.src = imgSrc;
+        });
+      };
+      
       // Create workbook and worksheet
       const workbook = new ExcelJS.Workbook();
       workbook.creator = "Gemini Agri Admin";
@@ -667,22 +690,45 @@ export const AdminOrdersTab = ({
         { width: 20 },  // Order Date
       ];
       
-      // Row 1: Company Name
-      worksheet.mergeCells("A1:I1");
-      const companyCell = worksheet.getCell("A1");
+      // Add company logo
+      try {
+        const logoBase64 = await getImageBase64(logo);
+        const logoImageId = workbook.addImage({
+          base64: logoBase64,
+          extension: "png",
+        });
+        
+        // Position logo in the header area (columns A-B, rows 1-2)
+        worksheet.addImage(logoImageId, {
+          tl: { col: 0, row: 0 },
+          ext: { width: 60, height: 60 },
+        });
+      } catch (logoError) {
+        console.warn("Could not add logo to Excel:", logoError);
+      }
+      
+      // Row 1: Company Name (shifted right to accommodate logo)
+      worksheet.mergeCells("B1:I1");
+      const companyCell = worksheet.getCell("B1");
       companyCell.value = "GEMINI AGRI";
       companyCell.font = { name: "Arial", size: 22, bold: true, color: { argb: white } };
       companyCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: darkGreen } };
       companyCell.alignment = { horizontal: "center", vertical: "middle" };
-      worksheet.getRow(1).height = 35;
+      // Apply dark green background to column A as well for consistency
+      const logoCell = worksheet.getCell("A1");
+      logoCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: darkGreen } };
+      worksheet.getRow(1).height = 40;
       
-      // Row 2: Tagline
-      worksheet.mergeCells("A2:I2");
-      const taglineCell = worksheet.getCell("A2");
+      // Row 2: Tagline (shifted right to match logo area)
+      worksheet.mergeCells("B2:I2");
+      const taglineCell = worksheet.getCell("B2");
       taglineCell.value = "Helping Filipino farmers for a sustainable agriculture";
       taglineCell.font = { name: "Arial", size: 11, italic: true, color: { argb: white } };
       taglineCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: darkGreen } };
       taglineCell.alignment = { horizontal: "center", vertical: "middle" };
+      // Apply dark green background to column A row 2 for consistency
+      const logoCell2 = worksheet.getCell("A2");
+      logoCell2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: darkGreen } };
       worksheet.getRow(2).height = 22;
       
       // Row 3: Empty spacer
