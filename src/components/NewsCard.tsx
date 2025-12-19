@@ -37,11 +37,12 @@ const NewsCard = ({
     <Card className="group cursor-pointer transition-smooth hover:scale-[1.02] active:scale-[0.98] touch-manipulation" onClick={handleClick}>
       <CardContent className="p-0">{/* Mobile-optimized layout */}
         {image && (
-          <div className="relative overflow-hidden rounded-t-lg">
+          <div className="relative overflow-hidden rounded-t-lg aspect-video">
             <img
               src={image}
               alt={title}
-              className="w-full h-32 object-cover transition-smooth group-hover:scale-105 rounded-t-lg"
+              className="w-full h-full object-cover transition-smooth group-hover:scale-105"
+              loading="lazy"
               onError={(e) => {
                 // Hide image container on load failure
                 const img = e.currentTarget;
@@ -64,7 +65,7 @@ const NewsCard = ({
           </div>
         )}
         {!image && (
-          <div className="w-full h-32 bg-muted flex items-center justify-center rounded-t-lg">
+          <div className="w-full aspect-video bg-muted flex items-center justify-center rounded-t-lg">
             <p className="text-muted-foreground text-xs">No image available</p>
           </div>
         )}
