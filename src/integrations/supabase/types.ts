@@ -392,6 +392,7 @@ export type Database = {
           id: string
           image_url: string | null
           published: boolean | null
+          published_date: string | null
           title: string
           updated_at: string | null
           views: number | null
@@ -403,6 +404,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           published?: boolean | null
+          published_date?: string | null
           title: string
           updated_at?: string | null
           views?: number | null
@@ -414,6 +416,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           published?: boolean | null
+          published_date?: string | null
           title?: string
           updated_at?: string | null
           views?: number | null
