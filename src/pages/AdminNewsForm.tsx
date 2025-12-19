@@ -230,7 +230,7 @@ const AdminNewsForm = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Article Date</Label>
+                <Label>Published Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
