@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Upload, X } from "lucide-react";
+import { ArrowLeft, Save, Upload, X, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,9 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { NewsImageCropper } from "@/components/NewsImageCropper";
+import { cn } from "@/lib/utils";
 
 const AdminNewsForm = () => {
   const { id } = useParams();
@@ -26,7 +30,8 @@ const AdminNewsForm = () => {
     content: "",
     category: "",
     image_url: "",
-    published: false
+    published: false,
+    published_date: new Date()
   });
 
   useEffect(() => {
@@ -60,7 +65,8 @@ const AdminNewsForm = () => {
         content: data.content,
         category: data.category || "",
         image_url: data.image_url || "",
-        published: data.published
+        published: data.published,
+        published_date: data.published_date ? new Date(data.published_date) : new Date()
       });
     }
   };
@@ -122,10 +128,15 @@ const AdminNewsForm = () => {
     setLoading(true);
 
     try {
+      const submitData = {
+        ...formData,
+        published_date: formData.published_date.toISOString().split('T')[0]
+      };
+
       if (id === 'new') {
         const { data, error } = await supabase
           .from('news')
-          .insert([formData])
+          .insert([submitData])
           .select()
           .single();
 
@@ -143,7 +154,7 @@ const AdminNewsForm = () => {
       } else {
         const { error } = await supabase
           .from('news')
-          .update(formData)
+          .update(submitData)
           .eq('id', id);
 
         if (error) throw error;
@@ -215,6 +226,33 @@ const AdminNewsForm = () => {
                     <SelectItem value="general">General</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Article Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.published_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.published_date ? format(formData.published_date, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.published_date}
+                      onSelect={(date) => setFormData({ ...formData, published_date: date || new Date() })}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-3 sm:space-y-4">
