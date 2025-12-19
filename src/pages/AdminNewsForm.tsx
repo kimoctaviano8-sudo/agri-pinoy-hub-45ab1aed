@@ -60,13 +60,14 @@ const AdminNewsForm = () => {
     }
 
     if (data) {
+      const newsData = data as typeof data & { published_date?: string };
       setFormData({
-        title: data.title,
-        content: data.content,
-        category: data.category || "",
-        image_url: data.image_url || "",
-        published: data.published,
-        published_date: data.published_date ? new Date(data.published_date) : new Date()
+        title: newsData.title,
+        content: newsData.content,
+        category: newsData.category || "",
+        image_url: newsData.image_url || "",
+        published: newsData.published ?? false,
+        published_date: newsData.published_date ? new Date(newsData.published_date) : new Date()
       });
     }
   };
