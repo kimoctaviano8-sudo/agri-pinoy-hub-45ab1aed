@@ -155,7 +155,7 @@ const Home = () => {
       const {
         data,
         error
-      } = await supabase.from('news').select('*').eq('published', true).order('created_at', {
+      } = await supabase.from('news').select('*').eq('published', true).order('published_date', {
         ascending: false
       });
       if (error) {
@@ -210,18 +210,21 @@ const Home = () => {
           views: 980
         }]);
       } else {
-        const mappedData = data.map(item => ({
-          id: item.id,
-          title: item.title,
-          excerpt: item.content.substring(0, 150) + '...',
-          category: item.category || 'Agriculture',
-          author: 'DA Press Office',
-          publishedAt: item.created_at,
-          readTime: Math.ceil(item.content.split(' ').length / 200) + ' min read',
-          views: item.views || 0,
-          image: item.image_url && item.image_url.trim() !== '' ? item.image_url : heroImage,
-          featured: false
-        }));
+        const mappedData = data.map(item => {
+          const newsItem = item as typeof item & { published_date?: string };
+          return {
+            id: newsItem.id,
+            title: newsItem.title,
+            excerpt: newsItem.content.substring(0, 150) + '...',
+            category: newsItem.category || 'Agriculture',
+            author: 'DA Press Office',
+            publishedAt: newsItem.published_date || newsItem.created_at,
+            readTime: Math.ceil(newsItem.content.split(' ').length / 200) + ' min read',
+            views: newsItem.views || 0,
+            image: newsItem.image_url && newsItem.image_url.trim() !== '' ? newsItem.image_url : heroImage,
+            featured: false
+          };
+        });
         setNewsData(mappedData);
       }
     } catch (error) {
