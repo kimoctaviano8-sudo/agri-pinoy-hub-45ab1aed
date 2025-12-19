@@ -48,15 +48,15 @@ export const NewsImageCropper = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Canvas dimensions based on aspect ratio - responsive
-    const canvasWidth = Math.min(400, window.innerWidth - 80); // Leave some margin
-    const canvasHeight = canvasWidth / aspectRatio;
+    // Preview canvas dimensions - responsive but preview only
+    const previewWidth = Math.min(400, window.innerWidth - 80);
+    const previewHeight = previewWidth / aspectRatio;
     
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
+    canvas.width = previewWidth;
+    canvas.height = previewHeight;
 
     // Clear canvas
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    ctx.clearRect(0, 0, previewWidth, previewHeight);
 
     // Calculate scale based on zoom
     const scale = zoom[0] / 100;
@@ -64,8 +64,8 @@ export const NewsImageCropper = ({
     const scaledHeight = img.naturalHeight * scale;
 
     // Center the image and apply position offset
-    const centerX = canvasWidth / 2;
-    const centerY = canvasHeight / 2;
+    const centerX = previewWidth / 2;
+    const centerY = previewHeight / 2;
     const x = centerX - scaledWidth / 2 + position.x;
     const y = centerY - scaledHeight / 2 + position.y;
 
@@ -81,7 +81,7 @@ export const NewsImageCropper = ({
     // Draw border
     ctx.strokeStyle = '#e5e7eb';
     ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, canvasWidth, canvasHeight);
+    ctx.strokeRect(0, 0, previewWidth, previewHeight);
   }, [image, zoom, rotation, position, aspectRatio]);
 
   const handleMouseDown = (event: React.MouseEvent) => {
@@ -106,14 +106,48 @@ export const NewsImageCropper = ({
   };
 
   const handleSave = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const img = imageRef.current;
+    if (!img) return;
 
-    canvas.toBlob((blob) => {
+    // Create a high-resolution output canvas (1200px width for quality)
+    const outputCanvas = document.createElement('canvas');
+    const outputWidth = 1200;
+    const outputHeight = outputWidth / aspectRatio;
+    outputCanvas.width = outputWidth;
+    outputCanvas.height = outputHeight;
+
+    const ctx = outputCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // Calculate scale based on zoom
+    const scale = zoom[0] / 100;
+    
+    // Scale factor from preview to output
+    const previewWidth = Math.min(400, window.innerWidth - 80);
+    const scaleFactor = outputWidth / previewWidth;
+    
+    const scaledWidth = img.naturalWidth * scale * scaleFactor;
+    const scaledHeight = img.naturalHeight * scale * scaleFactor;
+
+    // Center the image and apply position offset (scaled)
+    const centerX = outputWidth / 2;
+    const centerY = outputHeight / 2;
+    const x = centerX - scaledWidth / 2 + (position.x * scaleFactor);
+    const y = centerY - scaledHeight / 2 + (position.y * scaleFactor);
+
+    // Apply rotation
+    ctx.translate(centerX, centerY);
+    ctx.rotate((rotation[0] * Math.PI) / 180);
+    ctx.translate(-centerX, -centerY);
+
+    // Draw image at high resolution
+    ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+
+    outputCanvas.toBlob((blob) => {
       if (blob) {
         onCropComplete(blob);
       }
-    }, 'image/jpeg', 0.9);
+    }, 'image/jpeg', 0.92);
   };
 
   const resetAdjustments = () => {
