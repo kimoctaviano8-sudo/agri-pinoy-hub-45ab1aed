@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Upload, Loader2, AlertCircle, CheckCircle, X, RotateCcw, Zap, Info, CreditCard, Coins, Download, FileText, Image, MessageCircle, Trophy } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Camera, Upload, Loader2, AlertCircle, CheckCircle, X, RotateCcw, Zap, Info, CreditCard, Coins, Download, FileText, Image, MessageCircle, Trophy, ArrowLeft } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -80,6 +81,65 @@ const PlantScanner = () => {
       setResults([]);
     }
   };
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle payment redirect callback
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const orderId = searchParams.get('order_id');
+    
+    if (status && orderId) {
+      // Clear the URL params
+      setSearchParams({});
+      
+      if (status === 'success') {
+        // Check if we have pending credit purchase info
+        const pendingPurchase = localStorage.getItem('pendingCreditPurchase');
+        if (pendingPurchase) {
+          const purchaseInfo = JSON.parse(pendingPurchase);
+          // Verify this is for the same order
+          if (purchaseInfo.orderId === orderId) {
+            // Add credits via the add_credits RPC function
+            (async () => {
+              try {
+                await supabase.rpc('add_credits', {
+                  user_id_param: purchaseInfo.userId,
+                  credits_to_add: purchaseInfo.credits
+                });
+                
+                // Refresh credits
+                await fetchUserCredits();
+                
+                toast({
+                  title: "Payment Successful! 🎉",
+                  description: `${purchaseInfo.credits} credits have been added to your account.`,
+                });
+                
+                // Clear pending purchase
+                localStorage.removeItem('pendingCreditPurchase');
+              } catch (error) {
+                console.error('Error adding credits:', error);
+                toast({
+                  title: "Credits Pending",
+                  description: "Payment received. Your credits will be added shortly.",
+                });
+              }
+            })();
+          }
+        }
+      } else if (status === 'failed' || status === 'cancelled') {
+        toast({
+          title: status === 'cancelled' ? "Payment Cancelled" : "Payment Failed",
+          description: status === 'cancelled' 
+            ? "You cancelled the payment. No charges were made."
+            : "Payment could not be processed. Please try again.",
+          variant: "destructive"
+        });
+        localStorage.removeItem('pendingCreditPurchase');
+      }
+    }
+  }, [searchParams]);
 
   // Fetch user credits and points on component mount
   useEffect(() => {
@@ -384,39 +444,64 @@ const PlantScanner = () => {
       setLoading(false);
     }
   };
-  const purchaseCredits = async (packageType: string) => {
-    if (!user) return;
+  const purchaseCredits = async (paymentMethod: string) => {
+    if (!user || !selectedPackage) return;
     setPurchasingCredits(true);
     try {
       const session = await supabase.auth.getSession();
       if (!session.data.session?.access_token) {
         throw new Error('Authentication required');
       }
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('purchase-credits', {
+
+      // Generate a unique order ID for credit purchase
+      const orderId = `CREDIT-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Get the current page URL for redirect
+      const redirectUrl = window.location.origin + '/plant-scanner';
+
+      const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
-          creditPackage: packageType
+          amount: selectedPackage.price,
+          paymentMethod: paymentMethod,
+          orderId: orderId,
+          description: `${selectedPackage.credits} Scan Credits`,
+          redirectUrl: redirectUrl,
         },
         headers: {
           Authorization: `Bearer ${session.data.session.access_token}`
         }
       });
+
       if (error) throw error;
 
-      // Refresh credits
-      await fetchUserCredits();
-      setShowCreditDialog(false);
+      if (data.checkoutUrl) {
+        // Store pending credit purchase info in localStorage for webhook handling
+        localStorage.setItem('pendingCreditPurchase', JSON.stringify({
+          orderId,
+          credits: selectedPackage.credits,
+          price: selectedPackage.price,
+          paymentId: data.paymentId,
+          userId: user.id,
+          timestamp: Date.now()
+        }));
+        
+        // Redirect to PayMongo checkout
+        window.location.href = data.checkoutUrl;
+      } else if (data.clientKey) {
+        // Card payment - would need a card form (simplified for now)
+        toast({
+          title: "Card Payment",
+          description: "Card payment integration requires additional setup. Please try another payment method.",
+          variant: "destructive"
+        });
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error: any) {
+      console.error('Error initiating payment:', error);
       toast({
-        title: "Credits Purchased!",
-        description: data.message
-      });
-    } catch (error) {
-      console.error('Error purchasing credits:', error);
-      toast({
-        title: "Purchase Failed",
-        description: "Failed to purchase credits. Please try again.",
+        title: "Payment Failed",
+        description: error.message || "Failed to initiate payment. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -873,20 +958,21 @@ const PlantScanner = () => {
               </>
             ) : (
               <>
+                {/* Back Button */}
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setSelectedPackage(null)}
+                  className="mb-2 -ml-2 text-gray-600 hover:text-gray-900"
+                  disabled={purchasingCredits}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Change Package
+                </Button>
+
                 {/* Payment Step Card */}
                 <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
                   <CardContent className="p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-800">Order Summary</h3>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setSelectedPackage(null)}
-                        className="text-gray-500 hover:text-gray-700 -mr-2"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <h3 className="font-semibold text-gray-800 mb-4">Order Summary</h3>
                     <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
@@ -913,7 +999,7 @@ const PlantScanner = () => {
                   <CardContent className="space-y-3">
                     {/* QRPh */}
                     <Button
-                      onClick={() => purchaseCredits(selectedPackage.credits.toString())}
+                      onClick={() => purchaseCredits('qrph')}
                       disabled={purchasingCredits}
                       variant="outline"
                       className="w-full h-auto p-4 flex items-center justify-between hover:bg-blue-50 hover:border-blue-300 transition-all"
@@ -932,7 +1018,7 @@ const PlantScanner = () => {
 
                     {/* GCash */}
                     <Button
-                      onClick={() => purchaseCredits(selectedPackage.credits.toString())}
+                      onClick={() => purchaseCredits('gcash')}
                       disabled={purchasingCredits}
                       variant="outline"
                       className="w-full h-auto p-4 flex items-center justify-between hover:bg-blue-50 hover:border-blue-300 transition-all"
@@ -950,7 +1036,7 @@ const PlantScanner = () => {
 
                     {/* Maya */}
                     <Button
-                      onClick={() => purchaseCredits(selectedPackage.credits.toString())}
+                      onClick={() => purchaseCredits('maya')}
                       disabled={purchasingCredits}
                       variant="outline"
                       className="w-full h-auto p-4 flex items-center justify-between hover:bg-green-50 hover:border-green-300 transition-all"
@@ -968,7 +1054,7 @@ const PlantScanner = () => {
 
                     {/* Credit/Debit Card */}
                     <Button
-                      onClick={() => purchaseCredits(selectedPackage.credits.toString())}
+                      onClick={() => purchaseCredits('card')}
                       disabled={purchasingCredits}
                       variant="outline"
                       className="w-full h-auto p-4 flex items-center justify-between hover:bg-purple-50 hover:border-purple-300 transition-all"
