@@ -453,8 +453,8 @@ const PlantScanner = () => {
         throw new Error('Authentication required');
       }
 
-      // Generate a unique order ID for credit purchase
-      const orderId = `CREDIT-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      // Generate a unique order ID for credit purchase (starts with CREDITS- for webhook detection)
+      const orderId = `CREDITS-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       
       // Get the current page URL for redirect
       const redirectUrl = window.location.origin + '/plant-scanner';
@@ -466,6 +466,8 @@ const PlantScanner = () => {
           orderId: orderId,
           description: `${selectedPackage.credits} Scan Credits`,
           redirectUrl: redirectUrl,
+          // Include credits info for webhook processing
+          credits: selectedPackage.credits,
         },
         headers: {
           Authorization: `Bearer ${session.data.session.access_token}`
