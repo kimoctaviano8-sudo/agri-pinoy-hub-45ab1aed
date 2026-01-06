@@ -79,7 +79,7 @@ serve(async (req) => {
       });
     }
 
-    const { amount, paymentMethod, orderId, description, redirectUrl, bankCode } = body;
+    const { amount, paymentMethod, orderId, description, redirectUrl, bankCode, credits } = body;
 
     // Convert amount to centavos (PayMongo uses smallest currency unit)
     const amountInCentavos = Math.round(amount * 100);
@@ -110,6 +110,7 @@ serve(async (req) => {
             metadata: {
               order_id: orderId,
               user_id: user.id,
+              ...(credits && { credits: credits }),
             },
           },
         },
@@ -169,6 +170,7 @@ serve(async (req) => {
             metadata: {
               order_id: orderId,
               user_id: user.id,
+              ...(credits && { credits: credits }),
             },
           },
         },
@@ -221,6 +223,7 @@ serve(async (req) => {
               order_id: orderId,
               user_id: user.id,
               bank_code: normalizedBankCode,
+              ...(credits && { credits: credits }),
             },
           },
         },
@@ -264,6 +267,7 @@ serve(async (req) => {
             metadata: {
               order_id: orderId,
               user_id: user.id,
+              ...(credits && { credits: credits }),
             },
           },
         },
@@ -367,6 +371,7 @@ serve(async (req) => {
             metadata: {
               order_id: orderId,
               user_id: user.id,
+              ...(credits && { credits: credits }),
             },
           },
         },
