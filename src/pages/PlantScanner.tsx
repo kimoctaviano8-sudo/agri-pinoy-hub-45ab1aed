@@ -35,6 +35,7 @@ const PlantScanner = () => {
   const [credits, setCredits] = useState<number>(0);
   const [showCreditDialog, setShowCreditDialog] = useState(false);
   const [purchasingCredits, setPurchasingCredits] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<{ credits: number; price: number } | null>(null);
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const [showTechnicianDialog, setShowTechnicianDialog] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -800,71 +801,205 @@ const PlantScanner = () => {
       </div>
 
       {/* Credit Purchase Drawer */}
-      <Drawer open={showCreditDialog} onOpenChange={setShowCreditDialog}>
+      <Drawer open={showCreditDialog} onOpenChange={(open) => {
+        setShowCreditDialog(open);
+        if (!open) setSelectedPackage(null);
+      }}>
         <DrawerContent className="max-h-[90vh]">
           <DrawerHeader className="px-4">
-            <DrawerTitle className="text-2xl font-bold">Purchase Credits</DrawerTitle>
+            <DrawerTitle className="text-2xl font-bold">
+              {selectedPackage ? 'Complete Payment' : 'Purchase Credits'}
+            </DrawerTitle>
           </DrawerHeader>
           <div className="p-4 overflow-y-auto max-h-[60vh] scrollbar-hide space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-green-600" />
-                <span className="text-gray-700">Current Balance:</span>
-              </div>
-              <span className="text-2xl font-bold text-green-600">{credits} Credits</span>
-            </div>
-            
-            {credits <= 20 && (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800 text-sm font-medium">
-                  ⚠️ Your credits are running low! Purchase more to continue scanning.
-                </p>
-              </div>
-            )}
+            {!selectedPackage ? (
+              <>
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-5 h-5 text-green-600" />
+                    <span className="text-gray-700">Current Balance:</span>
+                  </div>
+                  <span className="text-2xl font-bold text-green-600">{credits} Credits</span>
+                </div>
+                
+                {credits <= 20 && (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800 text-sm font-medium">
+                      ⚠️ Your credits are running low! Purchase more to continue scanning.
+                    </p>
+                  </div>
+                )}
 
-            <div className="grid gap-3">
-              {[
-                { credits: 100, price: 299, popular: false, savings: null },
-                { credits: 200, price: 499, popular: true, savings: '₱99' },
-                { credits: 300, price: 699, popular: false, savings: '₱198' },
-                { credits: 500, price: 999, popular: false, savings: '₱496' },
-              ].map((pkg) => <Button key={pkg.credits} onClick={() => purchaseCredits(pkg.credits.toString())} disabled={purchasingCredits} className={`w-full flex items-center justify-between p-6 rounded-xl transition-all ${
-                    pkg.popular
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg border-2 border-green-400'
-                      : 'bg-gray-50 hover:bg-gray-100 text-gray-900 border-2 border-gray-200'
-                  }`}>
-                  <div className="flex items-center gap-3">
-                    <Coins className="w-6 h-6" />
-                    <div className="text-left">
-                      <p className="font-bold text-lg">{pkg.credits} Credits</p>
-                      {pkg.popular && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Most Popular</span>}
-                      {pkg.savings && !pkg.popular && <span className="text-xs text-green-600 font-medium">Save {pkg.savings}</span>}
+                <div className="grid gap-3">
+                  {[
+                    { credits: 100, price: 299, popular: false, savings: null },
+                    { credits: 200, price: 499, popular: true, savings: '₱99' },
+                    { credits: 300, price: 699, popular: false, savings: '₱198' },
+                    { credits: 500, price: 999, popular: false, savings: '₱496' },
+                  ].map((pkg) => (
+                    <Button 
+                      key={pkg.credits} 
+                      onClick={() => setSelectedPackage({ credits: pkg.credits, price: pkg.price })} 
+                      className={`w-full flex items-center justify-between p-6 rounded-xl transition-all ${
+                        pkg.popular
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg border-2 border-green-400'
+                          : 'bg-gray-50 hover:bg-gray-100 text-gray-900 border-2 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Coins className="w-6 h-6" />
+                        <div className="text-left">
+                          <p className="font-bold text-lg">{pkg.credits} Credits</p>
+                          {pkg.popular && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Most Popular</span>}
+                          {pkg.savings && !pkg.popular && <span className="text-xs text-green-600 font-medium">Save {pkg.savings}</span>}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-xl">₱{pkg.price}</p>
+                        <p className="text-xs opacity-80">₱{(pkg.price / pkg.credits).toFixed(2)} per scan</p>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">💡 Earn Free Credits:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Login daily to earn bonus credits</li>
+                    <li>• Complete achievements to earn points</li>
+                    <li>• Redeem points for free credits in Achievements</li>
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Payment Step Card */}
+                <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-gray-800">Order Summary</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setSelectedPackage(null)}
+                        className="text-gray-500 hover:text-gray-700 -mr-2"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-xl">₱{pkg.price}</p>
-                    <p className="text-xs opacity-80">₱{(pkg.price / pkg.credits).toFixed(2)} per scan</p>
-                  </div>
-                </Button>)}
-            </div>
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                          <Coins className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg text-gray-900">{selectedPackage.credits} Credits</p>
+                          <p className="text-sm text-gray-500">₱{(selectedPackage.price / selectedPackage.credits).toFixed(2)} per scan</p>
+                        </div>
+                      </div>
+                      <p className="text-2xl font-bold text-green-600">₱{selectedPackage.price}</p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {purchasingCredits && <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-                <span className="ml-2 text-gray-600">Processing purchase...</span>
-              </div>}
+                {/* Payment Methods Card */}
+                <Card className="border-2 border-gray-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-blue-600" />
+                      Select Payment Method
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* QRPh */}
+                    <Button
+                      onClick={() => purchaseCredits(selectedPackage.credits.toString())}
+                      disabled={purchasingCredits}
+                      variant="outline"
+                      className="w-full h-auto p-4 flex items-center justify-between hover:bg-blue-50 hover:border-blue-300 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                          <span className="text-white font-bold text-xs">QR</span>
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-gray-900">QRPh (InstaPay/PESONet)</p>
+                          <p className="text-xs text-gray-500">Scan QR code to pay instantly</p>
+                        </div>
+                      </div>
+                      <CheckCircle className="w-5 h-5 text-green-500 opacity-0 group-hover:opacity-100" />
+                    </Button>
 
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">💡 Earn Free Credits:</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Login daily to earn bonus credits</li>
-                <li>• Complete achievements to earn points</li>
-                <li>• Redeem points for free credits in Achievements</li>
-              </ul>
-            </div>
-            
-            <p className="text-xs text-gray-500 text-center">
-              Note: This is a demo purchase system. In production, this would integrate with a real payment processor.
-            </p>
+                    {/* GCash */}
+                    <Button
+                      onClick={() => purchaseCredits(selectedPackage.credits.toString())}
+                      disabled={purchasingCredits}
+                      variant="outline"
+                      className="w-full h-auto p-4 flex items-center justify-between hover:bg-blue-50 hover:border-blue-300 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">G</span>
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-gray-900">GCash</p>
+                          <p className="text-xs text-gray-500">Pay with your GCash wallet</p>
+                        </div>
+                      </div>
+                    </Button>
+
+                    {/* Maya */}
+                    <Button
+                      onClick={() => purchaseCredits(selectedPackage.credits.toString())}
+                      disabled={purchasingCredits}
+                      variant="outline"
+                      className="w-full h-auto p-4 flex items-center justify-between hover:bg-green-50 hover:border-green-300 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">M</span>
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-gray-900">Maya</p>
+                          <p className="text-xs text-gray-500">Pay with your Maya wallet</p>
+                        </div>
+                      </div>
+                    </Button>
+
+                    {/* Credit/Debit Card */}
+                    <Button
+                      onClick={() => purchaseCredits(selectedPackage.credits.toString())}
+                      disabled={purchasingCredits}
+                      variant="outline"
+                      className="w-full h-auto p-4 flex items-center justify-between hover:bg-purple-50 hover:border-purple-300 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <CreditCard className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-gray-900">Credit / Debit Card</p>
+                          <p className="text-xs text-gray-500">Visa, Mastercard, JCB</p>
+                        </div>
+                      </div>
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {purchasingCredits && (
+                  <div className="flex items-center justify-center py-4 bg-gray-50 rounded-lg">
+                    <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+                    <span className="ml-2 text-gray-600">Processing payment...</span>
+                  </div>
+                )}
+
+                {/* Security Badge */}
+                <div className="flex items-center justify-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="text-xs text-gray-600">Secure payment powered by PayMongo</span>
+                </div>
+              </>
+            )}
           </div>
         </DrawerContent>
       </Drawer>
