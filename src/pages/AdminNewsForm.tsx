@@ -259,22 +259,22 @@ const AdminNewsForm = () => {
               <div className="space-y-3 sm:space-y-4">
                 <Label>Thumbnail Image</Label>
                 
-                {/* Current Image Preview */}
+                {/* Current Image Preview - HD quality with proper aspect ratio */}
                 {formData.image_url && (
                   <div className="relative inline-block">
                     <img 
                       src={formData.image_url} 
                       alt="Current thumbnail" 
-                      className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg border"
+                      className="w-full max-w-xs sm:max-w-sm aspect-video object-cover rounded-lg border"
                     />
                     <Button
                       type="button"
                       variant="destructive"
                       size="sm"
-                      className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full p-0"
+                      className="absolute top-2 right-2 w-6 h-6 sm:w-8 sm:h-8 rounded-full p-0"
                       onClick={removeImage}
                     >
-                      <X className="w-2 h-2 sm:w-3 sm:h-3" />
+                      <X className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   </div>
                 )}
