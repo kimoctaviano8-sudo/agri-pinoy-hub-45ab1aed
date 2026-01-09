@@ -109,15 +109,19 @@ export const NewsImageCropper = ({
     const img = imageRef.current;
     if (!img) return;
 
-    // Create a high-resolution output canvas (1200px width for quality)
+    // Create a full HD output canvas (1920px width for true HD quality)
     const outputCanvas = document.createElement('canvas');
-    const outputWidth = 1200;
-    const outputHeight = outputWidth / aspectRatio;
+    const outputWidth = 1920;
+    const outputHeight = Math.round(outputWidth / aspectRatio);
     outputCanvas.width = outputWidth;
     outputCanvas.height = outputHeight;
 
     const ctx = outputCanvas.getContext('2d');
     if (!ctx) return;
+
+    // Enable high-quality image rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // Calculate scale based on zoom
     const scale = zoom[0] / 100;
@@ -143,11 +147,12 @@ export const NewsImageCropper = ({
     // Draw image at high resolution
     ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
 
+    // Output at maximum quality (0.95)
     outputCanvas.toBlob((blob) => {
       if (blob) {
         onCropComplete(blob);
       }
-    }, 'image/jpeg', 0.92);
+    }, 'image/jpeg', 0.95);
   };
 
   const resetAdjustments = () => {
