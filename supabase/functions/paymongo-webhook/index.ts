@@ -260,28 +260,43 @@ serve(async (req) => {
     // Get the signature header
     const signatureHeader = req.headers.get("paymongo-signature");
 
-    // Verify webhook signature if secret is configured
-    if (paymongoWebhookSecret) {
-      console.log(`[Webhook:${requestId}] Verifying webhook signature...`);
-      
-      const verificationResult = await verifyPaymongoSignature(rawBody, signatureHeader, paymongoWebhookSecret);
-      
-      if (!verificationResult.valid) {
-        console.error(`[Webhook:${requestId}] Signature verification failed: ${verificationResult.error}`);
-        return new Response(
-          JSON.stringify({ error: "Signature verification failed", details: verificationResult.error }),
-          {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-      
-      console.log(`[Webhook:${requestId}] Signature verification successful`);
-    } else {
-      // Log warning if webhook secret is not configured
-      console.warn(`[Webhook:${requestId}] WARNING: PAYMONGO_WEBHOOK_SECRET not configured - skipping signature verification`);
+    // MANDATORY: Webhook secret must be configured for security
+    if (!paymongoWebhookSecret) {
+      console.error(`[Webhook:${requestId}] CRITICAL: PAYMONGO_WEBHOOK_SECRET not configured`);
+      console.error(`[Webhook:${requestId}] Webhook endpoint is DISABLED for security - rejecting request`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Webhook configuration error",
+          message: "Payment processing temporarily unavailable. Please contact support." 
+        }),
+        { 
+          status: 503,  // Service Unavailable
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
     }
+
+    // Signature verification is ALWAYS performed
+    console.log(`[Webhook:${requestId}] Verifying webhook signature...`);
+    
+    const verificationResult = await verifyPaymongoSignature(rawBody, signatureHeader, paymongoWebhookSecret);
+    
+    if (!verificationResult.valid) {
+      console.error(`[Webhook:${requestId}] Signature verification failed: ${verificationResult.error}`);
+      console.error(`[Webhook:${requestId}] Rejecting potentially malicious webhook`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid signature",
+          message: "Webhook signature verification failed" 
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
+    console.log(`[Webhook:${requestId}] Signature verified successfully`);
 
     // Parse the verified payload
     const payload = JSON.parse(rawBody);
