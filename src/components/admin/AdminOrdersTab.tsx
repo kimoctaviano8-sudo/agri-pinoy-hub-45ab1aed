@@ -101,13 +101,19 @@ export const AdminOrdersTab = ({
       });
       if (error) throw error;
 
-      // Fetch user profiles separately
+      // Fetch user profiles separately using masked view for privacy
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(order => order.user_id))];
+        // Use the secure profiles_order_info view which masks sensitive data
         const {
           data: profiles
-        } = await supabase.from('profiles').select('id, full_name, email, phone').in('id', userIds);
-        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        } = await supabase.from('profiles_order_info' as any).select('id, full_name, masked_email, masked_phone').in('id', userIds);
+        const profileMap = new Map(profiles?.map((p: any) => [p.id, {
+          id: p.id,
+          full_name: p.full_name,
+          email: p.masked_email,
+          phone: p.masked_phone
+        }]) || []);
         const ordersWithProfiles = data.map(order => ({
           ...order,
           profiles: profileMap.get(order.user_id) || null
