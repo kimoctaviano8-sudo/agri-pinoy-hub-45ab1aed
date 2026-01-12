@@ -42,6 +42,7 @@ const PlantScanner = () => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
+  const [processingPayment, setProcessingPayment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -84,50 +85,68 @@ const PlantScanner = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Handle payment redirect callback
+  // SECURE: Handle payment redirect callback with server-side verification only
+  // Credits are granted ONLY via the PayMongo webhook - no client-side credit processing
   useEffect(() => {
-    const status = searchParams.get('status');
-    const orderId = searchParams.get('order_id');
-    
-    if (status && orderId) {
-      // Clear the URL params
+    const checkPaymentStatus = async () => {
+      const status = searchParams.get('status');
+      const orderId = searchParams.get('order_id');
+      
+      if (!status || !orderId || !user) return;
+      
+      // Clear URL params immediately
       setSearchParams({});
       
       if (status === 'success') {
-        // Check if we have pending credit purchase info
-        const pendingPurchase = localStorage.getItem('pendingCreditPurchase');
-        if (pendingPurchase) {
-          const purchaseInfo = JSON.parse(pendingPurchase);
-          // Verify this is for the same order
-          if (purchaseInfo.orderId === orderId) {
-            // Add credits via the add_credits RPC function
-            (async () => {
-              try {
-                await supabase.rpc('add_credits', {
-                  user_id_param: purchaseInfo.userId,
-                  credits_to_add: purchaseInfo.credits
-                });
-                
-                // Refresh credits
-                await fetchUserCredits();
-                
-                toast({
-                  title: "Payment Successful! 🎉",
-                  description: `${purchaseInfo.credits} credits have been added to your account.`,
-                });
-                
-                // Clear pending purchase
-                localStorage.removeItem('pendingCreditPurchase');
-              } catch (error) {
-                console.error('Error adding credits:', error);
-                toast({
-                  title: "Credits Pending",
-                  description: "Payment received. Your credits will be added shortly.",
-                });
-              }
-            })();
+        // Show processing state while waiting for webhook to add credits
+        setProcessingPayment(true);
+        
+        // Get initial credit count for comparison
+        const { data: initialCredits } = await supabase
+          .from('user_credits')
+          .select('credits_remaining')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        const startCredits = initialCredits?.credits_remaining ?? 0;
+        
+        // Poll for credit update (webhook processes asynchronously)
+        // The webhook is the ONLY secure path for adding credits
+        let attempts = 0;
+        const maxAttempts = 12; // 12 attempts with 5s delay = ~60 seconds max
+        
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          
+          const { data } = await supabase
+            .from('user_credits')
+            .select('credits_remaining')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          const currentCredits = data?.credits_remaining ?? 0;
+          
+          if (currentCredits > startCredits) {
+            // Credits updated by webhook!
+            setCredits(currentCredits);
+            toast({
+              title: "Payment Successful! 🎉",
+              description: `${currentCredits - startCredits} credits added to your account.`,
+            });
+            setProcessingPayment(false);
+            return;
           }
+          
+          attempts++;
         }
+        
+        // Timeout - webhook may still process later
+        setProcessingPayment(false);
+        await fetchUserCredits(); // Final refresh
+        toast({
+          title: "Payment Received",
+          description: "Your credits are being processed and will appear shortly.",
+        });
       } else if (status === 'failed' || status === 'cancelled') {
         toast({
           title: status === 'cancelled' ? "Payment Cancelled" : "Payment Failed",
@@ -136,10 +155,11 @@ const PlantScanner = () => {
             : "Payment could not be processed. Please try again.",
           variant: "destructive"
         });
-        localStorage.removeItem('pendingCreditPurchase');
       }
-    }
-  }, [searchParams]);
+    };
+    
+    checkPaymentStatus();
+  }, [searchParams, user]);
 
   // Fetch user credits and points on component mount
   useEffect(() => {
@@ -477,16 +497,8 @@ const PlantScanner = () => {
       if (error) throw error;
 
       if (data.checkoutUrl) {
-        // Store pending credit purchase info in localStorage for webhook handling
-        localStorage.setItem('pendingCreditPurchase', JSON.stringify({
-          orderId,
-          credits: selectedPackage.credits,
-          price: selectedPackage.price,
-          paymentId: data.paymentId,
-          userId: user.id,
-          timestamp: Date.now()
-        }));
-        
+        // SECURE: No localStorage storage - credits are granted ONLY via webhook
+        // The webhook verifies payment signature and grants credits server-side
         // Redirect to PayMongo checkout
         window.location.href = data.checkoutUrl;
       } else if (data.clientKey) {
