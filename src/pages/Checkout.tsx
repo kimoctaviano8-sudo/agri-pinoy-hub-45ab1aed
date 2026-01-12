@@ -322,16 +322,6 @@ const Checkout = () => {
       return;
     }
 
-    // Validate bank transfer selection
-    if (paymentMethod === 'bank_transfer' && !paymentSubMethod) {
-      toast({
-        title: "Select Bank",
-        description: "Please select a bank for transfer",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setProcessingPayment(true);
 
     try {
@@ -386,7 +376,6 @@ const Checkout = () => {
       // Determine initial order status based on payment method
       // COD: 'to_pay' - order confirmed, payment on delivery
       // PayMongo: 'pending_payment' - waiting for online payment
-      // Bank Transfer: 'pending_payment' - waiting for bank transfer verification
       let initialStatus = 'pending_payment';
       if (paymentMethod === 'cash_on_delivery') {
         initialStatus = 'to_pay';
@@ -396,8 +385,6 @@ const Checkout = () => {
       let storedPaymentMethod = paymentMethod;
       if (paymentMethod === 'paymongo') {
         storedPaymentMethod = `paymongo_${paymentSubMethod}`;
-      } else if (paymentMethod === 'bank_transfer') {
-        storedPaymentMethod = `bank_transfer_${paymentSubMethod}`;
       }
       
       // Combine checkout items with free products for the order
@@ -484,59 +471,7 @@ const Checkout = () => {
         }
       }
 
-      // Handle Bank Transfer via PayMongo DOB
-      if (paymentMethod === 'bank_transfer') {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData.session?.access_token;
 
-        toast({
-          title: "Processing Payment",
-          description: "Redirecting to bank authentication...",
-        });
-
-        const response = await fetch(
-          `https://bywimfvrbcjcktqzdvmk.supabase.co/functions/v1/create-payment`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({
-              amount: finalAmount,
-              paymentMethod: 'bank_transfer',
-              bankCode: paymentSubMethod,
-              orderId: orderData.id,
-              description: `Order ${orderNumber}`,
-              redirectUrl: `${window.location.origin}/order-success`,
-            }),
-          }
-        );
-
-        const paymentResult = await response.json();
-
-        if (!response.ok) {
-          // Update order status to payment_failed
-          await supabase
-            .from('orders')
-            .update({ status: 'payment_failed' })
-            .eq('id', orderData.id);
-
-          toast({
-            title: "Payment Error",
-            description: paymentResult.error || "Failed to initiate bank transfer",
-            variant: "destructive"
-          });
-          setProcessingPayment(false);
-          return;
-        }
-
-        // Redirect to PayMongo bank authentication
-        if (paymentResult.checkoutUrl) {
-          window.location.href = paymentResult.checkoutUrl;
-          return;
-        }
-      }
 
       // For COD, show success with appropriate message and pass order ID for cart clearing
       if (paymentMethod === 'cash_on_delivery') {
@@ -806,47 +741,6 @@ const Checkout = () => {
                 </div>
 
 
-                {/* Bank Transfer */}
-                <div className="border rounded-lg">
-                  <div className="flex items-center justify-between p-3">
-                    <Label htmlFor="bank" className="flex-1 cursor-pointer">Bank Transfer</Label>
-                    <RadioGroupItem value="bank_transfer" id="bank" />
-                  </div>
-                  {paymentMethod === 'bank_transfer' && (
-                    <div className="px-3 pb-3 border-t space-y-3">
-                      <Select value={paymentSubMethod} onValueChange={setPaymentSubMethod}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Select bank" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="bdo">BDO</SelectItem>
-                          <SelectItem value="landbank">Landbank</SelectItem>
-                          <SelectItem value="metrobank">Metrobank</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      
-                      {/* Bank Transfer Info */}
-                      {paymentSubMethod && (
-                        <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2">
-                          <p className="font-medium text-foreground flex items-center gap-2">
-                            <CreditCard className="w-4 h-4" />
-                            Secure Online Banking
-                          </p>
-                          <p className="text-muted-foreground">
-                            You will be redirected to {paymentSubMethod === 'bdo' ? 'BDO' : 
-                              paymentSubMethod === 'bpi' ? 'BPI' : 
-                              paymentSubMethod === 'landbank' ? 'Landbank' : 'Metrobank'}'s 
-                            secure online banking portal to complete your payment.
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
-                            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded">PayMongo Secured</span>
-                            <span>Fast • Secure • Real-time confirmation</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
             </RadioGroup>
           </CardContent>
