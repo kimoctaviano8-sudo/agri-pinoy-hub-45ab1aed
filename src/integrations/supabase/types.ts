@@ -699,6 +699,39 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_access_logs: {
+        Row: {
+          access_timestamp: string
+          access_type: string
+          accessed_fields: string[]
+          accessed_profile_id: string
+          accessor_id: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          access_timestamp?: string
+          access_type: string
+          accessed_fields: string[]
+          accessed_profile_id: string
+          accessor_id: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          access_timestamp?: string
+          access_type?: string
+          accessed_fields?: string[]
+          accessed_profile_id?: string
+          accessor_id?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1150,7 +1183,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_order_info: {
+        Row: {
+          full_name: string | null
+          id: string | null
+          masked_email: string | null
+          masked_phone: string | null
+        }
+        Insert: {
+          full_name?: string | null
+          id?: string | null
+          masked_email?: never
+          masked_phone?: never
+        }
+        Update: {
+          full_name?: string | null
+          id?: string | null
+          masked_email?: never
+          masked_phone?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_credits: {
@@ -1199,6 +1252,14 @@ export type Database = {
       }
       initialize_user_credits: {
         Args: { user_id_param: string }
+        Returns: undefined
+      }
+      log_profile_access: {
+        Args: {
+          p_access_type: string
+          p_accessed_fields: string[]
+          p_accessed_profile_id: string
+        }
         Returns: undefined
       }
       update_achievement_progress: {
