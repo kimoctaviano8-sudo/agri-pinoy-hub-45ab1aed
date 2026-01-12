@@ -799,7 +799,6 @@ const Checkout = () => {
                           <SelectItem value="qrph">QR Ph (InstaPay/PESONet)</SelectItem>
                           <SelectItem value="gcash">GCash</SelectItem>
                           <SelectItem value="maya">Maya</SelectItem>
-                          <SelectItem value="credit_debit">Credit/Debit Card</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
