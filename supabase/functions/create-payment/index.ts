@@ -79,6 +79,23 @@ serve(async (req) => {
       });
     }
 
+    // Check if vacation mode is enabled
+    const supabaseService = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: settingsData } = await supabaseService
+      .from("app_settings")
+      .select("vacation_mode")
+      .eq("id", "global")
+      .single();
+
+    if (settingsData?.vacation_mode) {
+      return new Response(JSON.stringify({ 
+        error: "Orders are temporarily paused. Please try again later." 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { amount, paymentMethod, orderId, description, redirectUrl, bankCode, credits } = body;
 
     // Convert amount to centavos (PayMongo uses smallest currency unit)

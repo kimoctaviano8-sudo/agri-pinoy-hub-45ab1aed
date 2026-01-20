@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: string
+          updated_at: string
+          updated_by: string | null
+          vacation_mode: boolean
+          vacation_mode_message: string | null
+        }
+        Insert: {
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          vacation_mode?: boolean
+          vacation_mode_message?: string | null
+        }
+        Update: {
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          vacation_mode?: boolean
+          vacation_mode_message?: string | null
+        }
+        Relationships: []
+      }
       custom_emoji_sets: {
         Row: {
           created_at: string

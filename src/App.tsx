@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { TranslationProvider } from "./contexts/TranslationContext";
 import { CartProvider } from "./contexts/CartContext";
 import { OnboardingProvider, useOnboarding } from "./contexts/OnboardingContext";
+import { VacationModeProvider } from "./contexts/VacationModeContext";
 import { useState } from "react";
 import Navigation from "./components/Navigation";
 import { FloatingNotifications } from "./components/FloatingNotifications";
@@ -126,10 +127,12 @@ const App = () => (
         <TranslationProvider>
           <CartProvider>
             <OnboardingProvider>
-              <Routes>
-                <Route path="/email-confirmed" element={<EmailConfirmed />} />
-                <Route path="/*" element={<ProtectedApp />} />
-              </Routes>
+              <VacationModeProvider>
+                <Routes>
+                  <Route path="/email-confirmed" element={<EmailConfirmed />} />
+                  <Route path="/*" element={<ProtectedApp />} />
+                </Routes>
+              </VacationModeProvider>
             </OnboardingProvider>
           </CartProvider>
         </TranslationProvider>

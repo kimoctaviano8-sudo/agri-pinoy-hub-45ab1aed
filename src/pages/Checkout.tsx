@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { ArrowLeft, MapPin, CreditCard, Truck, Percent, Loader2, Gift } from "lucide-react";
+import { ArrowLeft, MapPin, CreditCard, Truck, Percent, Loader2, Gift, Palmtree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useVacationModeContext } from "@/contexts/VacationModeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useOffers } from "@/hooks/useOffers";
 import { AppliedOffersDisplay } from "@/components/AppliedOffersDisplay";
@@ -38,6 +39,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { vacationMode, vacationMessage } = useVacationModeContext();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const productId = searchParams.get('product');
@@ -796,22 +798,36 @@ const Checkout = () => {
           </CardContent>
         </Card>
 
-        {/* Place Order Button */}
-        <Button 
-          onClick={handlePlaceOrder}
-          className="w-full h-12 text-base font-medium"
-          size="lg"
-          disabled={processingPayment}
-        >
-          {processingPayment ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            `Place Order - ₱${finalAmount.toFixed(2)}`
-          )}
-        </Button>
+        {/* Vacation Mode Block */}
+        {vacationMode ? (
+          <Card className="bg-warning/10 border-warning/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Palmtree className="w-6 h-6 text-warning flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-warning">Orders Temporarily Paused</p>
+                  <p className="text-sm text-muted-foreground">{vacationMessage}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Button 
+            onClick={handlePlaceOrder}
+            className="w-full h-12 text-base font-medium"
+            size="lg"
+            disabled={processingPayment}
+          >
+            {processingPayment ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              `Place Order - ₱${finalAmount.toFixed(2)}`
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
