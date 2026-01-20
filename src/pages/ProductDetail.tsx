@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ShoppingCart, CreditCard, Plus, Minus, ChevronDown, ChevronUp, ZoomIn, X } from "lucide-react";
+import { ArrowLeft, ShoppingCart, CreditCard, Plus, Minus, ChevronDown, ChevronUp, ZoomIn, X, Palmtree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/contexts/CartContext";
+import { useVacationModeContext } from "@/contexts/VacationModeContext";
+
 interface Product {
   id: string;
   name: string;
@@ -31,6 +33,7 @@ const ProductDetail = () => {
   const {
     addToCart
   } = useCart();
+  const { vacationMode, vacationMessage } = useVacationModeContext();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
@@ -203,9 +206,21 @@ const ProductDetail = () => {
                 <p className="text-lg font-bold text-primary">
                   ₱{product.price?.toFixed(2)}
                 </p>
-                <p className="text-xs text-muted-foreground mb-3">
-                  {product.stock_quantity > 0 ? `Stock: ${product.stock_quantity}` : 'Out of stock'}
-                </p>
+                {!vacationMode && (
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {product.stock_quantity > 0 ? `Stock: ${product.stock_quantity}` : 'Out of stock'}
+                  </p>
+                )}
+                
+                {/* Vacation Mode Banner */}
+                {vacationMode && (
+                  <div className="bg-warning/10 border border-warning/30 rounded-md p-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <Palmtree className="w-4 h-4 text-warning flex-shrink-0" />
+                      <p className="text-xs text-warning">{vacationMessage}</p>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Product Description Section */}
                 <div className="mb-4">
@@ -225,32 +240,36 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Quantity Controls */}
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium">Quantity</label>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => handleQuantityChange(false)} disabled={quantity <= 1} className="h-8 w-8 p-0">
-                    <Minus className="w-3 h-3" />
-                  </Button>
-                  <input type="text" inputMode="numeric" pattern="[0-9]*" value={quantity} onChange={handleQuantityInput} className="w-12 h-8 text-center font-medium text-sm border rounded-md bg-background" min={1} max={500} />
-                  <Button variant="outline" size="sm" onClick={() => handleQuantityChange(true)} className="h-8 w-8 p-0">
-                    <Plus className="w-3 h-3" />
-                  </Button>
+              {/* Quantity Controls - Hidden in Vacation Mode */}
+              {!vacationMode && (
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium">Quantity</label>
+                  <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => handleQuantityChange(false)} disabled={quantity <= 1} className="h-8 w-8 p-0">
+                      <Minus className="w-3 h-3" />
+                    </Button>
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={quantity} onChange={handleQuantityInput} className="w-12 h-8 text-center font-medium text-sm border rounded-md bg-background" min={1} max={500} />
+                    <Button variant="outline" size="sm" onClick={() => handleQuantityChange(true)} className="h-8 w-8 p-0">
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Action Buttons */}
-              <div className="space-y-2">
-                <Button onClick={handleAddToCart} className="w-full h-10" disabled={!product.active}>
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  <span className="text-sm">{product.active ? "Add to Cart" : "Out of Stock"}</span>
-                </Button>
-                
-                {product.active && <Button onClick={handleBuyNow} variant="outline" className="w-full h-10">
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    <span className="text-sm">Buy Now</span>
-                  </Button>}
-              </div>
+              {/* Action Buttons - Hidden in Vacation Mode */}
+              {!vacationMode && (
+                <div className="space-y-2">
+                  <Button onClick={handleAddToCart} className="w-full h-10" disabled={!product.active}>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    <span className="text-sm">{product.active ? "Add to Cart" : "Out of Stock"}</span>
+                  </Button>
+                  
+                  {product.active && <Button onClick={handleBuyNow} variant="outline" className="w-full h-10">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      <span className="text-sm">Buy Now</span>
+                    </Button>}
+                </div>
+              )}
 
               {/* Product Features */}
               <div className="pt-3 border-t">

@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useVacationModeContext } from "@/contexts/VacationModeContext";
 
 interface ProductCardProps {
   id: string;
@@ -32,6 +33,7 @@ const ProductCard = ({
   lowStockThreshold = 5,
 }: ProductCardProps) => {
   const navigate = useNavigate();
+  const { vacationMode } = useVacationModeContext();
 
   const handleClick = () => {
     navigate(`/products/${id}`);
@@ -56,12 +58,13 @@ const ProductCard = ({
               </Badge>
             </div>
           )}
-          {!inStock && (
+          {/* Hide stock indicators in vacation mode */}
+          {!vacationMode && !inStock && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <Badge variant="destructive" className="text-xs px-2 py-1">Out of Stock</Badge>
             </div>
           )}
-          {inStock && stockQuantity <= lowStockThreshold && stockQuantity > 0 && (
+          {!vacationMode && inStock && stockQuantity <= lowStockThreshold && stockQuantity > 0 && (
             <div className="absolute top-2 right-2">
               <Badge variant="secondary" className="text-xs px-2 py-1 bg-warning/90 text-warning-foreground">
                 Low Stock

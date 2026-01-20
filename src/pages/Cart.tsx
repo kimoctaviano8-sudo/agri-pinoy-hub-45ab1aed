@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, CreditCard, Truck, Gift } from "lucide-react";
+import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, CreditCard, Truck, Gift, Palmtree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
+import { useVacationModeContext } from "@/contexts/VacationModeContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useOffers, getOfferProgress } from "@/hooks/useOffers";
@@ -14,6 +15,7 @@ import { AppliedOffersDisplay, OfferProgressDisplay } from "@/components/Applied
 const Cart = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { vacationMode, vacationMessage } = useVacationModeContext();
   const {
     items,
     itemCount,
@@ -199,12 +201,29 @@ const Cart = () => {
           </CardContent>
         </Card>
 
+        {/* Vacation Mode Banner */}
+        {vacationMode && (
+          <Card className="bg-warning/10 border-warning/30 mb-4">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <Palmtree className="w-5 h-5 text-warning flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-warning">Orders Temporarily Paused</p>
+                  <p className="text-xs text-muted-foreground">{vacationMessage}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Action Buttons */}
         <div className="space-y-2">
-          <Button onClick={handleCheckout} className="w-full h-10">
-            <CreditCard className="w-4 h-4 mr-2" />
-            Proceed to Checkout
-          </Button>
+          {!vacationMode && (
+            <Button onClick={handleCheckout} className="w-full h-10">
+              <CreditCard className="w-4 h-4 mr-2" />
+              Proceed to Checkout
+            </Button>
+          )}
           
           <Button onClick={handleContinueShopping} variant="outline" className="w-full h-10">
             Continue Shopping

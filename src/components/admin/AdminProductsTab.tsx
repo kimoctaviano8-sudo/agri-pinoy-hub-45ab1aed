@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Edit, Trash2, Eye, EyeOff, Package, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, Package, AlertTriangle, Palmtree, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { useVacationModeContext } from "@/contexts/VacationModeContext";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Product {
   id: string;
@@ -24,16 +28,54 @@ interface AdminProductsTabProps {
 
 export const AdminProductsTab = ({ products, onToggleActive, onDelete }: AdminProductsTabProps) => {
   const navigate = useNavigate();
+  const { vacationMode, toggleVacationMode, loading: vacationLoading } = useVacationModeContext();
+  const [isToggling, setIsToggling] = useState(false);
+  const { toast } = useToast();
+
+  const handleVacationToggle = async (enabled: boolean) => {
+    setIsToggling(true);
+    await toggleVacationMode(enabled);
+    setIsToggling(false);
+  };
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2">
         <h2 className="text-lg font-semibold">Products</h2>
-        <Button size="sm" onClick={() => navigate('/admin/products/new')} className="h-8">
-          <Plus className="w-4 h-4 mr-1" />
-          Add
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Vacation Mode Toggle */}
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${vacationMode ? 'bg-warning/10 border-warning/30' : 'bg-muted/30 border-border'}`}>
+            <Palmtree className={`w-4 h-4 ${vacationMode ? 'text-warning' : 'text-muted-foreground'}`} />
+            <span className="text-xs font-medium hidden sm:inline">Vacation</span>
+            {vacationLoading || isToggling ? (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            ) : (
+              <Switch
+                checked={vacationMode}
+                onCheckedChange={handleVacationToggle}
+                className="scale-75"
+              />
+            )}
+          </div>
+          <Button size="sm" onClick={() => navigate('/admin/products/new')} className="h-8">
+            <Plus className="w-4 h-4 mr-1" />
+            Add
+          </Button>
+        </div>
       </div>
+      
+      {/* Vacation Mode Banner */}
+      {vacationMode && (
+        <Card className="p-3 bg-warning/10 border-warning/30">
+          <div className="flex items-center gap-2">
+            <Palmtree className="w-4 h-4 text-warning" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-warning">Vacation Mode Active</p>
+              <p className="text-xs text-muted-foreground">All user ordering is paused. Toggle off to resume.</p>
+            </div>
+          </div>
+        </Card>
+      )}
       
       <div className="space-y-3">
         {products.map((item) => (

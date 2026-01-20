@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { ShoppingCart, CreditCard, Package } from "lucide-react";
+import { ShoppingCart, CreditCard, Package, Palmtree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
+import { useVacationModeContext } from "@/contexts/VacationModeContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ const RecommendedProducts = ({
   const {
     addToCart
   } = useCart();
+  const { vacationMode, vacationMessage } = useVacationModeContext();
   const navigate = useNavigate();
   const {
     toast
@@ -247,16 +249,24 @@ const RecommendedProducts = ({
                     {product.category}
                   </Badge>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <Button size="sm" onClick={() => handleAddToCart(product)} className="h-7 text-[10px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-medium px-2">
-                    <ShoppingCart className="w-3 h-3 mr-1" />
-                    Add Cart
-                  </Button>
-                  <Button size="sm" onClick={() => handleBuyNow(product)} className="h-7 text-[10px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 font-medium px-2">
-                    <CreditCard className="w-3 h-3 mr-1" />
-                    Buy Now
-                  </Button>
-                </div>
+                {/* Action Buttons - Hidden in Vacation Mode */}
+                {!vacationMode ? (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <Button size="sm" onClick={() => handleAddToCart(product)} className="h-7 text-[10px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-medium px-2">
+                      <ShoppingCart className="w-3 h-3 mr-1" />
+                      Add Cart
+                    </Button>
+                    <Button size="sm" onClick={() => handleBuyNow(product)} className="h-7 text-[10px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 font-medium px-2">
+                      <CreditCard className="w-3 h-3 mr-1" />
+                      Buy Now
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-[10px] text-warning">
+                    <Palmtree className="w-3 h-3" />
+                    <span>Orders paused</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>)}
