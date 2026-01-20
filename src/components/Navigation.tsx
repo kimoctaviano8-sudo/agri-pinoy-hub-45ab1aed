@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useVacationModeContext } from "@/contexts/VacationModeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { CacheManager } from "@/components/CacheManager";
@@ -29,6 +30,7 @@ const Navigation = ({
   const {
     t
   } = useTranslation();
+  const { vacationMode } = useVacationModeContext();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{
@@ -119,14 +121,16 @@ const Navigation = ({
     );
   };
   const renderHeaderActions = () => <div className="flex items-center space-x-2">
-      <Link to="/cart">
-        <Button size="sm" variant="ghost" className="relative" id="cart-icon">
-          <ShoppingCart className="w-5 h-5" />
-          {itemCount > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0 min-w-0">
-              {itemCount > 99 ? '99+' : itemCount}
-            </Badge>}
-        </Button>
-      </Link>
+      {!vacationMode && (
+        <Link to="/cart">
+          <Button size="sm" variant="ghost" className="relative" id="cart-icon">
+            <ShoppingCart className="w-5 h-5" />
+            {itemCount > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0 min-w-0">
+                {itemCount > 99 ? '99+' : itemCount}
+              </Badge>}
+          </Button>
+        </Link>
+      )}
       <Link to="/inbox">
         <Button size="sm" variant="ghost" className="relative">
           <Mail className="w-5 h-5" />
