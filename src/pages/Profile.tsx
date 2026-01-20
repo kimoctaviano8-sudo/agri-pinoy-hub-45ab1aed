@@ -28,6 +28,7 @@ import AchievementsModal from "@/components/AchievementsModal";
 import { RatingModal } from "@/components/RatingModal";
 import { ProfileSettingsSection } from "@/components/ProfileSettingsSection";
 import { BiometricSettingsModal } from "@/components/BiometricSettingsModal";
+import { useVacationModeContext } from "@/contexts/VacationModeContext";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ const Profile = () => {
   const {
     toast
   } = useToast();
+  const { vacationMode } = useVacationModeContext();
   const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -608,10 +610,12 @@ Streak</div>
             </div>
           </div>
 
-          {/* Order Status Tracker */}
-          <div className="mt-6">
-            <OrderStatusTracker />
-          </div>
+          {/* Order Status Tracker - Hidden during vacation mode */}
+          {!vacationMode && (
+            <div className="mt-6">
+              <OrderStatusTracker />
+            </div>
+          )}
 
           {/* Support Section */}
           <div className="mt-6 mb-16">
