@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Search, Filter, Star, Package, Leaf, HelpCircle, X, SlidersHorizontal, TrendingUp, DollarSign, Phone } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Filter, Star, Package, Leaf, HelpCircle, X, SlidersHorizontal, TrendingUp, DollarSign, Phone, Building2, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
 import productsImage from "@/assets/products-showcase.jpg";
 const Products = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [priceRange, setPriceRange] = useState([0, 2000]);
@@ -396,20 +398,21 @@ const Products = () => {
           </div>
         </div>
 
-        {/* Featured Products - Green Background like Knowledge Base */}
-        <Card className="mb-4 bg-primary border-0 shadow-card">
+        {/* Registered Dealers Card */}
+        <Card 
+          className="mb-4 bg-primary border-0 shadow-card cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate('/dealers')}
+        >
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                <Star className="w-5 h-5 text-white" />
+                <Building2 className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-bold text-white">Featured Products</h3>
-                <p className="text-xs text-white/80">Top-rated by farmers</p>
+                <h3 className="text-sm font-bold text-white">Registered Dealers</h3>
+                <p className="text-xs text-white/80">Find authorized dealers near you</p>
               </div>
-              <Badge className="bg-white/20 backdrop-blur-sm text-white text-xs border-white/30">
-                Resources
-              </Badge>
+              <ChevronRight className="w-5 h-5 text-white/80" />
             </div>
           </CardContent>
         </Card>

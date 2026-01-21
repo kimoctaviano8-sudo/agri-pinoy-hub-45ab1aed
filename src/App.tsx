@@ -14,6 +14,7 @@ import { FloatingNotifications } from "./components/FloatingNotifications";
 import Onboarding from "./components/Onboarding";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
+import Dealers from "./pages/Dealers";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -82,6 +83,7 @@ const ProtectedApp = () => {
             <Route path="/" element={<Home />} />
             <Route path="/news/:id" element={<NewsDetail />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/dealers" element={<Dealers />} />
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
