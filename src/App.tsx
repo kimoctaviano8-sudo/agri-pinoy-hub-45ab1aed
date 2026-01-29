@@ -35,6 +35,7 @@ import MyPurchase from "./pages/MyPurchase";
 import OrderSuccess from "./pages/OrderSuccess";
 import HelpCentre from "./pages/HelpCentre";
 import GeminiCares from "./pages/GeminiCares";
+import GeminiPolicies from "./pages/GeminiPolicies";
 import { useLocationPermission } from "./hooks/useLocationPermission";
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const ProtectedApp = () => {
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/help-centre" element={<HelpCentre />} />
             <Route path="/gemini-cares" element={<GeminiCares />} />
+            <Route path="/gemini-policies" element={<GeminiPolicies />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/news/:id" element={<AdminNewsForm />} />
