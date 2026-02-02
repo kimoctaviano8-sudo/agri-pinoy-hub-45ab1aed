@@ -136,51 +136,51 @@ const ProductDetail = () => {
     navigate(`/checkout?product=${product.id}&quantity=${quantity}`);
   };
   if (loading) {
-    return <div className="min-h-screen bg-background p-2">
+    return <div className="min-h-screen bg-background p-4">
         <div className="max-w-lg mx-auto">
           <div className="animate-pulse">
-            <div className="h-6 bg-muted rounded mb-3"></div>
-            <div className="h-48 bg-muted rounded mb-3"></div>
-            <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+            <div className="h-6 bg-muted rounded mb-4"></div>
+            <div className="h-48 bg-muted rounded mb-4"></div>
+            <div className="h-4 bg-muted rounded w-3/4 mb-3"></div>
             <div className="h-3 bg-muted rounded w-1/2"></div>
           </div>
         </div>
       </div>;
   }
   if (!product) {
-    return <div className="min-h-screen bg-background p-2">
+    return <div className="min-h-screen bg-background p-4">
         <div className="max-w-lg mx-auto">
-          <Button variant="ghost" onClick={() => navigate('/products')} className="mb-3 p-2" size="sm">
-            <ArrowLeft className="w-3 h-3 mr-1" />
+          <Button variant="ghost" onClick={() => navigate('/products')} className="mb-4 p-2" size="sm">
+            <ArrowLeft className="w-3 h-3 mr-1.5" />
             <span className="text-sm">Back</span>
           </Button>
-          <div className="text-center">
-            <h1 className="text-lg font-bold mb-2">Product Not Found</h1>
+          <div className="text-center py-8">
+            <h1 className="text-lg font-bold mb-3">Product Not Found</h1>
             <p className="text-sm text-muted-foreground">The product you're looking for doesn't exist.</p>
           </div>
         </div>
       </div>;
   }
-  return <div className="min-h-screen bg-background p-2 pb-20">{/* Added pb-20 for bottom padding */}
+  return <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-lg mx-auto">
         {/* Back Button */}
-        <Button variant="ghost" onClick={() => navigate('/products')} className="mb-3 p-2" size="sm">
-          <ArrowLeft className="w-3 h-3 mr-1" />
+        <Button variant="ghost" onClick={() => navigate('/products')} className="mb-4 p-2" size="sm">
+          <ArrowLeft className="w-3 h-3 mr-1.5" />
           <span className="text-sm">Back</span>
         </Button>
 
         {/* Product Detail Card */}
         <Card className="shadow-sm">
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             {/* Product Image */}
-            <div className="mb-4">
+            <div className="mb-5">
               <div className="relative overflow-hidden rounded-lg cursor-pointer group" onClick={() => setIsImageZoomed(true)}>
                 <img src={product.image_url || "/placeholder.svg"} alt={product.name} className="w-full h-auto max-h-64 bg-muted/30 transition-transform duration-200 group-hover:scale-105 object-cover" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                   <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
                 </div>
                 {product.category && <div className="absolute top-2 left-2">
-                    <Badge variant="secondary" className="text-xs px-2 py-1">
+                    <Badge variant="secondary" className="text-xs px-2.5 py-1">
                       {product.category}
                     </Badge>
                   </div>}
@@ -200,22 +200,22 @@ const ProductDetail = () => {
             </Dialog>
 
             {/* Product Info */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <h1 className="text-xl font-bold mb-1 leading-tight">{product.name}</h1>
+                <h1 className="text-xl font-bold mb-2 leading-tight">{product.name}</h1>
                 <p className="text-lg font-bold text-primary">
                   ₱{product.price?.toFixed(2)}
                 </p>
                 {!vacationMode && (
-                  <p className="text-xs text-muted-foreground mb-3">
+                  <p className="text-xs text-muted-foreground mt-1 mb-4">
                     {product.stock_quantity > 0 ? `Stock: ${product.stock_quantity}` : 'Out of stock'}
                   </p>
                 )}
                 
                 {/* Vacation Mode Banner */}
                 {vacationMode && (
-                  <div className="bg-warning/10 border border-warning/30 rounded-md p-3 mb-3">
-                    <div className="flex items-center gap-2">
+                  <div className="bg-warning/10 border border-warning/30 rounded-md p-4 mt-3 mb-4">
+                    <div className="flex items-center gap-3">
                       <Palmtree className="w-4 h-4 text-warning flex-shrink-0" />
                       <p className="text-xs text-warning">{vacationMessage}</p>
                     </div>
@@ -223,13 +223,13 @@ const ProductDetail = () => {
                 )}
                 
                 {/* Product Description Section */}
-                <div className="mb-4">
-                  <h3 className="text-sm font-semibold mb-2">Description</h3>
-                  <div className="text-sm text-muted-foreground leading-relaxed bg-muted/20 p-3 rounded-md">
+                <div className="mb-5">
+                  <h3 className="text-sm font-semibold mb-3">Description</h3>
+                  <div className="text-sm text-muted-foreground leading-relaxed bg-muted/20 p-4 rounded-md">
                     <div className={`${!isDescriptionExpanded ? 'line-clamp-3' : ''}`}>
                       {product.description}
                     </div>
-                    {product.description && product.description.length > 150 && <Button variant="ghost" size="sm" onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="h-6 p-0 mt-2 text-xs text-primary hover:bg-transparent">
+                    {product.description && product.description.length > 150 && <Button variant="ghost" size="sm" onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="h-6 p-0 mt-3 text-xs text-primary hover:bg-transparent">
                         {isDescriptionExpanded ? <>
                             See Less <ChevronUp className="w-3 h-3 ml-1" />
                           </> : <>
@@ -243,14 +243,14 @@ const ProductDetail = () => {
               {/* Quantity Controls - Hidden in Vacation Mode */}
               {!vacationMode && (
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium">Quantity</label>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleQuantityChange(false)} disabled={quantity <= 1} className="h-8 w-8 p-0">
-                      <Minus className="w-3 h-3" />
+                  <label className="text-sm font-medium">Quantity</label>
+                  <div className="flex items-center space-x-3">
+                    <Button variant="outline" size="sm" onClick={() => handleQuantityChange(false)} disabled={quantity <= 1} className="h-9 w-9 p-0">
+                      <Minus className="w-3.5 h-3.5" />
                     </Button>
-                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={quantity} onChange={handleQuantityInput} className="w-12 h-8 text-center font-medium text-sm border rounded-md bg-background" min={1} max={500} />
-                    <Button variant="outline" size="sm" onClick={() => handleQuantityChange(true)} className="h-8 w-8 p-0">
-                      <Plus className="w-3 h-3" />
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={quantity} onChange={handleQuantityInput} className="w-14 h-9 text-center font-medium text-sm border rounded-md bg-background" min={1} max={500} />
+                    <Button variant="outline" size="sm" onClick={() => handleQuantityChange(true)} className="h-9 w-9 p-0">
+                      <Plus className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </div>
@@ -258,13 +258,13 @@ const ProductDetail = () => {
 
               {/* Action Buttons - Hidden in Vacation Mode */}
               {!vacationMode && (
-                <div className="space-y-2">
-                  <Button onClick={handleAddToCart} className="w-full h-10" disabled={!product.active}>
+                <div className="space-y-3">
+                  <Button onClick={handleAddToCart} className="w-full h-11" disabled={!product.active}>
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     <span className="text-sm">{product.active ? "Add to Cart" : "Out of Stock"}</span>
                   </Button>
                   
-                  {product.active && <Button onClick={handleBuyNow} variant="outline" className="w-full h-10">
+                  {product.active && <Button onClick={handleBuyNow} variant="outline" className="w-full h-11">
                       <CreditCard className="w-4 h-4 mr-2" />
                       <span className="text-sm">Buy Now</span>
                     </Button>}
@@ -272,9 +272,9 @@ const ProductDetail = () => {
               )}
 
               {/* Product Features */}
-              <div className="pt-3 border-t">
-                <h3 className="text-sm font-semibold mb-2">Features:</h3>
-                <ul className="space-y-1 text-xs text-muted-foreground">
+              <div className="pt-4 border-t">
+                <h3 className="text-sm font-semibold mb-3">Features:</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
                   <li>• Quality Product</li>
                   <li>• Trusted Brand</li>
                   <li>• Fast Delivery</li>
@@ -286,15 +286,15 @@ const ProductDetail = () => {
         </Card>
         
         {/* Related Products Section */}
-        {relatedProducts.length > 0 && <div className="mt-6">
-            <h2 className="text-lg font-semibold mb-3">Related Products</h2>
-            <div className="grid grid-cols-2 gap-3">
+        {relatedProducts.length > 0 && <div className="mt-8">
+            <h2 className="text-lg font-semibold mb-4">Related Products</h2>
+            <div className="grid grid-cols-2 gap-4">
               {relatedProducts.map(item => <Card key={item.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/products/${item.id}`)}>
-                  <CardContent className="p-2">
-                    <img src={item.image_url || "/placeholder.svg"} alt={item.name} className="w-full h-24 object-cover rounded-md mb-2" />
-                    <h3 className="text-xs font-medium line-clamp-2 mb-1">{item.name}</h3>
+                  <CardContent className="p-3">
+                    <img src={item.image_url || "/placeholder.svg"} alt={item.name} className="w-full h-28 object-cover rounded-md mb-3" />
+                    <h3 className="text-xs font-medium line-clamp-2 mb-1.5">{item.name}</h3>
                     <p className="text-sm font-bold text-primary">₱{item.price?.toFixed(2)}</p>
-                    {item.category && <Badge variant="secondary" className="text-[10px] mt-1">
+                    {item.category && <Badge variant="secondary" className="text-[10px] mt-2">
                         {item.category}
                       </Badge>}
                   </CardContent>
