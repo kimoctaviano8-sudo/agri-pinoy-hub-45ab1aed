@@ -23,10 +23,12 @@ import SeasonalCareCalendar from "@/components/SeasonalCareCalendar";
 import { ScanningAnimation } from "@/components/ScanningAnimation";
 import AchievementsModal from "@/components/AchievementsModal";
 import { toast as sonnerToast } from "sonner";
+
 interface DiseaseResult {
   disease: string;
   confidence: number;
 }
+
 const PlantScanner = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -46,16 +48,12 @@ const PlantScanner = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const {
-    toast
-  } = useToast();
-  const {
-    user
-  } = useAuth();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File Too Large",
@@ -65,7 +63,6 @@ const PlantScanner = () => {
         return;
       }
       
-      // Validate file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       if (!validTypes.includes(file.type)) {
         toast({
@@ -85,8 +82,6 @@ const PlantScanner = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // SECURE: Handle payment redirect callback with server-side verification only
-  // Credits are granted ONLY via the PayMongo webhook - no client-side credit processing
   useEffect(() => {
     const checkPaymentStatus = async () => {
       const status = searchParams.get('status');
@@ -94,14 +89,11 @@ const PlantScanner = () => {
       
       if (!status || !orderId || !user) return;
       
-      // Clear URL params immediately
       setSearchParams({});
       
       if (status === 'success') {
-        // Show processing state while waiting for webhook to add credits
         setProcessingPayment(true);
         
-        // Get initial credit count for comparison
         const { data: initialCredits } = await supabase
           .from('user_credits')
           .select('credits_remaining')
@@ -110,10 +102,8 @@ const PlantScanner = () => {
         
         const startCredits = initialCredits?.credits_remaining ?? 0;
         
-        // Poll for credit update (webhook processes asynchronously)
-        // The webhook is the ONLY secure path for adding credits
         let attempts = 0;
-        const maxAttempts = 12; // 12 attempts with 5s delay = ~60 seconds max
+        const maxAttempts = 12;
         
         while (attempts < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, 5000));
@@ -127,7 +117,6 @@ const PlantScanner = () => {
           const currentCredits = data?.credits_remaining ?? 0;
           
           if (currentCredits > startCredits) {
-            // Credits updated by webhook!
             setCredits(currentCredits);
             toast({
               title: "Payment Successful! 🎉",
@@ -140,9 +129,8 @@ const PlantScanner = () => {
           attempts++;
         }
         
-        // Timeout - webhook may still process later
         setProcessingPayment(false);
-        await fetchUserCredits(); // Final refresh
+        await fetchUserCredits();
         toast({
           title: "Payment Received",
           description: "Your credits are being processed and will appear shortly.",
@@ -161,7 +149,6 @@ const PlantScanner = () => {
     checkPaymentStatus();
   }, [searchParams, user]);
 
-  // Fetch user credits and points on component mount
   useEffect(() => {
     if (user) {
       fetchUserCredits();
@@ -186,33 +173,26 @@ const PlantScanner = () => {
     }
   };
 
-  // Auto-show tooltip for floating button
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowTooltip(true);
-      // Auto-hide after 3 seconds
       const hideTimer = setTimeout(() => {
         setShowTooltip(false);
       }, 3000);
       return () => clearTimeout(hideTimer);
-    }, 5000); // Show after 5 seconds
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, []);
+
   const fetchUserCredits = async () => {
     if (!user) return;
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('user_credits').select('credits_remaining').eq('user_id', user.id).maybeSingle();
+      const { data, error } = await supabase.from('user_credits').select('credits_remaining').eq('user_id', user.id).maybeSingle();
       if (error) {
         console.error('Error fetching credits:', error);
-        // Initialize credits if user doesn't have a record
-        await supabase.rpc('initialize_user_credits', {
-          user_id_param: user.id
-        });
-        setCredits(10); // Default credits
+        await supabase.rpc('initialize_user_credits', { user_id_param: user.id });
+        setCredits(10);
         return;
       }
       setCredits(data?.credits_remaining || 10);
@@ -225,7 +205,6 @@ const PlantScanner = () => {
     if (!user) return;
 
     try {
-      // Track first scan achievement
       const firstScan = await supabase.rpc('update_achievement_progress', {
         user_id_param: user.id,
         achievement_id_param: 'first_scan',
@@ -241,7 +220,6 @@ const PlantScanner = () => {
         }
       }
 
-      // Track scan count achievements
       const scan5 = await supabase.rpc('update_achievement_progress', {
         user_id_param: user.id,
         achievement_id_param: 'scan_5',
@@ -269,7 +247,6 @@ const PlantScanner = () => {
         progress_increment: 1
       });
 
-      // Track perfect diagnosis if confidence is high
       if (confidence >= 95) {
         const perfectDiag = await supabase.rpc('update_achievement_progress', {
           user_id_param: user.id,
@@ -287,7 +264,6 @@ const PlantScanner = () => {
         }
       }
 
-      // Refresh points
       await fetchUserPoints();
     } catch (error) {
       console.error('Error tracking achievements:', error);
@@ -297,14 +273,18 @@ const PlantScanner = () => {
   const saveScanToHistory = async (result: DiseaseResult, imageBase64: string) => {
     if (!user) return;
     try {
-      const {
-        error
-      } = await supabase.from('plant_scan_history').insert({
+      const { error } = await supabase.from('plant_scan_history').insert({
         user_id: user.id,
         image_url: imageBase64,
         disease_detected: result.disease,
         confidence_score: result.confidence / 100,
-        recommendations: result.disease.toLowerCase().includes('blight') ? 'Remove infected leaves immediately, improve air circulation, avoid overhead watering, and apply copper-based fungicides.' : result.disease.toLowerCase().includes('spot') ? 'Prune affected areas, ensure proper plant spacing, water at soil level, and apply preventive fungicide treatments.' : result.disease.toLowerCase().includes('rust') ? 'Remove infected plant parts, avoid watering leaves, improve drainage, and use resistant plant varieties when possible.' : 'Implement proper crop rotation, maintain soil health, ensure adequate spacing between plants, and monitor regularly for early detection.'
+        recommendations: result.disease.toLowerCase().includes('blight') 
+          ? 'Remove infected leaves immediately, improve air circulation, avoid overhead watering, and apply copper-based fungicides.' 
+          : result.disease.toLowerCase().includes('spot') 
+          ? 'Prune affected areas, ensure proper plant spacing, water at soil level, and apply preventive fungicide treatments.' 
+          : result.disease.toLowerCase().includes('rust') 
+          ? 'Remove infected plant parts, avoid watering leaves, improve drainage, and use resistant plant varieties when possible.' 
+          : 'Implement proper crop rotation, maintain soil health, ensure adequate spacing between plants, and monitor regularly for early detection.'
       });
       if (error) {
         console.error('Error saving scan history:', error);
@@ -313,10 +293,11 @@ const PlantScanner = () => {
       console.error('Error saving scan history:', error);
     }
   };
+
   const handleCameraCapture = () => {
     cameraInputRef.current?.click();
   };
-  // Compress image for faster upload
+
   const compressImage = (file: File, maxWidth = 800, quality = 0.7): Promise<string> => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
@@ -324,7 +305,6 @@ const PlantScanner = () => {
       const img = document.createElement('img');
       
       img.onload = () => {
-        // Calculate new dimensions
         let width = img.width;
         let height = img.height;
         
@@ -338,7 +318,6 @@ const PlantScanner = () => {
         
         ctx?.drawImage(img, 0, 0, width, height);
         
-        // Convert to compressed base64
         const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
         URL.revokeObjectURL(img.src);
         resolve(compressedBase64);
@@ -352,7 +331,6 @@ const PlantScanner = () => {
   const analyzePlant = async () => {
     if (!selectedImage || !user) return;
 
-    // Refresh credits before checking to ensure we have the latest value
     const { data: creditData } = await supabase
       .from('user_credits')
       .select('credits_remaining')
@@ -373,15 +351,12 @@ const PlantScanner = () => {
     }
     
     setLoading(true);
-    const startTime = Date.now();
     
-    // Haptic feedback
     if ('vibrate' in navigator) {
       navigator.vibrate([50]);
     }
 
     try {
-      // Run compression and session fetch in parallel for speed
       const [compressedImage, sessionResult] = await Promise.all([
         compressImage(selectedImage, 800, 0.7),
         supabase.auth.getSession()
@@ -391,7 +366,6 @@ const PlantScanner = () => {
         throw new Error('Please log in to use the scanner');
       }
 
-      // Call edge function with compressed image
       const response = await supabase.functions.invoke('plant-disease-analyzer', {
         body: { image: compressedImage },
         headers: {
@@ -400,7 +374,6 @@ const PlantScanner = () => {
       });
 
       if (response.error) {
-        
         const isCreditsError = 
           response.error.message?.includes('Insufficient credits') || 
           response.error.message?.includes('creditsRequired') ||
@@ -425,7 +398,6 @@ const PlantScanner = () => {
         throw new Error('Invalid response from analysis service');
       }
 
-      // Update credits
       setCredits(prev => Math.max(0, prev - 1));
 
       const confidenceValue = typeof data.confidence === 'number' 
@@ -438,7 +410,6 @@ const PlantScanner = () => {
       }];
       setResults(formattedResults);
 
-      // Run non-blocking operations in parallel
       Promise.all([
         trackAchievements(confidenceValue),
         saveScanToHistory(formattedResults[0], compressedImage)
@@ -449,7 +420,6 @@ const PlantScanner = () => {
         description: `Found: ${formattedResults[0].disease}. ${credits - 1} credits remaining.`
       });
 
-      // Show technician dialog for disease detection
       if (formattedResults[0].disease.toLowerCase() !== 'healthy crop') {
         setTimeout(() => setShowTechnicianDialog(true), 2000);
       }
@@ -464,6 +434,7 @@ const PlantScanner = () => {
       setLoading(false);
     }
   };
+
   const purchaseCredits = async (paymentMethod: string) => {
     if (!user || !selectedPackage) return;
     setPurchasingCredits(true);
@@ -473,10 +444,7 @@ const PlantScanner = () => {
         throw new Error('Authentication required');
       }
 
-      // Generate a unique order ID for credit purchase (starts with CREDITS- for webhook detection)
       const orderId = `CREDITS-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      
-      // Get the current page URL for redirect
       const redirectUrl = window.location.origin + '/plant-scanner';
 
       const { data, error } = await supabase.functions.invoke('create-payment', {
@@ -486,7 +454,6 @@ const PlantScanner = () => {
           orderId: orderId,
           description: `${selectedPackage.credits} Scan Credits`,
           redirectUrl: redirectUrl,
-          // Include credits info for webhook processing
           credits: selectedPackage.credits,
         },
         headers: {
@@ -497,12 +464,8 @@ const PlantScanner = () => {
       if (error) throw error;
 
       if (data.checkoutUrl) {
-        // SECURE: No localStorage storage - credits are granted ONLY via webhook
-        // The webhook verifies payment signature and grants credits server-side
-        // Redirect to PayMongo checkout
         window.location.href = data.checkoutUrl;
       } else if (data.clientKey) {
-        // Card payment - would need a card form (simplified for now)
         toast({
           title: "Card Payment",
           description: "Card payment integration requires additional setup. Please try another payment method.",
@@ -522,27 +485,27 @@ const PlantScanner = () => {
       setPurchasingCredits(false);
     }
   };
+
   const resetScanner = () => {
     setSelectedImage(null);
     setPreviewUrl("");
     setResults([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
+
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return "text-green-600";
-    if (confidence >= 60) return "text-yellow-600";
-    return "text-red-600";
+    if (confidence >= 80) return "text-success";
+    if (confidence >= 60) return "text-warning";
+    return "text-destructive";
   };
+
   const getConfidenceBgColor = (confidence: number) => {
-    if (confidence >= 80) return "bg-green-500";
-    if (confidence >= 60) return "bg-yellow-500";
-    return "bg-red-500";
+    if (confidence >= 80) return "bg-success";
+    if (confidence >= 60) return "bg-warning";
+    return "bg-destructive";
   };
+
   const downloadAsPDF = async () => {
     if (!results.length || !selectedImage) return;
     try {
@@ -550,18 +513,15 @@ const PlantScanner = () => {
       const timestamp = new Date().toLocaleString();
       const pdf = new jsPDF();
 
-      // Add title
       pdf.setFontSize(20);
-      pdf.setTextColor(34, 197, 94); // Green color
+      pdf.setTextColor(34, 197, 94);
       pdf.text('Plant Disease Analysis Report', 20, 25);
 
-      // Add timestamp
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
       pdf.text(`Date & Time: ${timestamp}`, 20, 40);
       pdf.text(`Image: ${selectedImage.name}`, 20, 50);
 
-      // Add results section
       pdf.setFontSize(16);
       pdf.setTextColor(34, 197, 94);
       pdf.text('Analysis Results', 20, 70);
@@ -571,22 +531,25 @@ const PlantScanner = () => {
       pdf.text(`Confidence Score: ${result.confidence.toFixed(1)}%`, 20, 95);
       pdf.text(`Confidence Level: ${result.confidence >= 80 ? 'High' : result.confidence >= 60 ? 'Medium' : 'Low'}`, 20, 105);
 
-      // Add treatment information
       pdf.setFontSize(16);
       pdf.setTextColor(34, 197, 94);
       pdf.text('Treatment Recommendations', 20, 125);
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
-      const treatmentText = result.disease.toLowerCase().includes('blight') ? 'Remove infected leaves immediately, improve air circulation, avoid overhead watering, and apply copper-based fungicides.' : result.disease.toLowerCase().includes('spot') ? 'Prune affected areas, ensure proper plant spacing, water at soil level, and apply preventive fungicide treatments.' : result.disease.toLowerCase().includes('rust') ? 'Remove infected plant parts, avoid watering leaves, improve drainage, and use resistant plant varieties when possible.' : 'Implement proper crop rotation, maintain soil health, ensure adequate spacing between plants, and monitor regularly for early detection.';
+      const treatmentText = result.disease.toLowerCase().includes('blight') 
+        ? 'Remove infected leaves immediately, improve air circulation, avoid overhead watering, and apply copper-based fungicides.' 
+        : result.disease.toLowerCase().includes('spot') 
+        ? 'Prune affected areas, ensure proper plant spacing, water at soil level, and apply preventive fungicide treatments.' 
+        : result.disease.toLowerCase().includes('rust') 
+        ? 'Remove infected plant parts, avoid watering leaves, improve drainage, and use resistant plant varieties when possible.' 
+        : 'Implement proper crop rotation, maintain soil health, ensure adequate spacing between plants, and monitor regularly for early detection.';
       const splitText = pdf.splitTextToSize(treatmentText, 170);
       pdf.text(splitText, 20, 140);
 
-      // Add application guide
       const appGuideText = 'Apply recommended fungicides during early morning or late evening to avoid leaf burn. Spray thoroughly covering both upper and lower leaf surfaces. Always wear protective equipment and follow label instructions for dilution rates.';
       const splitAppGuide = pdf.splitTextToSize(appGuideText, 170);
       pdf.text(splitAppGuide, 20, 165);
 
-      // Add footer
       pdf.setFontSize(10);
       pdf.setTextColor(128, 128, 128);
       pdf.text('Generated by Plant Disease Scanner', 20, 280);
@@ -604,6 +567,7 @@ const PlantScanner = () => {
       });
     }
   };
+
   const downloadAsJPEG = async () => {
     if (!results.length || !selectedImage || !resultsRef.current) return;
     try {
@@ -629,213 +593,248 @@ const PlantScanner = () => {
       });
     }
   };
-  return <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-700 text-white py-6 md:py-8">
-        <div className="px-4 text-center max-w-4xl mx-auto">
-          <div className="flex items-center justify-center gap-2 mb-2 md:mb-3">
-            <div className="p-2 bg-white/20 rounded-full">
-              <Camera className="w-5 h-5 md:w-6 md:h-6" />
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      {/* Minimal Header */}
+      <div className="px-4 pt-6 pb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Camera className="w-5 h-5 text-primary" />
             </div>
-            <h1 className="text-xl md:text-2xl font-bold">Plant Disease Scanner</h1>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">Plant Scanner</h1>
+              <p className="text-xs text-muted-foreground">AI-powered disease detection</p>
+            </div>
           </div>
-          <p className="text-white/90 text-xs md:text-sm">
-            Capture or upload plant images for instant AI-powered disease analysis
-          </p>
           
-          {/* Credits Display & Achievements */}
-          {user && <div className="flex items-center justify-center gap-2 mt-4">
+          {user && (
+            <div className="flex items-center gap-2">
               <Button 
+                variant="ghost"
                 size="sm" 
                 onClick={() => setShowAchievementsModal(true)}
-                className="bg-white/20 hover:bg-white/30 text-white border-0 rounded-full px-4 py-2 shadow-md transition-all hover:scale-105"
+                className="h-8 px-2"
               >
-                <Trophy className="w-4 h-4 mr-1" />
-                Achievements
+                <Trophy className="w-4 h-4 text-primary" />
               </Button>
               <Button 
+                variant="outline"
                 size="sm" 
                 onClick={() => setShowCreditDialog(true)}
-                className="bg-white/20 hover:bg-white/30 text-white border-0 rounded-full px-4 py-2 shadow-md transition-all hover:scale-105"
+                className="h-8 px-3 text-xs font-medium"
               >
-                <Coins className="w-4 h-4 mr-1" />
-                {credits} Credits
+                <Coins className="w-3.5 h-3.5 mr-1 text-primary" />
+                {credits}
               </Button>
-            </div>}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-6 bg-background">
-        {/* Image Input Section */}
-        <Card className="border-0 shadow-lg bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-6">
+      <div className="px-4 space-y-4">
+        {/* Scanner Card */}
+        <Card className="border-0 shadow-card">
+          <CardContent className="p-4">
             <Tabs defaultValue="camera" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="camera" className="flex items-center gap-2">
-                  <Camera className="w-4 h-4" />
+              <TabsList className="grid w-full grid-cols-2 mb-4 h-10">
+                <TabsTrigger value="camera" className="text-sm">
+                  <Camera className="w-4 h-4 mr-2" />
                   Camera
                 </TabsTrigger>
-                <TabsTrigger value="upload" className="flex items-center gap-2">
-                  <Upload className="w-4 h-4" />
+                <TabsTrigger value="upload" className="text-sm">
+                  <Upload className="w-4 h-4 mr-2" />
                   Upload
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="camera" className="space-y-4">
+              <TabsContent value="camera" className="mt-0">
                 <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageSelect} className="hidden" />
                 
-                {!previewUrl ? <div className="relative">
-                    <Button onClick={handleCameraCapture} className="w-full h-32 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-2 border-dashed border-white/30 rounded-xl shadow-lg transition-all hover:scale-[1.02]" size="lg">
-                      <div className="text-center">
-                        <div className="p-3 bg-white/20 rounded-full mb-3 mx-auto w-fit animate-pulse">
-                          <Camera className="w-8 h-8 text-white" />
-                        </div>
-                        <p className="text-white font-medium">Capture Plant Image</p>
-                        <p className="text-white/80 text-sm mt-1">Point camera at plant</p>
-                      </div>
-                    </Button>
-                  </div> : <div className="relative">
-                    <img src={previewUrl} alt="Captured plant" className="w-full h-64 object-cover rounded-xl shadow-lg" />
+                {!previewUrl ? (
+                  <button 
+                    onClick={handleCameraCapture} 
+                    className="w-full h-48 border-2 border-dashed border-muted-foreground/25 rounded-xl flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Camera className="w-7 h-7 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-foreground">Capture Plant Image</p>
+                      <p className="text-xs text-muted-foreground mt-1">Point camera at affected area</p>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="relative">
+                    <img src={previewUrl} alt="Captured plant" className="w-full h-48 object-cover rounded-xl" />
                     <ScanningAnimation isScanning={loading} />
-                    <Button onClick={resetScanner} size="sm" variant="secondary" className="absolute top-3 right-3 bg-white/90 hover:bg-white shadow-md text-gray-700 hover:text-gray-900 z-10">
-                      <X className="w-4 h-4 mr-1 text-gray-700" />
-                      Retake
+                    <Button 
+                      onClick={resetScanner} 
+                      size="sm" 
+                      variant="secondary" 
+                      className="absolute top-2 right-2 h-8 px-3 bg-background/90 hover:bg-background"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Clear
                     </Button>
-                  </div>}
+                  </div>
+                )}
               </TabsContent>
               
-              <TabsContent value="upload" className="space-y-4">
+              <TabsContent value="upload" className="mt-0">
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
                 
-                {!previewUrl ? <div className="relative">
-                    <Button onClick={() => fileInputRef.current?.click()} className="w-full h-32 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 border-2 border-dashed border-white/30 rounded-xl shadow-lg transition-all hover:scale-[1.02]" size="lg">
-                      <div className="text-center">
-                        <div className="p-3 bg-white/20 rounded-full mb-3 mx-auto w-fit animate-pulse">
-                          <Upload className="w-8 h-8 text-white" />
-                        </div>
-                        <p className="text-white font-medium">Upload Plant Image</p>
-                        <p className="text-white/80 text-sm mt-1">Choose from gallery</p>
-                      </div>
-                    </Button>
-                  </div> : <div className="relative">
-                    <img src={previewUrl} alt="Uploaded plant" className="w-full h-64 object-cover rounded-xl shadow-lg" />
+                {!previewUrl ? (
+                  <button 
+                    onClick={() => fileInputRef.current?.click()} 
+                    className="w-full h-48 border-2 border-dashed border-muted-foreground/25 rounded-xl flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Upload className="w-7 h-7 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-foreground">Upload Plant Image</p>
+                      <p className="text-xs text-muted-foreground mt-1">Choose from your gallery</p>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="relative">
+                    <img src={previewUrl} alt="Uploaded plant" className="w-full h-48 object-cover rounded-xl" />
                     <ScanningAnimation isScanning={loading} />
-                    <Button onClick={resetScanner} size="sm" variant="secondary" className="absolute top-3 right-3 bg-white/90 hover:bg-white shadow-md z-10">
+                    <Button 
+                      onClick={resetScanner} 
+                      size="sm" 
+                      variant="secondary" 
+                      className="absolute top-2 right-2 h-8 px-3 bg-background/90 hover:bg-background"
+                    >
                       <X className="w-4 h-4 mr-1" />
-                      Remove
+                      Clear
                     </Button>
-                  </div>}
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
 
             {/* Analyze Button */}
-            {selectedImage && !loading && results.length === 0 && <Button onClick={analyzePlant} className="w-full mt-6 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-medium py-3 rounded-xl shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl active:scale-95" size="lg">
+            {selectedImage && !loading && results.length === 0 && (
+              <Button 
+                onClick={analyzePlant} 
+                className="w-full mt-4 h-12 bg-primary hover:bg-primary/90"
+              >
                 <Zap className="w-5 h-5 mr-2" />
-                Analyze Plant Disease
-              </Button>}
+                Analyze Plant
+              </Button>
+            )}
 
             {/* Loading State */}
-            {loading && <div className="flex flex-col items-center justify-center py-8">
+            {loading && (
+              <div className="flex flex-col items-center justify-center py-8">
                 <div className="relative mb-4">
-                  <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                    <Loader2 className="w-10 h-10 text-white animate-spin" />
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
                   </div>
-                  <div className="absolute inset-0 bg-green-500/20 rounded-full animate-ping"></div>
-                  <div className="absolute -inset-2 bg-green-500/10 rounded-full animate-pulse"></div>
                 </div>
-                <p className="text-lg font-semibold text-gray-800 mb-1 animate-pulse">Scanning Plant Disease</p>
-                <p className="text-sm text-gray-600">AI is analyzing your plant...</p>
-                <div className="mt-4 flex gap-1">
-                  <div className="w-2 h-2 bg-success rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-success rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-success rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
-              </div>}
+                <p className="text-sm font-medium text-foreground">Analyzing...</p>
+                <p className="text-xs text-muted-foreground mt-1">AI is scanning your plant</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Results Section */}
-        {results.length > 0 && <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-full">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
+        {results.length > 0 && (
+          <Card className="border-0 shadow-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-success" />
                 Analysis Results
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4" ref={resultsRef}>
-              {results.map((result, index) => <div key={index} className="space-y-4">
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-xl shadow-sm border border-gray-200">
+              {results.map((result, index) => (
+                <div key={index} className="space-y-4">
+                  {/* Result Card */}
+                  <div className="p-4 bg-muted/50 rounded-xl">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-gray-800 text-lg">{result.disease}</h3>
-                      <Badge variant="secondary" className={`${getConfidenceColor(result.confidence)} font-semibold px-3 py-1 bg-white border-2`}>
+                      <h3 className="font-semibold text-foreground">{result.disease}</h3>
+                      <Badge variant="secondary" className={`${getConfidenceColor(result.confidence)} font-medium`}>
                         {result.confidence.toFixed(1)}%
                       </Badge>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div className={`${getConfidenceBgColor(result.confidence)} h-3 rounded-full transition-all duration-1000 ease-out`} style={{
-                  width: `${result.confidence}%`
-                }} />
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className={`${getConfidenceBgColor(result.confidence)} h-2 rounded-full transition-all duration-500`} 
+                        style={{ width: `${result.confidence}%` }} 
+                      />
                     </div>
-                    <p className="text-sm text-gray-600 mt-2">
+                    <p className="text-xs text-muted-foreground mt-2">
                       Confidence: {result.confidence >= 80 ? 'High' : result.confidence >= 60 ? 'Medium' : 'Low'}
                     </p>
                   </div>
 
-                  {/* Additional Information Section */}
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                      <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        How to Solve the Issue
+                  {/* Treatment Info */}
+                  <div className="space-y-3">
+                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
+                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                        How to Solve
                       </h4>
-                      <p className="text-sm text-blue-700 leading-relaxed">
-                        {result.disease.toLowerCase().includes('blight') ? 'Remove infected leaves immediately, improve air circulation, avoid overhead watering, and apply copper-based fungicides.' : result.disease.toLowerCase().includes('spot') ? 'Prune affected areas, ensure proper plant spacing, water at soil level, and apply preventive fungicide treatments.' : result.disease.toLowerCase().includes('rust') ? 'Remove infected plant parts, avoid watering leaves, improve drainage, and use resistant plant varieties when possible.' : 'Implement proper crop rotation, maintain soil health, ensure adequate spacing between plants, and monitor regularly for early detection.'}
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {result.disease.toLowerCase().includes('blight') 
+                          ? 'Remove infected leaves immediately, improve air circulation, avoid overhead watering, and apply copper-based fungicides.' 
+                          : result.disease.toLowerCase().includes('spot') 
+                          ? 'Prune affected areas, ensure proper plant spacing, water at soil level, and apply preventive fungicide treatments.' 
+                          : result.disease.toLowerCase().includes('rust') 
+                          ? 'Remove infected plant parts, avoid watering leaves, improve drainage, and use resistant plant varieties when possible.' 
+                          : 'Implement proper crop rotation, maintain soil health, ensure adequate spacing between plants, and monitor regularly for early detection.'}
                       </p>
                     </div>
 
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                      <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        Product Application Guide
+                    <div className="p-4 bg-success/5 rounded-xl border border-success/10">
+                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
+                        Application Guide
                       </h4>
-                      <p className="text-sm text-green-700 leading-relaxed">
-                        Apply recommended fungicides during early morning or late evening to avoid leaf burn. 
-                        Spray thoroughly covering both upper and lower leaf surfaces. Always wear protective equipment 
-                        and follow label instructions for dilution rates. Ensure plants are well-watered before application.
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Apply recommended fungicides during early morning or late evening. Spray thoroughly covering both leaf surfaces. Wear protective equipment and follow label instructions.
                       </p>
                     </div>
 
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                      <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                    <div className="p-4 bg-warning/5 rounded-xl border border-warning/10">
+                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-warning rounded-full"></div>
                         Treatment Duration
                       </h4>
-                      <p className="text-sm text-amber-700 leading-relaxed">
-                        <span className="font-medium">Initial Treatment:</span> Apply every 7-10 days for 3-4 weeks<br />
-                        <span className="font-medium">Maintenance:</span> Continue bi-weekly applications during favorable disease conditions<br />
-                        <span className="font-medium">Monitor:</span> Check plants every 2-3 days for improvement or new symptoms
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        <span className="font-medium">Initial:</span> Every 7-10 days for 3-4 weeks. <span className="font-medium">Maintenance:</span> Bi-weekly during favorable conditions.
                       </p>
                     </div>
                   </div>
-                </div>)}
+                </div>
+              ))}
               
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="border-2 border-blue-300 hover:bg-blue-50 py-3 px-3 rounded-xl font-medium text-blue-600 min-h-[56px] flex items-center justify-center" size="lg">
-                      <span className="text-xs font-medium leading-tight">Download Result</span>
-                    </Button>
-                  </DialogTrigger>
-                </Dialog>
-                
-                <Button onClick={resetScanner} variant="outline" className="border-2 border-gray-300 hover:bg-gray-50 py-3 px-3 rounded-xl font-medium min-h-[56px] flex items-center justify-center" size="lg">
-                  <span className="text-xs font-medium leading-tight">Scan Another</span>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowDownloadDialog(true)}
+                  className="h-10"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={resetScanner}
+                  className="h-10"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Scan Again
                 </Button>
               </div>
             </CardContent>
-          </Card>}
+          </Card>
+        )}
 
         {/* Weather-Integrated Treatment Advisor */}
         {results.length > 0 && (
@@ -848,51 +847,36 @@ const PlantScanner = () => {
         {/* Seasonal Care Calendar */}
         <SeasonalCareCalendar />
 
-        {/* Recommended Products Section */}
+        {/* Recommended Products */}
         {results.length > 0 && <RecommendedProducts disease={results[0].disease} confidence={results[0].confidence} />}
 
-        {/* Community Alerts Section */}
+        {/* Community Alerts */}
         {user && (
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-6">
+          <Card className="border-0 shadow-card">
+            <CardContent className="p-4">
               <CommunityAlerts />
             </CardContent>
           </Card>
         )}
 
-        {/* Diagnosis History Section */}
+        {/* Diagnosis History */}
         {user && <DiagnosisHistory />}
 
         {/* Info Section */}
-        <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-100 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-blue-100 rounded-full flex-shrink-0">
-                <Info className="w-5 h-5 text-blue-600" />
+        <Card className="border-0 shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Info className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-800 mb-2">Supported Plant Diseases</h3>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span><strong>Tomato:</strong> Septoria Leaf Spot, Bacterial Spot, Early/Late Blight</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <span><strong>Corn:</strong> Rust, Grey Leaf Spot, Northern Leaf Blight</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span><strong>Soy:</strong> Frogeye Leaf Spot, Downy Mildew</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    <span><strong>Cabbage:</strong> Black Rot</span>
-                  </div>
+                <h3 className="text-sm font-medium text-foreground mb-2">Supported Diseases</h3>
+                <div className="space-y-1.5 text-xs text-muted-foreground">
+                  <p><span className="font-medium text-foreground">Tomato:</span> Septoria, Bacterial Spot, Blight</p>
+                  <p><span className="font-medium text-foreground">Corn:</span> Rust, Grey Leaf Spot, Northern Blight</p>
+                  <p><span className="font-medium text-foreground">Soy:</span> Frogeye Leaf Spot, Downy Mildew</p>
+                  <p><span className="font-medium text-foreground">Cabbage:</span> Black Rot</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-3">
-                  For best results, ensure good lighting and focus on affected plant parts
-                </p>
               </div>
             </div>
           </CardContent>
@@ -905,199 +889,118 @@ const PlantScanner = () => {
         if (!open) setSelectedPackage(null);
       }}>
         <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="px-4">
-            <DrawerTitle className="text-2xl font-bold">
+          <DrawerHeader className="px-4 pb-2">
+            <DrawerTitle className="text-lg font-semibold text-primary">
               {selectedPackage ? 'Complete Payment' : 'Purchase Credits'}
             </DrawerTitle>
           </DrawerHeader>
           <div className="p-4 overflow-y-auto max-h-[60vh] scrollbar-hide space-y-4">
             {!selectedPackage ? (
               <>
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
                   <div className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-green-600" />
-                    <span className="text-gray-700">Current Balance:</span>
+                    <Coins className="w-4 h-4 text-primary" />
+                    <span className="text-sm text-muted-foreground">Current Balance</span>
                   </div>
-                  <span className="text-2xl font-bold text-green-600">{credits} Credits</span>
+                  <span className="text-lg font-bold text-primary">{credits}</span>
                 </div>
                 
                 {credits <= 20 && (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-yellow-800 text-sm font-medium">
-                      ⚠️ Your credits are running low! Purchase more to continue scanning.
+                  <div className="p-3 bg-warning/10 border border-warning/20 rounded-xl">
+                    <p className="text-warning text-xs font-medium">
+                      ⚠️ Credits running low. Purchase more to continue.
                     </p>
                   </div>
                 )}
 
-                <div className="grid gap-3">
+                <div className="space-y-2">
                   {[
-                    { credits: 100, price: 299, popular: false, savings: null },
-                    { credits: 200, price: 499, popular: true, savings: '₱99' },
-                    { credits: 300, price: 699, popular: false, savings: '₱198' },
-                    { credits: 500, price: 999, popular: false, savings: '₱496' },
+                    { credits: 100, price: 299, popular: false },
+                    { credits: 200, price: 499, popular: true },
+                    { credits: 300, price: 699, popular: false },
+                    { credits: 500, price: 999, popular: false },
                   ].map((pkg) => (
-                    <Button 
+                    <button 
                       key={pkg.credits} 
                       onClick={() => setSelectedPackage({ credits: pkg.credits, price: pkg.price })} 
-                      className={`w-full flex items-center justify-between p-6 rounded-xl transition-all ${
+                      className={`w-full flex items-center justify-between p-4 rounded-xl transition-all active:scale-[0.98] ${
                         pkg.popular
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg border-2 border-green-400'
-                          : 'bg-gray-50 hover:bg-gray-100 text-gray-900 border-2 border-gray-200'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/50 hover:bg-muted'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Coins className="w-6 h-6" />
+                        <Coins className="w-5 h-5" />
                         <div className="text-left">
-                          <p className="font-bold text-lg">{pkg.credits} Credits</p>
-                          {pkg.popular && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Most Popular</span>}
-                          {pkg.savings && !pkg.popular && <span className="text-xs text-green-600 font-medium">Save {pkg.savings}</span>}
+                          <p className="font-semibold">{pkg.credits} Credits</p>
+                          {pkg.popular && <span className="text-xs opacity-80">Most Popular</span>}
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-xl">₱{pkg.price}</p>
-                        <p className="text-xs opacity-80">₱{(pkg.price / pkg.credits).toFixed(2)} per scan</p>
+                        <p className="font-bold">₱{pkg.price}</p>
+                        <p className="text-xs opacity-70">₱{(pkg.price / pkg.credits).toFixed(2)}/scan</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setSelectedPackage(null)}
+                  className="mb-2 -ml-2 h-8"
+                  disabled={purchasingCredits}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+
+                <div className="p-4 bg-muted/50 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Coins className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">{selectedPackage.credits} Credits</p>
+                        <p className="text-xs text-muted-foreground">₱{(selectedPackage.price / selectedPackage.credits).toFixed(2)} per scan</p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-primary">₱{selectedPackage.price}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground mb-2">Select Payment Method</p>
+                  
+                  {[
+                    { id: 'qrph', name: 'QRPh', desc: 'InstaPay/PESONet' },
+                    { id: 'gcash', name: 'GCash', desc: 'Pay with GCash' },
+                    { id: 'maya', name: 'Maya', desc: 'Pay with Maya' },
+                    { id: 'card', name: 'Card', desc: 'Visa, Mastercard' },
+                  ].map((method) => (
+                    <Button
+                      key={method.id}
+                      onClick={() => purchaseCredits(method.id)}
+                      disabled={purchasingCredits}
+                      variant="outline"
+                      className="w-full h-auto p-4 justify-between"
+                    >
+                      <div className="text-left">
+                        <p className="font-medium">{method.name}</p>
+                        <p className="text-xs text-muted-foreground">{method.desc}</p>
                       </div>
                     </Button>
                   ))}
                 </div>
 
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-900 mb-2">💡 Earn Free Credits:</h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Login daily to earn bonus credits</li>
-                    <li>• Complete achievements to earn points</li>
-                    <li>• Redeem points for free credits in Achievements</li>
-                  </ul>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Back Button */}
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setSelectedPackage(null)}
-                  className="mb-2 -ml-2 text-gray-600 hover:text-gray-900"
-                  disabled={purchasingCredits}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Change Package
-                </Button>
-
-                {/* Payment Step Card */}
-                <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
-                  <CardContent className="p-5">
-                    <h3 className="font-semibold text-gray-800 mb-4">Order Summary</h3>
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
-                          <Coins className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-lg text-gray-900">{selectedPackage.credits} Credits</p>
-                          <p className="text-sm text-gray-500">₱{(selectedPackage.price / selectedPackage.credits).toFixed(2)} per scan</p>
-                        </div>
-                      </div>
-                      <p className="text-2xl font-bold text-green-600">₱{selectedPackage.price}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Payment Methods Card */}
-                <Card className="border-2 border-gray-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <CreditCard className="w-5 h-5 text-blue-600" />
-                      Select Payment Method
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* QRPh */}
-                    <Button
-                      onClick={() => purchaseCredits('qrph')}
-                      disabled={purchasingCredits}
-                      variant="outline"
-                      className="w-full h-auto p-4 flex items-center justify-between hover:bg-blue-50 hover:border-blue-300 transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                          <span className="text-white font-bold text-xs">QR</span>
-                        </div>
-                        <div className="text-left">
-                          <p className="font-semibold text-gray-900">QRPh (InstaPay/PESONet)</p>
-                          <p className="text-xs text-gray-500">Scan QR code to pay instantly</p>
-                        </div>
-                      </div>
-                      <CheckCircle className="w-5 h-5 text-green-500 opacity-0 group-hover:opacity-100" />
-                    </Button>
-
-                    {/* GCash */}
-                    <Button
-                      onClick={() => purchaseCredits('gcash')}
-                      disabled={purchasingCredits}
-                      variant="outline"
-                      className="w-full h-auto p-4 flex items-center justify-between hover:bg-blue-50 hover:border-blue-300 transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">G</span>
-                        </div>
-                        <div className="text-left">
-                          <p className="font-semibold text-gray-900">GCash</p>
-                          <p className="text-xs text-gray-500">Pay with your GCash wallet</p>
-                        </div>
-                      </div>
-                    </Button>
-
-                    {/* Maya */}
-                    <Button
-                      onClick={() => purchaseCredits('maya')}
-                      disabled={purchasingCredits}
-                      variant="outline"
-                      className="w-full h-auto p-4 flex items-center justify-between hover:bg-green-50 hover:border-green-300 transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">M</span>
-                        </div>
-                        <div className="text-left">
-                          <p className="font-semibold text-gray-900">Maya</p>
-                          <p className="text-xs text-gray-500">Pay with your Maya wallet</p>
-                        </div>
-                      </div>
-                    </Button>
-
-                    {/* Credit/Debit Card */}
-                    <Button
-                      onClick={() => purchaseCredits('card')}
-                      disabled={purchasingCredits}
-                      variant="outline"
-                      className="w-full h-auto p-4 flex items-center justify-between hover:bg-purple-50 hover:border-purple-300 transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          <CreditCard className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <p className="font-semibold text-gray-900">Credit / Debit Card</p>
-                          <p className="text-xs text-gray-500">Visa, Mastercard, JCB</p>
-                        </div>
-                      </div>
-                    </Button>
-                  </CardContent>
-                </Card>
-
                 {purchasingCredits && (
-                  <div className="flex items-center justify-center py-4 bg-gray-50 rounded-lg">
-                    <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-                    <span className="ml-2 text-gray-600">Processing payment...</span>
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary mr-2" />
+                    <span className="text-sm text-muted-foreground">Processing...</span>
                   </div>
                 )}
-
-                {/* Security Badge */}
-                <div className="flex items-center justify-center gap-2 p-3 bg-gray-50 rounded-lg">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-xs text-gray-600">Secure payment powered by PayMongo</span>
-                </div>
               </>
             )}
           </div>
@@ -1106,48 +1009,41 @@ const PlantScanner = () => {
 
       {/* Download Format Dialog */}
       <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Download className="w-5 h-5 text-blue-600" />
-              Choose Download Format
+              <Download className="w-5 h-5 text-primary" />
+              Download Format
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center">
-              <p className="text-gray-600 mb-4">
-                Select the format to download your analysis results:
-              </p>
-            </div>
+          <div className="space-y-3">
+            <Button 
+              onClick={() => {
+                downloadAsPDF();
+                setShowDownloadDialog(false);
+              }} 
+              variant="outline"
+              className="w-full justify-between h-12"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-destructive" />
+                <span>PDF Document</span>
+              </div>
+            </Button>
             
-            <div className="space-y-3">
-              <Button onClick={() => {
-              downloadAsPDF();
-              setShowDownloadDialog(false);
-            }} className="w-full justify-between bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white" size="lg">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  <span>PDF Document</span>
-                </div>
-                <span className="text-xs opacity-80">Detailed Report</span>
-              </Button>
-              
-              <Button onClick={() => {
-              downloadAsJPEG();
-              setShowDownloadDialog(false);
-            }} className="w-full justify-between bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white" size="lg">
-                <div className="flex items-center gap-2">
-                  <Image className="w-5 h-5" />
-                  <span>JPEG Image</span>
-                </div>
-                <span className="text-xs opacity-80">Visual Results</span>
-              </Button>
-            </div>
-            
-            <div className="text-xs text-gray-500 space-y-1">
-              <p><strong>PDF:</strong> Complete analysis report with all details and recommendations</p>
-              <p><strong>JPEG:</strong> Visual screenshot of the results section for quick sharing</p>
-            </div>
+            <Button 
+              onClick={() => {
+                downloadAsJPEG();
+                setShowDownloadDialog(false);
+              }} 
+              variant="outline"
+              className="w-full justify-between h-12"
+            >
+              <div className="flex items-center gap-2">
+                <Image className="w-5 h-5 text-primary" />
+                <span>JPEG Image</span>
+              </div>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1162,21 +1058,27 @@ const PlantScanner = () => {
         currentPoints={userPoints}
       />
 
-      {/* Floating Expert Assistance Button */}
+      {/* Floating Expert Button */}
       {!showAchievementsModal && (
         <TooltipProvider>
           <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
             <TooltipTrigger asChild>
-              <Button onClick={() => setShowTechnicianDialog(true)} className="fixed bottom-[12%] right-6 z-50 rounded-full w-14 h-14 shadow-lg hover:shadow-xl transition-all duration-300 opacity-40 hover:opacity-100 focus-visible:opacity-100 active:opacity-100 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 hover:scale-110" size="icon">
-                <MessageCircle className="w-6 h-6 text-white" />
+              <Button 
+                onClick={() => setShowTechnicianDialog(true)} 
+                className="fixed bottom-[12%] right-4 z-50 rounded-full w-12 h-12 shadow-elevated opacity-60 hover:opacity-100 bg-primary hover:bg-primary/90 transition-all hover:scale-105" 
+                size="icon"
+              >
+                <MessageCircle className="w-5 h-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="left" className="bg-white text-gray-900 border border-gray-200 shadow-lg animate-in fade-in-0 zoom-in-95">
-              <p className="text-sm font-medium">Need expert assistance?</p>
+            <TooltipContent side="left" className="bg-popover border shadow-lg">
+              <p className="text-sm">Need expert help?</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       )}
-    </div>;
+    </div>
+  );
 };
+
 export default PlantScanner;
