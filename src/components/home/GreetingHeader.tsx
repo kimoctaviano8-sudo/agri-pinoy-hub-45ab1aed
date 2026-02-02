@@ -3,7 +3,6 @@ import { format } from "date-fns";
 import { Search, Mic, MicOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 // Type declarations for Web Speech API
@@ -126,31 +125,31 @@ export const GreetingHeader = ({
       </div>
 
       {/* Search Bar with Voice Input */}
-      <div className="relative flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder={isListening ? "Listening..." : "Search news, products..."}
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 pr-4 h-11 bg-background border-0 rounded-xl placeholder:text-muted-foreground/70"
-          />
-        </div>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder={isListening ? "Listening..." : "Search news, products..."}
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className={`pl-10 h-11 bg-background border-0 rounded-xl placeholder:text-muted-foreground/70 ${speechSupported ? 'pr-11' : 'pr-4'}`}
+        />
         {speechSupported && (
-          <Button
+          <button
             type="button"
-            size="icon"
-            variant={isListening ? "destructive" : "secondary"}
-            className="h-11 w-11 rounded-xl shrink-0"
             onClick={startListening}
             disabled={isListening}
+            className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition-colors ${
+              isListening 
+                ? 'text-destructive bg-destructive/10' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
           >
             {isListening ? (
-              <MicOff className="w-5 h-5 animate-pulse" />
+              <MicOff className="w-4 h-4 animate-pulse" />
             ) : (
-              <Mic className="w-5 h-5" />
+              <Mic className="w-4 h-4" />
             )}
-          </Button>
+          </button>
         )}
       </div>
     </div>
