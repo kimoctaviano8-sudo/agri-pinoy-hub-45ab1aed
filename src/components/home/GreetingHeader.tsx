@@ -29,7 +29,7 @@ export const GreetingHeader = ({
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <div className="bg-primary px-4 pt-6 pb-10">
+    <div className="bg-primary px-4 pt-6 pb-10 rounded-b-3xl">
       {/* Greeting Row */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex-1">
