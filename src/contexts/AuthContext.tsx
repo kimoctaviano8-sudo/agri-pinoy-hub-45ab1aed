@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useOAuthSignIn } from '@/hooks/useOAuthSignIn';
 import { useNativeBiometric } from '@/hooks/useNativeBiometric';
+import { Capacitor } from '@capacitor/core';
 
 interface AuthContextType {
   user: User | null;
@@ -197,11 +198,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return `${baseUrl}/avatars/default-male-farmer.jpg`;
       };
 
+      // Use custom URL scheme for native apps, web URL for browser
+      const getEmailRedirectUrl = () => {
+        if (Capacitor.isNativePlatform()) {
+          // Custom URL scheme for deep linking back to the app
+          return 'geminiagri://email-confirmed';
+        }
+        return `${window.location.origin}/email-confirmed`;
+      };
+
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/email-confirmed`,
+          emailRedirectTo: getEmailRedirectUrl(),
           data: {
             first_name: userData.firstName,
             last_name: userData.lastName,
