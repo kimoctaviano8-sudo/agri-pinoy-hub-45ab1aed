@@ -63,6 +63,7 @@ export const TechnicianContactDialog = ({ open, onOpenChange }: TechnicianContac
     { name: "Relan Rivas", phone: "0999 885 2599", region: "Region IV-A" },
     { name: "Preach Tibayan", phone: "0998 985 3740", region: "Region IV-A" },
     { name: "Conrado Vasquez", phone: "0998 954 5137", region: "Region V" },
+    { name: "Rey Mark Uno", phone: "0930 089 4709", region: "Region V" },
   ];
 
   return (
