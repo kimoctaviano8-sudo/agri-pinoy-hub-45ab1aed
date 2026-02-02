@@ -490,7 +490,7 @@ const Profile = () => {
           <div className="flex items-start gap-4 mb-4">
             {/* Profile Image - Left Side */}
             <div className="relative flex-shrink-0 mt-6">
-              <Avatar className="w-[99px] h-[99px] shadow-lg border-[3px] border-white">
+              <Avatar className="w-[99px] h-[99px] border-[3px] border-white">
                 <AvatarImage src={avatar || undefined} alt="Profile" />
                 <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
                   {profileData.name.charAt(0)}
