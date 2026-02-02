@@ -4,11 +4,23 @@ const corsHeaders = {
 };
 
 interface WeatherApiResponse {
-  timezone: string
+  timezone: string;
   current_weather: {
-    temperature: number
-    weathercode: number
-  } | null
+    temperature: number;
+    weathercode: number;
+  } | null;
+  daily?: {
+    temperature_2m_max: number[];
+    temperature_2m_min: number[];
+    sunrise: string[];
+    sunset: string[];
+  };
+  hourly?: {
+    relative_humidity_2m: number[];
+    precipitation: number[];
+    surface_pressure: number[];
+    wind_speed_10m: number[];
+  };
 }
 
 interface GeocodingResult {
@@ -28,6 +40,14 @@ interface GeocodingResult {
 interface WeatherResult {
   location: string;
   temperature: number;
+  temperatureHigh: number;
+  temperatureLow: number;
+  humidity: number;
+  precipitation: number;
+  pressure: number;
+  windSpeed: number;
+  sunrise: string;
+  sunset: string;
   conditionEmoji: string;
   description: string;
 }
@@ -73,6 +93,19 @@ async function getLocationName(lat: number, lon: number): Promise<string> {
   }
 }
 
+function formatTime(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  } catch {
+    return '--:--';
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -95,12 +128,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch weather and location name in parallel
+    // Fetch weather with enhanced data and location name in parallel
     const weatherUrl = new URL('https://api.open-meteo.com/v1/forecast');
     weatherUrl.searchParams.set('latitude', String(lat));
     weatherUrl.searchParams.set('longitude', String(lon));
     weatherUrl.searchParams.set('current_weather', 'true');
     weatherUrl.searchParams.set('timezone', 'auto');
+    weatherUrl.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min,sunrise,sunset');
+    weatherUrl.searchParams.set('hourly', 'relative_humidity_2m,precipitation,surface_pressure,wind_speed_10m');
+    weatherUrl.searchParams.set('forecast_days', '1');
 
     const [weatherResponse, locationName] = await Promise.all([
       fetch(weatherUrl.toString()),
@@ -127,6 +163,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Get current hour index for hourly data
+    const currentHour = new Date().getHours();
+
     const getWeatherEmoji = (code: number) => {
       if (code === 0) return '☀️';
       if (code >= 1 && code <= 3) return '⛅';
@@ -145,9 +184,27 @@ Deno.serve(async (req) => {
       return 'Check conditions';
     };
 
+    // Extract enhanced weather data
+    const temperatureHigh = data.daily?.temperature_2m_max?.[0] ?? current.temperature;
+    const temperatureLow = data.daily?.temperature_2m_min?.[0] ?? current.temperature;
+    const humidity = data.hourly?.relative_humidity_2m?.[currentHour] ?? 0;
+    const precipitation = data.hourly?.precipitation?.[currentHour] ?? 0;
+    const pressure = data.hourly?.surface_pressure?.[currentHour] ?? 0;
+    const windSpeed = data.hourly?.wind_speed_10m?.[currentHour] ?? 0;
+    const sunrise = data.daily?.sunrise?.[0] ? formatTime(data.daily.sunrise[0]) : '--:--';
+    const sunset = data.daily?.sunset?.[0] ? formatTime(data.daily.sunset[0]) : '--:--';
+
     const result: WeatherResult = {
       location: locationName,
       temperature: current.temperature,
+      temperatureHigh: Math.round(temperatureHigh),
+      temperatureLow: Math.round(temperatureLow),
+      humidity: Math.round(humidity),
+      precipitation: Math.round(precipitation * 10) / 10,
+      pressure: Math.round(pressure),
+      windSpeed: Math.round(windSpeed * 10) / 10,
+      sunrise,
+      sunset,
       conditionEmoji: getWeatherEmoji(current.weathercode),
       description: getWeatherDescription(current.temperature, current.weathercode),
     };

@@ -17,6 +17,7 @@ export type Database = {
       app_settings: {
         Row: {
           id: string
+          show_carousel: boolean | null
           updated_at: string
           updated_by: string | null
           vacation_mode: boolean
@@ -24,6 +25,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          show_carousel?: boolean | null
           updated_at?: string
           updated_by?: string | null
           vacation_mode?: boolean
@@ -31,6 +33,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          show_carousel?: boolean | null
           updated_at?: string
           updated_by?: string | null
           vacation_mode?: boolean

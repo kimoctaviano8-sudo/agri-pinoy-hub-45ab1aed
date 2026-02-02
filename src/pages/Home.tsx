@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, TrendingUp, Calendar, MapPin, CalendarIcon, X } from "lucide-react";
+import { Filter, TrendingUp, Calendar, CalendarIcon, X } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
@@ -15,10 +13,15 @@ import NewsCard from "@/components/NewsCard";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { GreetingHeader } from "@/components/home/GreetingHeader";
+import { WeatherWidget } from "@/components/home/WeatherWidget";
 import heroImage from "@/assets/hero-agriculture.jpg";
 import farmerImage from "@/assets/farmer-mobile.jpg";
+
 const Home = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -32,22 +35,41 @@ const Home = () => {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideCount, setSlideCount] = useState(0);
+  const [showCarousel, setShowCarousel] = useState(false);
+  const [userProfile, setUserProfile] = useState<{
+    first_name?: string;
+    avatar_url?: string;
+  } | null>(null);
   const [weather, setWeather] = useState({
     location: "Loading...",
     temperature: "--",
+    temperatureHigh: "--",
+    temperatureLow: "--",
+    humidity: "--",
+    precipitation: "--",
+    pressure: "--",
+    windSpeed: "--",
+    sunrise: "--:--",
+    sunset: "--:--",
     condition: "⏳",
     description: "Getting location..."
   });
+
   const categories = ["All", "agriculture", "gemini", "market", "weather", "general"];
+
   useEffect(() => {
     fetchNews();
     fetchCarouselItems();
+    fetchCarouselVisibility();
     getUserLocationAndWeather();
+    if (user) {
+      fetchUserProfile();
+    }
 
     // Add interval to refresh news data every 5 minutes to prevent stale cache
     const interval = setInterval(fetchNews, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -59,6 +81,40 @@ const Home = () => {
       setCurrentSlide(carouselApi.selectedScrollSnap());
     });
   }, [carouselApi]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      setUserProfile(data);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
+  const fetchCarouselVisibility = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('show_carousel')
+        .eq('id', 'global')
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) {
+        setShowCarousel(data.show_carousel ?? true);
+      }
+    } catch (error) {
+      console.error('Error fetching carousel visibility:', error);
+      setShowCarousel(true); // Default to showing carousel
+    }
+  };
 
   const fetchCarouselItems = async () => {
     try {
@@ -74,6 +130,7 @@ const Home = () => {
       console.error('Error fetching carousel items:', error);
     }
   };
+
   const getUserLocationAndWeather = async () => {
     try {
       // Check if geolocation is supported
@@ -81,6 +138,14 @@ const Home = () => {
         setWeather({
           location: "Manila",
           temperature: "28",
+          temperatureHigh: "32",
+          temperatureLow: "24",
+          humidity: "75",
+          precipitation: "0",
+          pressure: "1013",
+          windSpeed: "3.5",
+          sunrise: "5:45 AM",
+          sunset: "6:15 PM",
           condition: "☀️",
           description: "Location not available"
         });
@@ -89,10 +154,7 @@ const Home = () => {
 
       // Get user's current position
       navigator.geolocation.getCurrentPosition(async position => {
-        const {
-          latitude,
-          longitude
-        } = position.coords;
+        const { latitude, longitude } = position.coords;
         await fetchWeatherData(latitude, longitude);
       }, error => {
         console.error('Geolocation error:', error);
@@ -108,11 +170,20 @@ const Home = () => {
       setWeather({
         location: "Manila",
         temperature: "28",
+        temperatureHigh: "32",
+        temperatureLow: "24",
+        humidity: "75",
+        precipitation: "0",
+        pressure: "1013",
+        windSpeed: "3.5",
+        sunrise: "5:45 AM",
+        sunset: "6:15 PM",
         condition: "☀️",
         description: "Perfect for farming"
       });
     }
   };
+
   const fetchWeatherData = async (lat: number, lon: number) => {
     try {
       const { data, error } = await supabase.functions.invoke(
@@ -129,6 +200,14 @@ const Home = () => {
       const weatherData = data as {
         location: string;
         temperature: number;
+        temperatureHigh: number;
+        temperatureLow: number;
+        humidity: number;
+        precipitation: number;
+        pressure: number;
+        windSpeed: number;
+        sunrise: string;
+        sunset: string;
         conditionEmoji: string;
         description: string;
       };
@@ -136,6 +215,14 @@ const Home = () => {
       setWeather({
         location: weatherData.location,
         temperature: Math.round(weatherData.temperature).toString(),
+        temperatureHigh: weatherData.temperatureHigh.toString(),
+        temperatureLow: weatherData.temperatureLow.toString(),
+        humidity: weatherData.humidity.toString(),
+        precipitation: weatherData.precipitation.toString(),
+        pressure: weatherData.pressure.toString(),
+        windSpeed: weatherData.windSpeed.toString(),
+        sunrise: weatherData.sunrise,
+        sunset: weatherData.sunset,
         condition: weatherData.conditionEmoji,
         description: weatherData.description,
       });
@@ -144,18 +231,24 @@ const Home = () => {
       setWeather({
         location: "Location unavailable",
         temperature: "--",
+        temperatureHigh: "--",
+        temperatureLow: "--",
+        humidity: "--",
+        precipitation: "--",
+        pressure: "--",
+        windSpeed: "--",
+        sunrise: "--:--",
+        sunset: "--:--",
         condition: "⛅",
         description: "Weather unavailable",
       });
     }
   };
+
   const fetchNews = async () => {
     try {
       // Add cache busting to ensure fresh data
-      const {
-        data,
-        error
-      } = await supabase.from('news').select('*').eq('published', true).order('published_date', {
+      const { data, error } = await supabase.from('news').select('*').eq('published', true).order('published_date', {
         ascending: false
       });
       if (error) {
@@ -233,6 +326,7 @@ const Home = () => {
       setLoading(false);
     }
   };
+
   const filteredNews = newsData.filter(news => {
     const matchesSearch = news.title.toLowerCase().includes(searchQuery.toLowerCase()) || news.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "All" || news.category?.toLowerCase() === selectedCategory.toLowerCase();
@@ -267,31 +361,34 @@ const Home = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, selectedDate, dateRange]);
-  const trendingTopics = ["Rice Production", "Climate Change", "Organic Farming", "Export Markets", "Government Subsidies"];
+
   const clearDateFilter = () => {
     setSelectedDate(undefined);
     setDateRange(undefined);
   };
-  return <div className="min-h-screen bg-background pb-20">
-      {/* Mobile Hero Carousel Section */}
-      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
-        <Carousel
-          opts={{
-            loop: true,
-            align: "start",
-          }}
-          plugins={[
-            Autoplay({
-              delay: 4000,
-              stopOnInteraction: false,
-            }),
-          ]}
-          setApi={setCarouselApi}
-          className="w-full h-full"
-        >
-          <CarouselContent noGap className="h-48 sm:h-56 md:h-64">
-            {carouselItems.length > 0 ? (
-              carouselItems.map((item) => (
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      {/* Conditional Carousel or Greeting Header */}
+      {showCarousel && carouselItems.length > 0 ? (
+        /* Mobile Hero Carousel Section */
+        <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
+          <Carousel
+            opts={{
+              loop: true,
+              align: "start",
+            }}
+            plugins={[
+              Autoplay({
+                delay: 4000,
+                stopOnInteraction: false,
+              }),
+            ]}
+            setApi={setCarouselApi}
+            className="w-full h-full"
+          >
+            <CarouselContent noGap className="h-48 sm:h-56 md:h-64">
+              {carouselItems.map((item) => (
                 <CarouselItem key={item.id} noGap className="h-48 sm:h-56 md:h-64">
                   <div className="relative h-full w-full">
                     <img 
@@ -320,81 +417,55 @@ const Home = () => {
                     )}
                   </div>
                 </CarouselItem>
-              ))
-            ) : (
-              <CarouselItem noGap className="h-48 sm:h-56 md:h-64">
-                <div className="relative h-full w-full">
-                  <img src={heroImage} alt="Philippine Agriculture" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/10"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center text-white px-6 max-w-md">
-                      <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 leading-tight [text-shadow:_0_2px_8px_rgba(0,0,0,0.8),_0_1px_3px_rgba(0,0,0,0.9)]">
-                        Welcome To Gemini
-                      </h1>
-                      <p className="text-xs sm:text-sm text-white leading-relaxed [text-shadow:_0_2px_6px_rgba(0,0,0,0.7),_0_1px_2px_rgba(0,0,0,0.8)]">
-                        Latest news and insights for Filipino farmers
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CarouselItem>
-            )}
-          </CarouselContent>
-        </Carousel>
-        {/* Carousel Dot Indicators */}
-        {slideCount > 1 && (
-          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-            {Array.from({ length: slideCount }).map((_, index) => (
-              <button
-                key={index}
-                onClick={() => carouselApi?.scrollTo(index)}
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                  currentSlide === index
-                    ? "bg-white w-3"
-                    : "bg-white/50 hover:bg-white/75"
-                )}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </CarouselContent>
+          </Carousel>
+          {/* Carousel Dot Indicators */}
+          {slideCount > 1 && (
+            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+              {Array.from({ length: slideCount }).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => carouselApi?.scrollTo(index)}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                    currentSlide === index
+                      ? "bg-white w-3"
+                      : "bg-white/50 hover:bg-white/75"
+                  )}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* New Greeting Header with Weather Widget */
+        <>
+          <GreetingHeader
+            firstName={userProfile?.first_name}
+            avatarUrl={userProfile?.avatar_url}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
+          <WeatherWidget weather={weather} />
+        </>
+      )}
 
       <div className="px-4 py-4 bg-background">
-        {/* Mobile Search and Filter - Compact */}
-        <div className="mb-4 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder={t('search_news')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 h-10 placeholder:text-xs" />
-          </div>
-
-          {/* Category Filter - Horizontal Scroll */}
-          <div className="flex space-x-2 overflow-x-auto pb-1 scrollbar-hide">
-            {categories.map(category => <Badge key={category} variant={selectedCategory === category ? "default" : "outline"} className="cursor-pointer transition-smooth hover:scale-105 whitespace-nowrap text-xs px-3 py-1 min-h-[28px] touch-manipulation" onClick={() => setSelectedCategory(category)}>
-                {category}
-              </Badge>)}
-          </div>
+        {/* Category Filter - Horizontal Scroll */}
+        <div className="flex space-x-2 overflow-x-auto pb-1 scrollbar-hide mb-4">
+          {categories.map(category => (
+            <Badge 
+              key={category} 
+              variant={selectedCategory === category ? "default" : "outline"} 
+              className="cursor-pointer transition-smooth hover:scale-105 whitespace-nowrap text-xs px-3 py-1 min-h-[28px] touch-manipulation" 
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </Badge>
+          ))}
         </div>
-
-        {/* Weather Widget - Above Latest News */}
-        <Card className="bg-primary/5 mb-4">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <MapPin className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">Today's Weather</span>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-bold">
-                  {weather.location} {weather.temperature}°C {weather.condition}
-                </div>
-                <div className="text-xs text-muted-foreground">{weather.description}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
 
         {/* Mobile News Grid - Single Column */}
         <div className="space-y-4">
@@ -407,83 +478,123 @@ const Home = () => {
           </div>
 
           {/* Date Filter - Conditionally shown */}
-          {showDateFilters && <div className="flex flex-wrap gap-2 mb-4">
-            {/* Single Date Picker */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("h-9 text-xs px-3 flex-1 min-w-[140px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-3 w-3" />
-                  {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus className={cn("p-3 pointer-events-auto")} />
-              </PopoverContent>
-            </Popover>
+          {showDateFilters && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {/* Single Date Picker */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("h-9 text-xs px-3 flex-1 min-w-[140px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-3 w-3" />
+                    {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus className={cn("p-3 pointer-events-auto")} />
+                </PopoverContent>
+              </Popover>
 
-            {/* Date Range Picker */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("h-9 text-xs px-3 flex-1 min-w-[140px] justify-center text-center font-normal", !dateRange?.from && !dateRange?.to && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-3 w-3" />
-                  {dateRange?.from && dateRange.to ? `${format(dateRange.from, "MMM dd")} - ${format(dateRange.to, "MMM dd")}` : dateRange?.from ? `From ${format(dateRange.from, "MMM dd")}` : dateRange?.to ? `Until ${format(dateRange.to, "MMM dd")}` : "Date range"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent mode="range" selected={dateRange} onSelect={range => setDateRange(range)} initialFocus className={cn("p-3 pointer-events-auto")} />
-              </PopoverContent>
-            </Popover>
+              {/* Date Range Picker */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("h-9 text-xs px-3 flex-1 min-w-[140px] justify-center text-center font-normal", !dateRange?.from && !dateRange?.to && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-3 w-3" />
+                    {dateRange?.from && dateRange.to ? `${format(dateRange.from, "MMM dd")} - ${format(dateRange.to, "MMM dd")}` : dateRange?.from ? `From ${format(dateRange.from, "MMM dd")}` : dateRange?.to ? `Until ${format(dateRange.to, "MMM dd")}` : "Date range"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent mode="range" selected={dateRange} onSelect={range => setDateRange(range)} initialFocus className={cn("p-3 pointer-events-auto")} />
+                </PopoverContent>
+              </Popover>
 
-            {/* Clear Date Filter Button */}
-            {(selectedDate || dateRange?.from || dateRange?.to) && <Button variant="ghost" size="sm" onClick={clearDateFilter} className="h-9 px-2 text-xs">
-                <X className="h-3 w-3" />
-              </Button>}
-          </div>}
+              {/* Clear Date Filter Button */}
+              {(selectedDate || dateRange?.from || dateRange?.to) && (
+                <Button variant="ghost" size="sm" onClick={clearDateFilter} className="h-9 px-2 text-xs">
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          )}
 
           <div className="space-y-3">
-            {loading ? <div className="text-center py-8">
+            {loading ? (
+              <div className="text-center py-8">
                 <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
                 <p className="text-muted-foreground mt-2">Loading news...</p>
-              </div> : filteredNews.length === 0 ? <div className="text-center py-8">
+              </div>
+            ) : filteredNews.length === 0 ? (
+              <div className="text-center py-8">
                 <p className="text-muted-foreground">No news found.</p>
-              </div> : <>
-                {currentNews.map((news, index) => <NewsCard id={news.id} key={news.id} title={news.title} excerpt={news.excerpt} category={news.category} author={news.author} publishedAt={news.publishedAt} readTime={news.readTime} views={news.views} image={news.image} featured={index === 0 && currentPage === 1} />)}
+              </div>
+            ) : (
+              <>
+                {currentNews.map((news, index) => (
+                  <NewsCard 
+                    id={news.id} 
+                    key={news.id} 
+                    title={news.title} 
+                    excerpt={news.excerpt} 
+                    category={news.category} 
+                    author={news.author} 
+                    publishedAt={news.publishedAt} 
+                    readTime={news.readTime} 
+                    views={news.views} 
+                    image={news.image} 
+                    featured={index === 0 && currentPage === 1} 
+                  />
+                ))}
                 
                 {/* Pagination */}
-                {totalPages > 1 && <div className="flex justify-center mt-6">
+                {totalPages > 1 && (
+                  <div className="flex justify-center mt-6">
                     <Pagination>
                       <PaginationContent>
                         <PaginationItem>
-                          <PaginationPrevious href="#" onClick={e => {
-                      e.preventDefault();
-                      if (currentPage > 1) setCurrentPage(currentPage - 1);
-                    }} className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''} />
+                          <PaginationPrevious 
+                            href="#" 
+                            onClick={e => {
+                              e.preventDefault();
+                              if (currentPage > 1) setCurrentPage(currentPage - 1);
+                            }} 
+                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''} 
+                          />
                         </PaginationItem>
                         
-                        {Array.from({
-                    length: totalPages
-                  }, (_, i) => i + 1).map(page => <PaginationItem key={page}>
-                            <PaginationLink href="#" onClick={e => {
-                      e.preventDefault();
-                      setCurrentPage(page);
-                    }} isActive={currentPage === page}>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <PaginationItem key={page}>
+                            <PaginationLink 
+                              href="#" 
+                              onClick={e => {
+                                e.preventDefault();
+                                setCurrentPage(page);
+                              }} 
+                              isActive={currentPage === page}
+                            >
                               {page}
                             </PaginationLink>
-                          </PaginationItem>)}
+                          </PaginationItem>
+                        ))}
                         
                         <PaginationItem>
-                          <PaginationNext href="#" onClick={e => {
-                      e.preventDefault();
-                      if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                    }} className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''} />
+                          <PaginationNext 
+                            href="#" 
+                            onClick={e => {
+                              e.preventDefault();
+                              if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                            }} 
+                            className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''} 
+                          />
                         </PaginationItem>
                       </PaginationContent>
                     </Pagination>
-                  </div>}
-              </>}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Home;
