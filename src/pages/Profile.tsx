@@ -339,7 +339,7 @@ const Profile = () => {
   const drawerMenuItems = [{
     icon: Phone,
     label: "Need Help?",
-    subtitle: "Chat support live 24/7",
+    subtitle: "Chat support 8:30am - 5:30pm",
     action: () => navigate('/inbox')
   }, {
     icon: Edit,
