@@ -328,9 +328,9 @@ const Products = () => {
         </div>
       </div>
 
-      <div className="px-4 py-4 bg-background">
+      <div className="px-4 py-5 bg-background">
         {/* Enhanced Search and Filter */}
-        <div className="mb-4 space-y-3">
+        <div className="mb-5 space-y-4">
           {/* Search with suggestions */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -372,19 +372,19 @@ const Products = () => {
 
           {/* Advanced filters - collapsible */}
           <Collapsible open={showFilters} onOpenChange={setShowFilters}>
-            <CollapsibleContent className="space-y-3">
+            <CollapsibleContent className="space-y-4">
               <Card>
-                <CardContent className="p-3 space-y-3">
+                <CardContent className="p-4 space-y-4">
                   {/* Price range filter */}
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
+                    <label className="text-sm font-medium mb-3 block">
                       Price Range: ₱{priceRange[0]} - ₱{priceRange[1]}
                     </label>
                     <Slider value={priceRange} onValueChange={setPriceRange} max={priceRangeFromProducts[1]} min={priceRangeFromProducts[0]} step={50} className="w-full" />
                   </div>
                   
                   {/* Stock filter */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <input type="checkbox" id="inStock" checked={showInStockOnly} onChange={e => setShowInStockOnly(e.target.checked)} className="rounded" />
                     <label htmlFor="inStock" className="text-sm">In stock only</label>
                   </div>
@@ -394,8 +394,8 @@ const Products = () => {
           </Collapsible>
 
           {/* Category Filter - Horizontal Scroll */}
-          <div className="flex space-x-2 overflow-x-auto pb-1 scrollbar-hide">
-            {categories.map(category => <Badge key={category} variant={selectedCategory === category ? "default" : "outline"} className="cursor-pointer transition-smooth hover:scale-105 whitespace-nowrap text-xs px-3 py-1 min-h-[28px] touch-manipulation" onClick={() => setSelectedCategory(category)}>
+          <div className="flex space-x-2.5 overflow-x-auto pb-2 scrollbar-hide">
+            {categories.map(category => <Badge key={category} variant={selectedCategory === category ? "default" : "outline"} className="cursor-pointer transition-smooth hover:scale-105 whitespace-nowrap text-xs px-4 py-1.5 min-h-[32px] touch-manipulation" onClick={() => setSelectedCategory(category)}>
                 {category}
               </Badge>)}
           </div>
@@ -403,16 +403,16 @@ const Products = () => {
 
         {/* Registered Dealers Card */}
         <Card 
-          className="mb-4 bg-primary border-0 shadow-card cursor-pointer hover:shadow-lg transition-shadow"
+          className="mb-5 bg-primary border-0 shadow-card cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/dealers')}
         >
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+          <CardContent className="p-5">
+            <div className="flex items-center space-x-4">
+              <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-bold text-white">Registered Dealers</h3>
+                <h3 className="text-sm font-bold text-white mb-0.5">Registered Dealers</h3>
                 <p className="text-xs text-white/80">Find authorized dealers near you</p>
               </div>
               <ChevronRight className="w-5 h-5 text-white/80" />
@@ -422,39 +422,39 @@ const Products = () => {
 
         {/* Mobile Products Grid - 2 Columns */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold text-foreground">
               Products ({filteredProducts.length})
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {loading ? <div className="col-span-2 text-center py-8">
+          <div className="grid grid-cols-2 gap-4">
+            {loading ? <div className="col-span-2 text-center py-10">
                 <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
-                <p className="text-muted-foreground mt-2">Loading products...</p>
-              </div> : filteredProducts.length === 0 ? <div className="col-span-2 text-center py-8 space-y-2">
+                <p className="text-muted-foreground mt-3">Loading products...</p>
+              </div> : filteredProducts.length === 0 ? <div className="col-span-2 text-center py-10 space-y-3">
                 <Package className="w-12 h-12 text-muted-foreground mx-auto" />
                 <p className="text-muted-foreground font-medium">No products found</p>
                 <p className="text-sm text-muted-foreground">
                   {searchQuery ? "Try different keywords or adjust filters" : "Check back later for new products"}
                 </p>
-                {searchQuery && <Button variant="outline" size="sm" onClick={clearSearch} className="mt-2">
+                {searchQuery && <Button variant="outline" size="sm" onClick={clearSearch} className="mt-3">
                     Clear search
                   </Button>}
               </div> : filteredProducts.map(product => <ProductCard key={product.id} id={product.id} name={product.name} description={product.description} price={product.price} image={product.image} rating={product.rating} reviews={product.reviews} benefits={product.benefits} inStock={product.inStock} featured={product.featured} stockQuantity={product.stockQuantity} lowStockThreshold={product.lowStockThreshold} />)}
           </div>
         </div>
         {/* Mobile Quick Support Card */}
-        <Card className="mt-6">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
+        <Card className="mt-8">
+          <CardContent className="p-5">
+            <div className="flex items-center space-x-4">
               <div className="flex-1">
-                <h3 className="font-semibold text-sm">Need Help?</h3>
-                <p className="text-xs text-muted-foreground">
+                <h3 className="font-semibold text-sm mb-1">Need Help?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   Our experts are here to help you choose the right products.
                 </p>
               </div>
-              <Button size="sm" className="text-xs px-3" onClick={() => setShowContactModal(true)}>
+              <Button size="sm" className="text-xs px-4" onClick={() => setShowContactModal(true)}>
                 Contact
               </Button>
             </div>
