@@ -38,6 +38,7 @@ const Home = () => {
   const [showCarousel, setShowCarousel] = useState(false);
   const [userProfile, setUserProfile] = useState<{
     first_name?: string;
+    full_name?: string;
     avatar_url?: string;
   } | null>(null);
   const [weather, setWeather] = useState({
@@ -87,7 +88,7 @@ const Home = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, avatar_url')
+        .select('first_name, full_name, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -443,7 +444,10 @@ const Home = () => {
         /* New Greeting Header with Weather Widget */
         <>
           <GreetingHeader
-            firstName={userProfile?.first_name}
+             firstName={
+               userProfile?.first_name?.trim() ||
+               userProfile?.full_name?.trim()?.split(/\s+/)[0]
+             }
             avatarUrl={userProfile?.avatar_url}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
