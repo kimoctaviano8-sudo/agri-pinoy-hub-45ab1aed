@@ -650,14 +650,17 @@ Streak</div>
       {/* Profile Image Cropper */}
       <ProfileImageCropper isOpen={showCropper} onClose={() => setShowCropper(false)} onSave={handleCroppedImageSave} currentImage={avatar || undefined} />
 
-      {/* Edit Profile Modal/Overlay */}
-      {isEditing && <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-          <div className="bg-background w-full rounded-t-2xl p-4 space-y-4 animate-slide-in-right">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Edit Profile</h2>
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
-                Cancel
-              </Button>
+      {/* Edit Profile Drawer */}
+      <Drawer open={isEditing} onOpenChange={setIsEditing}>
+        <DrawerContent className="bg-background border-none">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-primary">Edit Profile</h2>
+              <DrawerClose asChild>
+                <Button variant="ghost" size="sm">
+                  Cancel
+                </Button>
+              </DrawerClose>
             </div>
             
             <div className="space-y-4">
@@ -670,7 +673,6 @@ Streak</div>
                 <Label htmlFor="edit-email" className="text-sm font-medium">Email</Label>
                 <Input id="edit-email" name="email" type="email" value={profileData.email} onChange={handleInputChange} className="mt-1" />
               </div>
-
               
               <div>
                 <Label htmlFor="edit-phone" className="text-sm font-medium">Phone</Label>
@@ -687,7 +689,8 @@ Streak</div>
               </Button>
             </div>
           </div>
-        </div>}
+        </DrawerContent>
+      </Drawer>
 
 
       {/* Biometric Settings Modal */}
