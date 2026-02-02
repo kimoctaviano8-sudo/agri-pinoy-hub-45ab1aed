@@ -72,17 +72,17 @@ const ProductCard = ({
             </div>
           )}
         </div>
-        <div className="p-3 space-y-3">
-          <div className="space-y-1">
-            <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-smooth line-clamp-2">
+        <div className="p-4 space-y-3">
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-smooth line-clamp-2">
               {name}
             </h3>
             <div className="text-base font-bold text-foreground">{price}</div>
           </div>
           
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {benefits.slice(0, 2).map((benefit, index) => (
-              <Badge key={index} variant="outline" className="text-[10px] px-1.5 py-0.5 h-4">
+              <Badge key={index} variant="outline" className="text-[10px] px-2 py-0.5 h-5">
                 {benefit}
               </Badge>
             ))}
