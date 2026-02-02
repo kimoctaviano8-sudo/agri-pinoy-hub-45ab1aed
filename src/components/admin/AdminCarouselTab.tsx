@@ -288,21 +288,21 @@ export const AdminCarouselTab = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="title">Title (Main Text)</Label>
+            <Label htmlFor="title">Title (Optional)</Label>
             <Input
               id="title"
               value={newItem.title}
               onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
-              placeholder="e.g., Welcome to Gemini"
+              placeholder="Leave empty for image-only slide"
             />
           </div>
           <div>
-            <Label htmlFor="subtitle">Subtitle (Description)</Label>
+            <Label htmlFor="subtitle">Subtitle (Optional)</Label>
             <Input
               id="subtitle"
               value={newItem.subtitle}
               onChange={(e) => setNewItem({ ...newItem, subtitle: e.target.value })}
-              placeholder="e.g., Latest news and insights for Filipino farmers"
+              placeholder="Leave empty for image-only slide"
             />
           </div>
           <div>
