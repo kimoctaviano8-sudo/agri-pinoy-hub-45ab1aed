@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -13,6 +14,7 @@ import ProductCard from "@/components/ProductCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import productsImage from "@/assets/products-showcase.jpg";
 const Products = () => {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ const Products = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const categories = ["All", "seeds", "tools", "fertilizers", "equipment", "services"];
 
   // Enhanced search terms for suggestions
@@ -459,59 +462,93 @@ const Products = () => {
         </Card>
       </div>
 
-      {/* Contact Modal */}
-      <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
-        <DialogContent className="max-w-sm mx-auto sm:max-w-md px-4 py-0 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <DialogHeader className="p-4 pb-2">
-            <DialogTitle className="text-center text-base sm:text-lg font-semibold text-gray-900">
-              Field Technicians Directory
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="px-4 pb-4 space-y-3">
-            <p className="text-center text-xs sm:text-sm text-gray-600 mb-4">
-              Choose a field technician from your region to call directly.
-            </p>
+      {/* Contact Modal - Native drawer on mobile, dialog on desktop */}
+      {isMobile ? (
+        <Drawer open={showContactModal} onOpenChange={setShowContactModal}>
+          <DrawerContent className="max-h-[85vh]">
+            <DrawerHeader className="pb-2">
+              <DrawerTitle className="text-center text-base font-semibold">
+                Field Technicians Directory
+              </DrawerTitle>
+            </DrawerHeader>
+            
+            <div className="px-4 pb-6 space-y-3 overflow-y-auto">
+              <p className="text-center text-xs text-muted-foreground mb-4">
+                Choose a field technician from your region to call directly.
+              </p>
+              
+              <div className="space-y-3">
+                {contacts.map((contact, index) => (
+                  <Card key={index} className="transition-all duration-200 active:scale-[0.98]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">📞</span>
+                            <h3 className="text-sm font-semibold">{contact.name}</h3>
+                          </div>
+                          <p className="text-sm font-medium">{contact.phone}</p>
+                          <p className="text-xs text-muted-foreground">{contact.region}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="ml-3"
+                          onClick={() => handleCallTechnician(contact.phone.replace(/\s/g, ''), contact.name)}
+                        >
+                          <Phone className="w-4 h-4 mr-1" />
+                          Call
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-center text-lg font-semibold">
+                Field Technicians Directory
+              </DialogTitle>
+            </DialogHeader>
             
             <div className="space-y-3">
-              {contacts.map((contact, index) => (
-                <Card key={index} className="transition-all duration-200 hover:shadow-md">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-lg">📞</span>
-                          <h3 className="text-sm font-semibold text-gray-900">{contact.name}</h3>
+              <p className="text-center text-sm text-muted-foreground mb-4">
+                Choose a field technician from your region to call directly.
+              </p>
+              
+              <div className="space-y-3">
+                {contacts.map((contact, index) => (
+                  <Card key={index} className="transition-all duration-200 hover:shadow-md">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">📞</span>
+                            <h3 className="text-sm font-semibold">{contact.name}</h3>
+                          </div>
+                          <p className="text-sm font-medium">{contact.phone}</p>
+                          <p className="text-xs text-muted-foreground">{contact.region}</p>
                         </div>
-                        <p className="text-sm text-gray-700 font-medium">{contact.phone}</p>
-                        <p className="text-xs text-gray-500">{contact.region}</p>
+                        <Button
+                          size="sm"
+                          onClick={() => handleCallTechnician(contact.phone.replace(/\s/g, ''), contact.name)}
+                        >
+                          <Phone className="w-4 h-4 mr-1" />
+                          Call
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        className="ml-3 bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => handleCallTechnician(contact.phone.replace(/\s/g, ''), contact.name)}
-                      >
-                        <Phone className="w-4 h-4 mr-1" />
-                        Call
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
-            
-            <div className="pt-3 border-t">
-              <Button
-                variant="outline"
-                className="w-full text-sm"
-                onClick={() => setShowContactModal(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>;
 };
 export default Products;
