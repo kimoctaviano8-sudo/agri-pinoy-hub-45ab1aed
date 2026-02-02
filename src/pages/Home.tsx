@@ -289,10 +289,10 @@ const Home = () => {
           setApi={setCarouselApi}
           className="w-full h-full"
         >
-          <CarouselContent className="h-48 sm:h-56 md:h-64">
+          <CarouselContent noGap className="h-48 sm:h-56 md:h-64">
             {carouselItems.length > 0 ? (
               carouselItems.map((item) => (
-                <CarouselItem key={item.id} className="h-48 sm:h-56 md:h-64">
+                <CarouselItem key={item.id} noGap className="h-48 sm:h-56 md:h-64">
                   <div className="relative h-full w-full">
                     <img 
                       src={item.image_url} 
@@ -322,7 +322,7 @@ const Home = () => {
                 </CarouselItem>
               ))
             ) : (
-              <CarouselItem className="h-48 sm:h-56 md:h-64">
+              <CarouselItem noGap className="h-48 sm:h-56 md:h-64">
                 <div className="relative h-full w-full">
                   <img src={heroImage} alt="Philippine Agriculture" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/10"></div>
