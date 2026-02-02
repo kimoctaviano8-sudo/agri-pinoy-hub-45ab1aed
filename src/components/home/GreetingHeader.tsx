@@ -36,17 +36,15 @@ export const GreetingHeader = ({
           <h1 className="text-lg font-semibold text-primary-foreground">
             Hello, {greeting}
           </h1>
-          <p className="text-primary-foreground/80 text-sm">{displayName}</p>
-        </div>
-        <div className="flex items-center gap-3">
           <p className="text-xs text-primary-foreground/70">{today}</p>
-          <Avatar className="w-10 h-10 border-2 border-primary-foreground/30">
-            <AvatarImage src={avatarUrl} alt={displayName} />
-            <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-sm">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <p className="text-primary-foreground/80 text-sm mt-1">{displayName}</p>
         </div>
+        <Avatar className="w-10 h-10 border-2 border-primary-foreground/30">
+          <AvatarImage src={avatarUrl} alt={displayName} />
+          <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-sm">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
       </div>
 
       {/* Search Bar */}
