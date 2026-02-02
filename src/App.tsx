@@ -37,6 +37,7 @@ import HelpCentre from "./pages/HelpCentre";
 import GeminiCares from "./pages/GeminiCares";
 import GeminiPolicies from "./pages/GeminiPolicies";
 import { useLocationPermission } from "./hooks/useLocationPermission";
+import { useDeepLink } from "./hooks/useDeepLink";
 const queryClient = new QueryClient();
 
 // Protected App Component that manages landing vs authenticated state
@@ -56,6 +57,9 @@ const ProtectedApp = () => {
 
   // Request location permission on app startup
   useLocationPermission();
+
+  // Set up deep link listener for native apps
+  useDeepLink();
 
   // Show loading screen while checking authentication
   if (isLoading) {
