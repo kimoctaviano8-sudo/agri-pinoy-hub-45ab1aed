@@ -332,7 +332,7 @@ const MyPurchase = () => {
           Back
         </Button>
 
-        <h1 className="text-2xl font-bold mb-6">My Purchase</h1>
+        <h1 className="text-lg font-bold mb-6">My Purchase</h1>
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <div className="overflow-x-auto pb-2 scrollbar-hide">

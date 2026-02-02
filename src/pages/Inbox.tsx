@@ -411,7 +411,7 @@ const Inbox = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex-1">
-              <h1 className="text-lg font-semibold text-foreground">Support</h1>
+              <h1 className="text-lg font-bold text-foreground">Support</h1>
               <p className="text-xs text-muted-foreground">Get help from our team</p>
             </div>
           </div>
@@ -539,7 +539,7 @@ const Inbox = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex-1">
-              <h1 className="text-lg font-semibold text-foreground">Support Tickets</h1>
+              <h1 className="text-lg font-bold text-foreground">Support Tickets</h1>
               <p className="text-xs text-muted-foreground">Manage user inquiries</p>
             </div>
           </div>
