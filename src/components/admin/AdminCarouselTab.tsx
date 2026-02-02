@@ -31,10 +31,57 @@ export const AdminCarouselTab = () => {
     subtitle: "",
     image: null as File | null,
   });
+  const [showCarousel, setShowCarousel] = useState(true);
+  const [savingCarouselSetting, setSavingCarouselSetting] = useState(false);
 
   useEffect(() => {
     fetchCarouselItems();
+    fetchCarouselVisibility();
   }, []);
+
+  const fetchCarouselVisibility = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('show_carousel')
+        .eq('id', 'global')
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) {
+        setShowCarousel(data.show_carousel ?? true);
+      }
+    } catch (error) {
+      console.error('Error fetching carousel visibility:', error);
+    }
+  };
+
+  const handleToggleCarouselVisibility = async (checked: boolean) => {
+    setSavingCarouselSetting(true);
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ show_carousel: checked })
+        .eq('id', 'global');
+
+      if (error) throw error;
+
+      setShowCarousel(checked);
+      toast({
+        title: "Success",
+        description: `Carousel is now ${checked ? 'visible' : 'hidden'} on the home page`,
+      });
+    } catch (error) {
+      console.error('Error updating carousel visibility:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update carousel visibility",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingCarouselSetting(false);
+    }
+  };
 
   const fetchCarouselItems = async () => {
     try {
@@ -278,6 +325,25 @@ export const AdminCarouselTab = () => {
 
   return (
     <div className="space-y-6 p-4">
+      {/* Carousel Visibility Toggle */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-sm">Show Carousel on Home Page</h3>
+              <p className="text-xs text-muted-foreground">
+                Toggle to show or hide the promotional carousel on the home page
+              </p>
+            </div>
+            <Switch
+              checked={showCarousel}
+              onCheckedChange={handleToggleCarouselVisibility}
+              disabled={savingCarouselSetting}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Add New Carousel Item */}
       <Card>
         <CardHeader>
