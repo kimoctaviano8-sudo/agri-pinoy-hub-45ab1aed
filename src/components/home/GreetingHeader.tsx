@@ -34,10 +34,9 @@ export const GreetingHeader = ({
       <div className="flex items-center justify-between mb-4">
         <div className="flex-1">
           <h1 className="text-lg font-semibold text-primary-foreground">
-            Hello, {greeting}
+            Hello {displayName}, {greeting}
           </h1>
           <p className="text-xs text-primary-foreground/70">{today}</p>
-          <p className="text-primary-foreground/80 text-sm mt-1">{displayName}</p>
         </div>
         <Avatar className="w-10 h-10 border-2 border-primary-foreground/30">
           <AvatarImage src={avatarUrl} alt={displayName} />
