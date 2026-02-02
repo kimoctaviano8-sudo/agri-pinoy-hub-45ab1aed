@@ -12,7 +12,7 @@ const TranslationContext = createContext<TranslationContextType | undefined>(und
 const translations: Record<string, Record<string, string>> = {
   english: {
     // Navigation
-    'nav_news': 'News',
+    'nav_news': 'Home',
     'nav_products': 'Products',
     'nav_community': 'Community',
     'nav_profile': 'Profile',
@@ -421,7 +421,7 @@ const translations: Record<string, Record<string, string>> = {
   },
   tagalog: {
     // Navigation
-    'nav_news': 'Balita',
+    'nav_news': 'Tahanan',
     'nav_products': 'Produkto',
     'nav_community': 'Komunidad',
     'nav_profile': 'Profile',
