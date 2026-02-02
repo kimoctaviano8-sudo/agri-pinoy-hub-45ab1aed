@@ -24,7 +24,7 @@ export const GreetingHeader = ({
   onSearchChange,
 }: GreetingHeaderProps) => {
   const greeting = getTimeBasedGreeting();
-  const displayName = firstName || "Farmer";
+  const displayName = firstName && firstName.trim() !== '' ? firstName : "Farmer";
   const today = format(new Date(), "EEEE, dd MMM yyyy");
   const initials = displayName.slice(0, 2).toUpperCase();
 
