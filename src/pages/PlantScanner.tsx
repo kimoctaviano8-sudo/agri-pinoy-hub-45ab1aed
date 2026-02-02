@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Camera, Upload, Loader2, AlertCircle, CheckCircle, X, RotateCcw, Zap, Info, CreditCard, Coins, Download, FileText, Image, MessageCircle, Trophy, ArrowLeft } from "lucide-react";
+import { Camera, Upload, Loader2, AlertCircle, CheckCircle, X, RotateCcw, Zap, Info, CreditCard, Coins, Download, FileText, Image, MessageCircle, Trophy, ArrowLeft, Leaf, Droplets } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -9,32 +9,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import RecommendedProducts from "@/components/RecommendedProducts";
 import { DiagnosisHistory } from "@/components/DiagnosisHistory";
 import { TechnicianContactDialog } from "@/components/TechnicianContactDialog";
-import CommunityAlerts from "@/components/CommunityAlerts";
-import SmartTreatmentScheduler from "@/components/SmartTreatmentScheduler";
-import WeatherImpactAlerts from "@/components/WeatherImpactAlerts";
-import SeasonalCareCalendar from "@/components/SeasonalCareCalendar";
-import { ScanningAnimation } from "@/components/ScanningAnimation";
 import AchievementsModal from "@/components/AchievementsModal";
 import { toast as sonnerToast } from "sonner";
-
-interface DiseaseResult {
-  disease: string;
-  confidence: number;
-}
+import { SymptomSelector, PLANT_SYMPTOMS } from "@/components/SymptomSelector";
+import { NutrientDeficiencyResults, NutrientAnalysis } from "@/components/NutrientDeficiencyResults";
 
 const PlantScanner = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
-  const [results, setResults] = useState<DiseaseResult[]>([]);
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [analysisResult, setAnalysisResult] = useState<NutrientAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
   const [credits, setCredits] = useState<number>(0);
   const [showCreditDialog, setShowCreditDialog] = useState(false);
   const [purchasingCredits, setPurchasingCredits] = useState(false);
@@ -76,7 +67,6 @@ const PlantScanner = () => {
       setSelectedImage(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-      setResults([]);
     }
   };
 
@@ -215,7 +205,7 @@ const PlantScanner = () => {
         const achievementData = firstScan.data as { earned: boolean; points_awarded: number };
         if (achievementData.earned) {
           sonnerToast.success(`🏆 Achievement Unlocked! +${achievementData.points_awarded} points`, {
-            description: "First Scan - You completed your first plant scan!"
+            description: "First Scan - You completed your first nutrient analysis!"
           });
         }
       }
@@ -230,7 +220,7 @@ const PlantScanner = () => {
         const achievementData = scan5.data as { earned: boolean; points_awarded: number };
         if (achievementData.earned) {
           sonnerToast.success(`🏆 Achievement Unlocked! +${achievementData.points_awarded} points`, {
-            description: "Scanner Novice - You completed 5 plant scans!"
+            description: "Scanner Novice - You completed 5 nutrient analyses!"
           });
         }
       }
@@ -258,7 +248,7 @@ const PlantScanner = () => {
           const achievementData = perfectDiag.data as { earned: boolean; points_awarded: number };
           if (achievementData.earned) {
             sonnerToast.success(`🏆 Achievement Unlocked! +${achievementData.points_awarded} points`, {
-              description: "Perfect Diagnosis - You got a 95%+ confidence scan!"
+              description: "Expert Diagnosis - You got a 95%+ confidence analysis!"
             });
           }
         }
@@ -270,21 +260,16 @@ const PlantScanner = () => {
     }
   };
 
-  const saveScanToHistory = async (result: DiseaseResult, imageBase64: string) => {
+  const saveScanToHistory = async (result: NutrientAnalysis, imageBase64?: string) => {
     if (!user) return;
     try {
+      const recommendations = result.foliar_products.map(p => `${p.name}: ${p.dosage}`).join('; ');
       const { error } = await supabase.from('plant_scan_history').insert({
         user_id: user.id,
-        image_url: imageBase64,
-        disease_detected: result.disease,
+        image_url: imageBase64 || null,
+        disease_detected: `${result.nutrient} Deficiency`,
         confidence_score: result.confidence / 100,
-        recommendations: result.disease.toLowerCase().includes('blight') 
-          ? 'Remove infected leaves immediately, improve air circulation, avoid overhead watering, and apply copper-based fungicides.' 
-          : result.disease.toLowerCase().includes('spot') 
-          ? 'Prune affected areas, ensure proper plant spacing, water at soil level, and apply preventive fungicide treatments.' 
-          : result.disease.toLowerCase().includes('rust') 
-          ? 'Remove infected plant parts, avoid watering leaves, improve drainage, and use resistant plant varieties when possible.' 
-          : 'Implement proper crop rotation, maintain soil health, ensure adequate spacing between plants, and monitor regularly for early detection.'
+        recommendations: recommendations || 'Apply recommended foliar fertilizer based on deficiency level.'
       });
       if (error) {
         console.error('Error saving scan history:', error);
@@ -328,8 +313,15 @@ const PlantScanner = () => {
     });
   };
 
-  const analyzePlant = async () => {
-    if (!selectedImage || !user) return;
+  const analyzeNutrients = async () => {
+    if (selectedSymptoms.length === 0 || !user) {
+      toast({
+        title: "Select Symptoms",
+        description: "Please select at least one symptom to analyze.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const { data: creditData } = await supabase
       .from('user_credits')
@@ -344,7 +336,7 @@ const PlantScanner = () => {
       setShowCreditDialog(true);
       toast({
         title: "No Credits Available",
-        description: "Please purchase credits to continue scanning.",
+        description: "Please purchase credits to continue.",
         variant: "destructive"
       });
       return;
@@ -357,17 +349,23 @@ const PlantScanner = () => {
     }
 
     try {
-      const [compressedImage, sessionResult] = await Promise.all([
-        compressImage(selectedImage, 800, 0.7),
-        supabase.auth.getSession()
-      ]);
+      // Prepare image if provided
+      let compressedImage: string | undefined;
+      if (selectedImage) {
+        compressedImage = await compressImage(selectedImage, 800, 0.7);
+      }
+
+      const sessionResult = await supabase.auth.getSession();
 
       if (!sessionResult.data.session?.access_token) {
         throw new Error('Please log in to use the scanner');
       }
 
-      const response = await supabase.functions.invoke('plant-disease-analyzer', {
-        body: { image: compressedImage },
+      const response = await supabase.functions.invoke('nutrient-analyzer', {
+        body: { 
+          symptoms: selectedSymptoms,
+          image: compressedImage
+        },
         headers: {
           Authorization: `Bearer ${sessionResult.data.session.access_token}`
         }
@@ -383,7 +381,7 @@ const PlantScanner = () => {
           setShowCreditDialog(true);
           toast({
             title: "Insufficient Credits",
-            description: "You need more credits to scan. Please purchase credits to continue.",
+            description: "You need more credits to analyze. Please purchase credits to continue.",
             variant: "destructive"
           });
           return;
@@ -392,42 +390,30 @@ const PlantScanner = () => {
         throw new Error(response.error.message || 'Analysis failed');
       }
       
-      const data = response.data;
+      const data = response.data as NutrientAnalysis;
 
-      if (!data || !data.disease) {
+      if (!data || !data.nutrient) {
         throw new Error('Invalid response from analysis service');
       }
 
       setCredits(prev => Math.max(0, prev - 1));
-
-      const confidenceValue = typeof data.confidence === 'number' 
-        ? data.confidence 
-        : parseFloat(data.confidence) || 0;
-      
-      const formattedResults = [{
-        disease: data.disease || 'Unknown',
-        confidence: confidenceValue > 1 ? confidenceValue : confidenceValue * 100
-      }];
-      setResults(formattedResults);
+      setAnalysisResult(data);
 
       Promise.all([
-        trackAchievements(confidenceValue),
-        saveScanToHistory(formattedResults[0], compressedImage)
+        trackAchievements(data.confidence),
+        saveScanToHistory(data, compressedImage)
       ]).catch(console.error);
       
       toast({
         title: "Analysis Complete",
-        description: `Found: ${formattedResults[0].disease}. ${credits - 1} credits remaining.`
+        description: `Detected: ${data.nutrient} Deficiency. ${credits - 1} credits remaining.`
       });
 
-      if (formattedResults[0].disease.toLowerCase() !== 'healthy crop') {
-        setTimeout(() => setShowTechnicianDialog(true), 2000);
-      }
     } catch (error: any) {
-      console.error('Error analyzing plant:', error);
+      console.error('Error analyzing nutrients:', error);
       toast({
         title: "Analysis Failed",
-        description: error.message || "Failed to analyze plant. Please try again.",
+        description: error.message || "Failed to analyze. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -489,71 +475,53 @@ const PlantScanner = () => {
   const resetScanner = () => {
     setSelectedImage(null);
     setPreviewUrl("");
-    setResults([]);
+    setSelectedSymptoms([]);
+    setAnalysisResult(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return "text-success";
-    if (confidence >= 60) return "text-warning";
-    return "text-destructive";
-  };
-
-  const getConfidenceBgColor = (confidence: number) => {
-    if (confidence >= 80) return "bg-success";
-    if (confidence >= 60) return "bg-warning";
-    return "bg-destructive";
-  };
-
   const downloadAsPDF = async () => {
-    if (!results.length || !selectedImage) return;
+    if (!analysisResult) return;
     try {
-      const result = results[0];
       const timestamp = new Date().toLocaleString();
       const pdf = new jsPDF();
 
       pdf.setFontSize(20);
       pdf.setTextColor(34, 197, 94);
-      pdf.text('Plant Disease Analysis Report', 20, 25);
+      pdf.text('Nutrient Deficiency Analysis Report', 20, 25);
 
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
       pdf.text(`Date & Time: ${timestamp}`, 20, 40);
-      pdf.text(`Image: ${selectedImage.name}`, 20, 50);
 
       pdf.setFontSize(16);
       pdf.setTextColor(34, 197, 94);
-      pdf.text('Analysis Results', 20, 70);
+      pdf.text('Analysis Results', 20, 60);
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(`Disease Detected: ${result.disease}`, 20, 85);
-      pdf.text(`Confidence Score: ${result.confidence.toFixed(1)}%`, 20, 95);
-      pdf.text(`Confidence Level: ${result.confidence >= 80 ? 'High' : result.confidence >= 60 ? 'Medium' : 'Low'}`, 20, 105);
+      pdf.text(`Nutrient Deficiency: ${analysisResult.nutrient}`, 20, 75);
+      pdf.text(`Confidence Score: ${analysisResult.confidence.toFixed(1)}%`, 20, 85);
+      pdf.text(`Severity Level: ${analysisResult.deficiency_level}`, 20, 95);
 
       pdf.setFontSize(16);
       pdf.setTextColor(34, 197, 94);
-      pdf.text('Treatment Recommendations', 20, 125);
+      pdf.text('Recommended Foliar Fertilizers', 20, 115);
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
-      const treatmentText = result.disease.toLowerCase().includes('blight') 
-        ? 'Remove infected leaves immediately, improve air circulation, avoid overhead watering, and apply copper-based fungicides.' 
-        : result.disease.toLowerCase().includes('spot') 
-        ? 'Prune affected areas, ensure proper plant spacing, water at soil level, and apply preventive fungicide treatments.' 
-        : result.disease.toLowerCase().includes('rust') 
-        ? 'Remove infected plant parts, avoid watering leaves, improve drainage, and use resistant plant varieties when possible.' 
-        : 'Implement proper crop rotation, maintain soil health, ensure adequate spacing between plants, and monitor regularly for early detection.';
-      const splitText = pdf.splitTextToSize(treatmentText, 170);
-      pdf.text(splitText, 20, 140);
-
-      const appGuideText = 'Apply recommended fungicides during early morning or late evening to avoid leaf burn. Spray thoroughly covering both upper and lower leaf surfaces. Always wear protective equipment and follow label instructions for dilution rates.';
-      const splitAppGuide = pdf.splitTextToSize(appGuideText, 170);
-      pdf.text(splitAppGuide, 20, 165);
+      
+      let yPos = 130;
+      analysisResult.foliar_products.forEach((product, idx) => {
+        pdf.text(`${idx + 1}. ${product.name} (${product.type})`, 20, yPos);
+        pdf.text(`   Dosage: ${product.dosage}`, 20, yPos + 8);
+        pdf.text(`   Frequency: ${product.frequency}`, 20, yPos + 16);
+        yPos += 28;
+      });
 
       pdf.setFontSize(10);
       pdf.setTextColor(128, 128, 128);
-      pdf.text('Generated by Plant Disease Scanner', 20, 280);
-      pdf.save(`plant-analysis-${Date.now()}.pdf`);
+      pdf.text('Generated by Nutrient Deficiency Scanner', 20, 280);
+      pdf.save(`nutrient-analysis-${Date.now()}.pdf`);
       toast({
         title: "PDF Downloaded",
         description: "Analysis report has been saved as PDF."
@@ -569,7 +537,7 @@ const PlantScanner = () => {
   };
 
   const downloadAsJPEG = async () => {
-    if (!results.length || !selectedImage || !resultsRef.current) return;
+    if (!analysisResult || !resultsRef.current) return;
     try {
       const canvas = await html2canvas(resultsRef.current, {
         backgroundColor: '#ffffff',
@@ -577,7 +545,7 @@ const PlantScanner = () => {
         useCORS: true
       });
       const link = document.createElement('a');
-      link.download = `plant-analysis-${Date.now()}.jpg`;
+      link.download = `nutrient-analysis-${Date.now()}.jpg`;
       link.href = canvas.toDataURL('image/jpeg', 0.9);
       link.click();
       toast({
@@ -601,11 +569,11 @@ const PlantScanner = () => {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Camera className="w-5 h-5 text-primary" />
+              <Leaf className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Plant Scanner</h1>
-              <p className="text-xs text-muted-foreground">AI-powered disease detection</p>
+              <h1 className="text-lg font-bold text-foreground">Nutrient Scanner</h1>
+              <p className="text-xs text-muted-foreground">Symptom-based deficiency analysis</p>
             </div>
           </div>
           
@@ -634,17 +602,34 @@ const PlantScanner = () => {
       </div>
 
       <div className="px-4 space-y-4">
-        {/* Scanner Card */}
+        {/* Symptom Selector Card */}
         <Card className="border-0 shadow-card">
           <CardContent className="p-4">
+            <SymptomSelector 
+              selectedSymptoms={selectedSymptoms}
+              onSymptomsChange={setSelectedSymptoms}
+              disabled={loading}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Optional Photo Section */}
+        <Card className="border-0 shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Camera className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Add Photo (Optional)</span>
+              <Badge variant="secondary" className="text-[10px]">Improves accuracy</Badge>
+            </div>
+            
             <Tabs defaultValue="camera" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4 h-10">
-                <TabsTrigger value="camera" className="text-sm">
-                  <Camera className="w-4 h-4 mr-2" />
+              <TabsList className="grid w-full grid-cols-2 mb-3 h-9">
+                <TabsTrigger value="camera" className="text-xs">
+                  <Camera className="w-3.5 h-3.5 mr-1.5" />
                   Camera
                 </TabsTrigger>
-                <TabsTrigger value="upload" className="text-sm">
-                  <Upload className="w-4 h-4 mr-2" />
+                <TabsTrigger value="upload" className="text-xs">
+                  <Upload className="w-3.5 h-3.5 mr-1.5" />
                   Upload
                 </TabsTrigger>
               </TabsList>
@@ -655,28 +640,23 @@ const PlantScanner = () => {
                 {!previewUrl ? (
                   <button 
                     onClick={handleCameraCapture} 
-                    className="w-full h-48 border-2 border-dashed border-muted-foreground/25 rounded-xl flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
+                    className="w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
                   >
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Camera className="w-7 h-7 text-primary" />
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                      <Camera className="w-5 h-5 text-muted-foreground" />
                     </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-foreground">Capture Plant Image</p>
-                      <p className="text-xs text-muted-foreground mt-1">Point camera at affected area</p>
-                    </div>
+                    <p className="text-xs text-muted-foreground">Tap to capture plant photo</p>
                   </button>
                 ) : (
                   <div className="relative">
-                    <img src={previewUrl} alt="Captured plant" className="w-full h-48 object-cover rounded-xl" />
-                    <ScanningAnimation isScanning={loading} />
+                    <img src={previewUrl} alt="Captured plant" className="w-full h-32 object-cover rounded-xl" />
                     <Button 
-                      onClick={resetScanner} 
+                      onClick={() => { setSelectedImage(null); setPreviewUrl(""); }} 
                       size="sm" 
                       variant="secondary" 
-                      className="absolute top-2 right-2 h-8 px-3 bg-background/90 hover:bg-background"
+                      className="absolute top-2 right-2 h-7 px-2 bg-background/90 hover:bg-background"
                     >
-                      <X className="w-4 h-4 mr-1" />
-                      Clear
+                      <X className="w-3 h-3" />
                     </Button>
                   </div>
                 )}
@@ -688,62 +668,61 @@ const PlantScanner = () => {
                 {!previewUrl ? (
                   <button 
                     onClick={() => fileInputRef.current?.click()} 
-                    className="w-full h-48 border-2 border-dashed border-muted-foreground/25 rounded-xl flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
+                    className="w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
                   >
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Upload className="w-7 h-7 text-primary" />
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                      <Upload className="w-5 h-5 text-muted-foreground" />
                     </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-foreground">Upload Plant Image</p>
-                      <p className="text-xs text-muted-foreground mt-1">Choose from your gallery</p>
-                    </div>
+                    <p className="text-xs text-muted-foreground">Tap to upload from gallery</p>
                   </button>
                 ) : (
                   <div className="relative">
-                    <img src={previewUrl} alt="Uploaded plant" className="w-full h-48 object-cover rounded-xl" />
-                    <ScanningAnimation isScanning={loading} />
+                    <img src={previewUrl} alt="Uploaded plant" className="w-full h-32 object-cover rounded-xl" />
                     <Button 
-                      onClick={resetScanner} 
+                      onClick={() => { setSelectedImage(null); setPreviewUrl(""); }} 
                       size="sm" 
                       variant="secondary" 
-                      className="absolute top-2 right-2 h-8 px-3 bg-background/90 hover:bg-background"
+                      className="absolute top-2 right-2 h-7 px-2 bg-background/90 hover:bg-background"
                     >
-                      <X className="w-4 h-4 mr-1" />
-                      Clear
+                      <X className="w-3 h-3" />
                     </Button>
                   </div>
                 )}
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
 
-            {/* Analyze Button */}
-            {selectedImage && !loading && results.length === 0 && (
-              <Button 
-                onClick={analyzePlant} 
-                className="w-full mt-4 h-12 bg-primary hover:bg-primary/90"
-              >
-                <Zap className="w-5 h-5 mr-2" />
-                Analyze Plant
-              </Button>
-            )}
+        {/* Analyze Button */}
+        {selectedSymptoms.length > 0 && !loading && !analysisResult && (
+          <Button 
+            onClick={analyzeNutrients} 
+            className="w-full h-12 bg-primary hover:bg-primary/90"
+          >
+            <Droplets className="w-5 h-5 mr-2" />
+            Analyze Nutrient Deficiency
+          </Button>
+        )}
 
-            {/* Loading State */}
-            {loading && (
-              <div className="flex flex-col items-center justify-center py-8">
+        {/* Loading State */}
+        {loading && (
+          <Card className="border-0 shadow-card">
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center justify-center py-4">
                 <div className="relative mb-4">
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
                     <Loader2 className="w-8 h-8 text-primary animate-spin" />
                   </div>
                 </div>
-                <p className="text-sm font-medium text-foreground">Analyzing...</p>
-                <p className="text-xs text-muted-foreground mt-1">AI is scanning your plant</p>
+                <p className="text-sm font-medium text-foreground">Analyzing symptoms...</p>
+                <p className="text-xs text-muted-foreground mt-1">AI is identifying nutrient deficiencies</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Results Section */}
-        {results.length > 0 && (
+        {analysisResult && (
           <Card className="border-0 shadow-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -752,67 +731,7 @@ const PlantScanner = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4" ref={resultsRef}>
-              {results.map((result, index) => (
-                <div key={index} className="space-y-4">
-                  {/* Result Card */}
-                  <div className="p-4 bg-muted/50 rounded-xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-foreground">{result.disease}</h3>
-                      <Badge variant="secondary" className={`${getConfidenceColor(result.confidence)} font-medium`}>
-                        {result.confidence.toFixed(1)}%
-                      </Badge>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div 
-                        className={`${getConfidenceBgColor(result.confidence)} h-2 rounded-full transition-all duration-500`} 
-                        style={{ width: `${result.confidence}%` }} 
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Confidence: {result.confidence >= 80 ? 'High' : result.confidence >= 60 ? 'Medium' : 'Low'}
-                    </p>
-                  </div>
-
-                  {/* Treatment Info */}
-                  <div className="space-y-3">
-                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-                        How to Solve
-                      </h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {result.disease.toLowerCase().includes('blight') 
-                          ? 'Remove infected leaves immediately, improve air circulation, avoid overhead watering, and apply copper-based fungicides.' 
-                          : result.disease.toLowerCase().includes('spot') 
-                          ? 'Prune affected areas, ensure proper plant spacing, water at soil level, and apply preventive fungicide treatments.' 
-                          : result.disease.toLowerCase().includes('rust') 
-                          ? 'Remove infected plant parts, avoid watering leaves, improve drainage, and use resistant plant varieties when possible.' 
-                          : 'Implement proper crop rotation, maintain soil health, ensure adequate spacing between plants, and monitor regularly for early detection.'}
-                      </p>
-                    </div>
-
-                    <div className="p-4 bg-success/5 rounded-xl border border-success/10">
-                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
-                        Application Guide
-                      </h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Apply recommended fungicides during early morning or late evening. Spray thoroughly covering both leaf surfaces. Wear protective equipment and follow label instructions.
-                      </p>
-                    </div>
-
-                    <div className="p-4 bg-warning/5 rounded-xl border border-warning/10">
-                      <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-warning rounded-full"></div>
-                        Treatment Duration
-                      </h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        <span className="font-medium">Initial:</span> Every 7-10 days for 3-4 weeks. <span className="font-medium">Maintenance:</span> Bi-weekly during favorable conditions.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <NutrientDeficiencyResults analysis={analysisResult} />
               
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <Button 
@@ -829,32 +748,9 @@ const PlantScanner = () => {
                   className="h-10"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Scan Again
+                  New Analysis
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Weather-Integrated Treatment Advisor */}
-        {results.length > 0 && (
-          <>
-            <SmartTreatmentScheduler disease={results[0].disease} />
-            <WeatherImpactAlerts disease={results[0].disease} />
-          </>
-        )}
-
-        {/* Seasonal Care Calendar */}
-        <SeasonalCareCalendar />
-
-        {/* Recommended Products */}
-        {results.length > 0 && <RecommendedProducts disease={results[0].disease} confidence={results[0].confidence} />}
-
-        {/* Community Alerts */}
-        {user && (
-          <Card className="border-0 shadow-card">
-            <CardContent className="p-4">
-              <CommunityAlerts />
             </CardContent>
           </Card>
         )}
@@ -870,12 +766,12 @@ const PlantScanner = () => {
                 <Info className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-foreground mb-2">Supported Diseases</h3>
+                <h3 className="text-sm font-medium text-foreground mb-2">How It Works</h3>
                 <div className="space-y-1.5 text-xs text-muted-foreground">
-                  <p><span className="font-medium text-foreground">Tomato:</span> Septoria, Bacterial Spot, Blight</p>
-                  <p><span className="font-medium text-foreground">Corn:</span> Rust, Grey Leaf Spot, Northern Blight</p>
-                  <p><span className="font-medium text-foreground">Soy:</span> Frogeye Leaf Spot, Downy Mildew</p>
-                  <p><span className="font-medium text-foreground">Cabbage:</span> Black Rot</p>
+                  <p><span className="font-medium text-foreground">1.</span> Select symptoms you observe on your plants</p>
+                  <p><span className="font-medium text-foreground">2.</span> Optionally add a photo for better accuracy</p>
+                  <p><span className="font-medium text-foreground">3.</span> Get nutrient deficiency diagnosis</p>
+                  <p><span className="font-medium text-foreground">4.</span> Receive foliar fertilizer recommendations</p>
                 </div>
               </div>
             </div>
