@@ -2,13 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { TranslationProvider } from "./contexts/TranslationContext";
 import { CartProvider } from "./contexts/CartContext";
 import { OnboardingProvider, useOnboarding } from "./contexts/OnboardingContext";
 import { VacationModeProvider } from "./contexts/VacationModeContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Navigation from "./components/Navigation";
 import { FloatingNotifications } from "./components/FloatingNotifications";
 import Onboarding from "./components/Onboarding";
@@ -46,6 +46,8 @@ const ProtectedApp = () => {
     user,
     isLoading
   } = useAuth();
+  const navigate = useNavigate();
+  const [justLoggedInUserId, setJustLoggedInUserId] = useState<string | null>(null);
   const {
     hasCompletedOnboarding,
     completeOnboarding
@@ -54,6 +56,24 @@ const ProtectedApp = () => {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
   const location = useLocation();
+
+  // If user just transitioned from logged-out -> logged-in, always send them to Home.
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (user) {
+      // First render after a successful login
+      if (!justLoggedInUserId) {
+        setJustLoggedInUserId(user.id);
+        if (location.pathname !== "/") {
+          navigate("/", { replace: true });
+        }
+      }
+    } else {
+      // Reset when logged out
+      if (justLoggedInUserId) setJustLoggedInUserId(null);
+    }
+  }, [user, isLoading, justLoggedInUserId, location.pathname, navigate]);
 
   // Request location permission on app startup
   useLocationPermission();
