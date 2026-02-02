@@ -533,7 +533,7 @@ const Checkout = () => {
           Back
         </Button>
 
-        <h1 className="text-xl font-bold mb-6">Checkout</h1>
+        <h1 className="text-lg font-bold mb-6">Checkout</h1>
 
         {/* Order Summary */}
         <Card className="mb-6">

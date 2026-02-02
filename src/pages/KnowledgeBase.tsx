@@ -152,7 +152,7 @@ const KnowledgeBase = () => {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h1 className="text-base font-bold text-foreground">Foliar Fertilizers</h1>
+              <h1 className="text-lg font-bold text-foreground">Foliar Fertilizers</h1>
               <p className="text-xs text-muted-foreground">Herogra Especiales Products</p>
             </div>
           </div>
@@ -176,7 +176,7 @@ const KnowledgeBase = () => {
 
         {/* Mobile-Optimized Categories */}
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-foreground px-1">Categories</h3>
+          <h3 className="text-base font-semibold text-foreground px-1">Categories</h3>
           <div className="grid grid-cols-2 gap-2">
             {categories.map((category) => {
               const IconComponent = category.icon;
@@ -221,7 +221,7 @@ const KnowledgeBase = () => {
         {/* Mobile Articles Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-semibold">
+            <h2 className="text-base font-bold">
               {selectedCategory === "all" ? "All Products" : 
                categories.find(c => c.id === selectedCategory)?.name}
             </h2>

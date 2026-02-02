@@ -78,7 +78,7 @@ const Cart = () => {
 
           <div className="text-center py-8">
             <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h1 className="text-xl font-bold mb-2">Your cart is empty</h1>
+            <h1 className="text-lg font-bold mb-2">Your cart is empty</h1>
             <p className="text-sm text-muted-foreground mb-6">
               Add some products to get started
             </p>
@@ -97,7 +97,7 @@ const Cart = () => {
         </Button>
 
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl font-bold">Cart ({itemCount} items)</h1>
+          <h1 className="text-lg font-bold">Cart ({itemCount} items)</h1>
           <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive hover:text-destructive">
             Clear All
           </Button>
