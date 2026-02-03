@@ -125,12 +125,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user role when user is authenticated
-          setTimeout(() => {
-            fetchUserRole(session.user!.id);
-            // Update login streak for daily tracking
-            updateLoginStreak(session.user!.id);
-          }, 0);
+          // Fetch user role when user is authenticated - await before setting loading to false
+          await fetchUserRole(session.user.id);
+          // Update login streak for daily tracking (fire and forget)
+          updateLoginStreak(session.user.id);
         } else {
           setUserRole(null);
         }
@@ -140,17 +138,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserRole(session.user.id);
+        await fetchUserRole(session.user.id);
         updateLoginStreak(session.user.id);
       }
       
       setIsLoading(false);
-    });
+    };
+    
+    initSession();
 
     return () => subscription.unsubscribe();
   }, []);
