@@ -118,40 +118,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch user role when user is authenticated - await before setting loading to false
-          await fetchUserRole(session.user.id);
-          // Update login streak for daily tracking (fire and forget)
-          updateLoginStreak(session.user.id);
-        } else {
-          setUserRole(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
-
-    // Check for existing session
-    const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // IMPORTANT: keep this callback synchronous; don't call other Supabase APIs inside it.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
-        await fetchUserRole(session.user.id);
-        updateLoginStreak(session.user.id);
+        // Defer Supabase calls to avoid auth deadlocks
+        setTimeout(() => {
+          fetchUserRole(session.user.id);
+          updateLoginStreak(session.user.id);
+        }, 0);
+      } else {
+        setUserRole(null);
       }
-      
+
       setIsLoading(false);
-    };
-    
-    initSession();
+    });
+
+    // Check for existing session AFTER setting up listener
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        setTimeout(() => {
+          fetchUserRole(session.user!.id);
+          updateLoginStreak(session.user!.id);
+        }, 0);
+      } else {
+        setUserRole(null);
+      }
+
+      setIsLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
