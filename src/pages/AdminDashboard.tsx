@@ -23,7 +23,8 @@ import { AdminVouchersTab } from "@/components/admin/AdminVouchersTab";
 const AdminDashboard = () => {
   const {
     user,
-    userRole
+    userRole,
+    isLoading: authLoading
   } = useAuth();
   const navigate = useNavigate();
   const {
@@ -78,17 +79,38 @@ const AdminDashboard = () => {
     fetchData();
   }, [user, userRole, navigate, toast, fetchData]);
 
-  // Loading state
-  if (userRole !== 'admin' || loading) {
-    return <div className="min-h-screen bg-gradient-earth flex items-center justify-center pb-20">
+  // Loading state (wait for auth + role + admin data)
+  if (authLoading || !user || userRole === null || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-earth flex items-center justify-center pb-20">
         <div className="text-center p-6">
           <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-            <div className="w-8 h-8 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
           </div>
           <h2 className="text-xl font-semibold text-primary mb-2">Loading Admin Dashboard</h2>
           <p className="text-muted-foreground">Verifying permissions...</p>
         </div>
-      </div>;
+      </div>
+    );
+  }
+
+  // Non-admin fallback (should normally redirect via useEffect)
+  if (userRole !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-earth flex items-center justify-center pb-20">
+        <div className="text-center p-6 max-w-md">
+          <h2 className="text-xl font-semibold text-foreground mb-2">Access denied</h2>
+          <p className="text-muted-foreground mb-4">You don’t have admin privileges.</p>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-primary-foreground"
+          >
+            Go back home
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Handler functions
