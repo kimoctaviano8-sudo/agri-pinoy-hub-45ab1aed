@@ -601,7 +601,7 @@ const PlantScanner = () => {
         </div>
       </div>
 
-      <div className="px-4 space-y-4">
+      <div className="px-4 space-y-4 pb-8">
         {/* Symptom Selector Card */}
         <Card className="border-0 shadow-card">
           <CardContent className="p-4">
