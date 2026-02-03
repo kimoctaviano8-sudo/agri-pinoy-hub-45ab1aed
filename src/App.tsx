@@ -25,6 +25,7 @@ import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import { ProtectedAdminRoute } from "./components/ProtectedAdminRoute";
 import AdminNewsForm from "./pages/AdminNewsForm";
 import AdminProductForm from "./pages/AdminProductForm";
 import NewsDetail from "./pages/NewsDetail";
@@ -125,9 +126,9 @@ const ProtectedApp = () => {
             <Route path="/gemini-cares" element={<GeminiCares />} />
             <Route path="/gemini-policies" element={<GeminiPolicies />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/news/:id" element={<AdminNewsForm />} />
-            <Route path="/admin/products/:id" element={<AdminProductForm />} />
+            <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
+            <Route path="/admin/news/:id" element={<ProtectedAdminRoute><AdminNewsForm /></ProtectedAdminRoute>} />
+            <Route path="/admin/products/:id" element={<ProtectedAdminRoute><AdminProductForm /></ProtectedAdminRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
