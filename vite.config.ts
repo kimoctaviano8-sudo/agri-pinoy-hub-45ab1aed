@@ -10,11 +10,11 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   optimizeDeps: {
-    include: ["xlsx"],
+    include: ["exceljs"],
   },
   build: {
     commonjsOptions: {
-      include: [/xlsx/, /node_modules/],
+      include: [/exceljs/, /node_modules/],
     },
   },
   plugins: [
