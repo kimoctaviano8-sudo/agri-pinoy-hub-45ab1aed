@@ -1,5 +1,6 @@
 import { MapPin, Droplets, CloudRain, Gauge, Wind, Sunrise, Sunset } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface WeatherData {
   location: string;
@@ -18,11 +19,69 @@ interface WeatherData {
 
 interface WeatherWidgetProps {
   weather: WeatherData;
+  isLoading?: boolean;
 }
 
-export const WeatherWidget = ({ weather }: WeatherWidgetProps) => {
+export const WeatherWidget = ({ weather, isLoading = false }: WeatherWidgetProps) => {
+  // Minimal skeleton loading state
+  if (isLoading) {
+    return (
+      <Card className="bg-card shadow-lg border-0 -mt-6 mx-4 relative z-10 animate-fade-in">
+        <CardContent className="p-4">
+          {/* Location and Main Temperature Skeleton */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-1 mb-1">
+                <Skeleton className="h-3.5 w-3.5 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <Skeleton className="h-10 w-28 mb-1" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="text-right">
+              <Skeleton className="h-10 w-10 rounded-full ml-auto" />
+              <Skeleton className="h-3 w-16 mt-1 ml-auto" />
+            </div>
+          </div>
+
+          {/* Weather Details Grid Skeleton */}
+          <div className="grid grid-cols-4 gap-3 py-3 border-t border-b border-border">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="text-center">
+                <Skeleton className="w-4 h-4 mx-auto mb-1 rounded-full" />
+                <Skeleton className="h-3 w-10 mx-auto mb-1" />
+                <Skeleton className="h-4 w-8 mx-auto" />
+              </div>
+            ))}
+          </div>
+
+          {/* Sunrise and Sunset Skeleton */}
+          <div className="flex justify-between items-center pt-3">
+            <div className="flex items-center gap-2">
+              <Skeleton className="w-4 h-4 rounded-full" />
+              <div>
+                <Skeleton className="h-3 w-10 mb-1" />
+                <Skeleton className="h-4 w-14" />
+              </div>
+            </div>
+            <div className="flex-1 mx-4">
+              <Skeleton className="h-1 w-full rounded-full" />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="text-right">
+                <Skeleton className="h-3 w-10 mb-1 ml-auto" />
+                <Skeleton className="h-4 w-14 ml-auto" />
+              </div>
+              <Skeleton className="w-4 h-4 rounded-full" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Card className="bg-card shadow-lg border-0 -mt-6 mx-4 relative z-10">
+    <Card className="bg-card shadow-lg border-0 -mt-6 mx-4 relative z-10 animate-fade-in">
       <CardContent className="p-4">
         {/* Location and Main Temperature */}
         <div className="flex items-start justify-between mb-4">

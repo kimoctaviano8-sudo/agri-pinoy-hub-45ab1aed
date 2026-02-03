@@ -41,19 +41,20 @@ const Home = () => {
     full_name?: string;
     avatar_url?: string;
   } | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
   const [weather, setWeather] = useState({
-    location: "Loading...",
-    temperature: "--",
-    temperatureHigh: "--",
-    temperatureLow: "--",
-    humidity: "--",
-    precipitation: "--",
-    pressure: "--",
-    windSpeed: "--",
-    sunrise: "--:--",
-    sunset: "--:--",
-    condition: "⏳",
-    description: "Getting location..."
+    location: "",
+    temperature: "",
+    temperatureHigh: "",
+    temperatureLow: "",
+    humidity: "",
+    precipitation: "",
+    pressure: "",
+    windSpeed: "",
+    sunrise: "",
+    sunset: "",
+    condition: "",
+    description: ""
   });
 
   const categories = ["All", "agriculture", "gemini", "market", "weather", "general"];
@@ -133,6 +134,7 @@ const Home = () => {
   };
 
   const getUserLocationAndWeather = async () => {
+    setWeatherLoading(true);
     try {
       // Check if geolocation is supported
       if (!navigator.geolocation) {
@@ -150,6 +152,7 @@ const Home = () => {
           condition: "☀️",
           description: "Location not available"
         });
+        setWeatherLoading(false);
         return;
       }
 
@@ -182,6 +185,7 @@ const Home = () => {
         condition: "☀️",
         description: "Perfect for farming"
       });
+      setWeatherLoading(false);
     }
   };
 
@@ -243,6 +247,8 @@ const Home = () => {
         condition: "⛅",
         description: "Weather unavailable",
       });
+    } finally {
+      setWeatherLoading(false);
     }
   };
 
@@ -452,7 +458,7 @@ const Home = () => {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
           />
-          <WeatherWidget weather={weather} />
+          <WeatherWidget weather={weather} isLoading={weatherLoading} />
         </>
       )}
 
