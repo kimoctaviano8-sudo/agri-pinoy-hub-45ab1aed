@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { Filter, TrendingUp, Calendar, CalendarIcon, X } from "lucide-react";
-import { usePullToRefresh } from "@/hooks/usePullToRefresh";
-import { PullToRefreshIndicator } from "@/components/PullToRefresh";
 import Autoplay from "embla-carousel-autoplay";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { format } from "date-fns";
@@ -376,35 +374,8 @@ const Home = () => {
     setDateRange(undefined);
   };
 
-  // Pull to refresh handler
-  const handleRefresh = useCallback(async () => {
-    await Promise.all([
-      fetchNews(),
-      fetchCarouselItems(),
-      getUserLocationAndWeather(),
-    ]);
-  }, []);
-
-  const { containerRef, pullDistance, isRefreshing, progress } = usePullToRefresh({
-    onRefresh: handleRefresh,
-    threshold: 80,
-    maxPull: 120,
-  });
-
   return (
-    <div 
-      ref={containerRef}
-      className="min-h-screen bg-background pb-20 overflow-auto relative"
-      style={{
-        transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
-        transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none',
-      }}
-    >
-      <PullToRefreshIndicator
-        pullDistance={pullDistance}
-        isRefreshing={isRefreshing}
-        progress={progress}
-      />
+    <div className="min-h-screen bg-background pb-20">
       {/* Conditional Carousel or Greeting Header */}
       {showCarousel && carouselItems.length > 0 ? (
         /* Mobile Hero Carousel Section */
