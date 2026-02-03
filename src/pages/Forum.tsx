@@ -1130,7 +1130,7 @@ const Forum = () => {
                   </div>) : (/* View Mode */
             <>
                     {/* Enhanced Post Title */}
-                    {post.title && <h3 className="text-lg font-bold text-foreground leading-tight">{post.title}</h3>}
+                    {post.title && <h3 className="text-base font-semibold text-foreground leading-tight">{post.title}</h3>}
                     
                     {/* Enhanced Post Content */}
                     <p className="text-foreground/90 leading-relaxed text-sm">{post.content}</p>
