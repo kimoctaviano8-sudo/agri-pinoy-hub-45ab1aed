@@ -55,32 +55,39 @@ const AdminDashboard = () => {
     deleteProfanityWord
   } = useAdminData();
 
+  // Track if we've already fetched data to prevent re-fetching
+  const [hasFetched, setHasFetched] = useState(false);
+
   useEffect(() => {
-    console.log('AdminDashboard useEffect - user:', !!user, 'userRole:', userRole, 'loading:', loading);
-    if (!user) {
-      console.log('AdminDashboard: No user, still loading');
-      return;
-    }
-    if (userRole === null) {
-      console.log('AdminDashboard: userRole is null, setting loading to true');
-      return;
-    }
+    // Wait for auth to finish loading
+    if (authLoading) return;
+    
+    // Wait for user to be available
+    if (!user) return;
+    
+    // Wait for role to be fetched (null means still loading)
+    if (userRole === null) return;
+    
+    // If not admin, redirect
     if (userRole !== 'admin') {
-      console.log('AdminDashboard: User is not admin, role:', userRole);
       toast({
         title: "Access Denied",
         description: "You don't have admin privileges.",
         variant: "destructive"
       });
-      navigate('/');
+      navigate('/', { replace: true });
       return;
     }
-    console.log('AdminDashboard: User is admin, fetching data');
-    fetchData();
-  }, [user, userRole, navigate, toast, fetchData]);
+    
+    // Only fetch once
+    if (!hasFetched) {
+      setHasFetched(true);
+      fetchData();
+    }
+  }, [user, userRole, authLoading, navigate, toast, fetchData, hasFetched]);
 
-  // Loading state (wait for auth + role + admin data)
-  if (authLoading || !user || userRole === null || loading) {
+  // Loading state (wait for auth + role)
+  if (authLoading || !user || userRole === null) {
     return (
       <div className="min-h-screen bg-gradient-earth flex items-center justify-center pb-20">
         <div className="text-center p-6">
@@ -89,6 +96,21 @@ const AdminDashboard = () => {
           </div>
           <h2 className="text-xl font-semibold text-primary mb-2">Loading Admin Dashboard</h2>
           <p className="text-muted-foreground">Verifying permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading admin data
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-earth flex items-center justify-center pb-20">
+        <div className="text-center p-6">
+          <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-8 h-8 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+          </div>
+          <h2 className="text-xl font-semibold text-primary mb-2">Loading Admin Dashboard</h2>
+          <p className="text-muted-foreground">Loading data...</p>
         </div>
       </div>
     );
