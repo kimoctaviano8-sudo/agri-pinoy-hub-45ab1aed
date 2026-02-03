@@ -54,7 +54,7 @@ export const useAdminData = () => {
   const [forumPosts, setForumPosts] = useState<ForumPost[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [profanityWords, setProfanityWords] = useState<ProfanityWord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
