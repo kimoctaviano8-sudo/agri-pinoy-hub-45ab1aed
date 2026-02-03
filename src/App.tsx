@@ -57,7 +57,8 @@ const ProtectedApp = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const location = useLocation();
 
-  // If user just transitioned from logged-out -> logged-in, always send them to Home.
+  // If user just transitioned from logged-out -> logged-in, send them to Home ONLY
+  // when they are currently on the login route.
   useEffect(() => {
     if (isLoading) return;
 
@@ -65,7 +66,8 @@ const ProtectedApp = () => {
       // First render after a successful login
       if (!justLoggedInUserId) {
         setJustLoggedInUserId(user.id);
-        if (location.pathname !== "/") {
+        // Don't override deep links (e.g. /admin) after login/refresh.
+        if (location.pathname === "/login") {
           navigate("/", { replace: true });
         }
       }
