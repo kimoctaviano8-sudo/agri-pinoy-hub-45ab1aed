@@ -1,6 +1,14 @@
 import { useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export interface Symptom {
   id: string;
@@ -79,6 +87,8 @@ interface SymptomSelectorProps {
 }
 
 export function SymptomSelector({ selectedSymptoms, onSymptomsChange, disabled }: SymptomSelectorProps) {
+  const [open, setOpen] = useState(false);
+
   const toggleSymptom = (symptomId: string) => {
     if (disabled) return;
     
@@ -87,6 +97,20 @@ export function SymptomSelector({ selectedSymptoms, onSymptomsChange, disabled }
     } else {
       onSymptomsChange([...selectedSymptoms, symptomId]);
     }
+  };
+
+  const removeSymptom = (symptomId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (disabled) return;
+    onSymptomsChange(selectedSymptoms.filter(id => id !== symptomId));
+  };
+
+  const getSymptomLabel = (symptomId: string) => {
+    return PLANT_SYMPTOMS.find(s => s.id === symptomId)?.label || symptomId;
+  };
+
+  const getSymptomIcon = (symptomId: string) => {
+    return PLANT_SYMPTOMS.find(s => s.id === symptomId)?.icon || '';
   };
 
   return (
@@ -98,53 +122,65 @@ export function SymptomSelector({ selectedSymptoms, onSymptomsChange, disabled }
         </span>
       </div>
       
-      <div className="grid grid-cols-2 gap-2">
-        {PLANT_SYMPTOMS.map((symptom) => {
-          const isSelected = selectedSymptoms.includes(symptom.id);
-          
-          return (
-            <button
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild disabled={disabled}>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-between h-auto min-h-10 py-2 px-3",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <span className="text-sm text-muted-foreground">
+              {selectedSymptoms.length === 0 
+                ? "Tap to select symptoms you observe" 
+                : `${selectedSymptoms.length} symptom${selectedSymptoms.length > 1 ? 's' : ''} selected`}
+            </span>
+            <ChevronDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent 
+          className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-64 overflow-y-auto bg-popover z-50"
+          align="start"
+        >
+          {PLANT_SYMPTOMS.map((symptom) => (
+            <DropdownMenuCheckboxItem
               key={symptom.id}
-              onClick={() => toggleSymptom(symptom.id)}
-              disabled={disabled}
-              className={cn(
-                "relative p-3 rounded-xl border-2 text-left transition-all",
-                "hover:border-primary/50 active:scale-[0.98]",
-                isSelected 
-                  ? "border-primary bg-primary/5" 
-                  : "border-muted-foreground/20 bg-background",
-                disabled && "opacity-50 cursor-not-allowed"
-              )}
+              checked={selectedSymptoms.includes(symptom.id)}
+              onCheckedChange={() => toggleSymptom(symptom.id)}
+              className="cursor-pointer"
             >
-              {isSelected && (
-                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-3 h-3 text-primary-foreground" />
-                </div>
-              )}
-              
-              <div className="flex items-start gap-2">
-                <span className="text-lg">{symptom.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    "text-xs font-medium truncate",
-                    isSelected ? "text-primary" : "text-foreground"
-                  )}>
-                    {symptom.label}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">
-                    {symptom.description}
-                  </p>
-                </div>
+              <span className="mr-2">{symptom.icon}</span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{symptom.label}</span>
+                <span className="text-xs text-muted-foreground">{symptom.description}</span>
               </div>
-            </button>
-          );
-        })}
-      </div>
-      
-      {selectedSymptoms.length === 0 && (
-        <p className="text-xs text-muted-foreground text-center py-2">
-          Tap symptoms you observe on your plant
-        </p>
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Selected symptoms badges */}
+      {selectedSymptoms.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selectedSymptoms.map((symptomId) => (
+            <Badge
+              key={symptomId}
+              variant="secondary"
+              className="flex items-center gap-1 px-2 py-1 text-xs"
+            >
+              <span>{getSymptomIcon(symptomId)}</span>
+              <span>{getSymptomLabel(symptomId)}</span>
+              <button
+                onClick={(e) => removeSymptom(symptomId, e)}
+                className="ml-1 hover:bg-muted rounded-full p-0.5"
+                disabled={disabled}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
       )}
     </div>
   );
