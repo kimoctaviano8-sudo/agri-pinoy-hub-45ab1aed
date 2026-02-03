@@ -81,7 +81,7 @@ export const CommentInput = ({
         value={value} 
         onChange={handleInputChange}
         onKeyPress={handleKeyPress}
-        className="flex-1 h-9 bg-background/80 border-border/60 focus:border-primary/60 rounded-full px-4 text-sm" 
+        className="flex-1 h-9 bg-background/80 border-border/60 focus:border-primary/60 rounded-full px-4 text-xs placeholder:text-xs" 
       />
       <Button 
         size="sm" 
