@@ -573,10 +573,9 @@ const PlantScanner = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-foreground">Nutrient Scanner</h1>
-                <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-700 border-amber-200">Beta</Badge>
+                <h1 className="text-lg font-bold text-foreground whitespace-nowrap">Nutrient Scanner</h1>
+                <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-700 border-amber-200 whitespace-nowrap">Beta</Badge>
               </div>
-              <p className="text-xs text-muted-foreground">Symptom-based deficiency analysis</p>
             </div>
           </div>
           
