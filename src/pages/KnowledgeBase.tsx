@@ -141,7 +141,7 @@ const KnowledgeBase = () => {
     <div className="min-h-screen bg-background pb-24">
       {/* Compact Mobile Header */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50">
-        <div className="flex items-center justify-between p-3">
+        <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
@@ -162,7 +162,7 @@ const KnowledgeBase = () => {
         </div>
       </div>
 
-      <div className="px-3 pt-3 space-y-3">
+      <div className="px-4 pt-4 space-y-4">
         {/* Compact Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
