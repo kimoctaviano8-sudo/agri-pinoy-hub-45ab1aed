@@ -134,8 +134,8 @@ const Dealers = () => {
             <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-3">
               <Building2 className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-xl font-bold mb-2">Registered Dealers</h1>
-            <p className="text-xs text-white/90">
+            <h1 className="text-lg font-bold mb-1">Registered Dealers</h1>
+            <p className="text-[10px] text-white/90">
               Find authorized dealers near you
             </p>
           </div>
@@ -170,7 +170,7 @@ const Dealers = () => {
 
         {/* Results Count */}
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-bold text-foreground">
+          <h2 className="text-sm font-bold text-foreground">
             Dealers ({filteredDealers.length})
           </h2>
         </div>
@@ -202,21 +202,21 @@ const Dealers = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-1.5 text-xs">
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
                       <span className="text-muted-foreground">
                         {dealer.address}, {dealer.city}, {dealer.province}
                       </span>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <Phone className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="text-muted-foreground">{dealer.phone}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="text-muted-foreground">{dealer.hours}</span>
                     </div>
                   </div>
