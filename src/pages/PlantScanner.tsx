@@ -572,7 +572,10 @@ const PlantScanner = () => {
               <Leaf className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Nutrient Scanner</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold text-foreground">Nutrient Scanner</h1>
+                <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-700 border-amber-200">Beta</Badge>
+              </div>
               <p className="text-xs text-muted-foreground">Symptom-based deficiency analysis</p>
             </div>
           </div>
