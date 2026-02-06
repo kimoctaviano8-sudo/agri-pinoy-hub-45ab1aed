@@ -14,7 +14,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import productsImage from "@/assets/products-showcase.jpg";
-
 const Products = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,33 +27,43 @@ const Products = () => {
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const isMobile = useIsMobile();
   const categories = ["All", "seeds", "tools", "fertilizers", "equipment", "services"];
-
   const commonSearchTerms = ["foliar fertilizer", "organic", "bio-pesticide", "root stimulator", "soil enhancer", "growth promoter", "liquid fertilizer", "NPK", "micronutrients", "pest control", "crop nutrition", "yield booster"];
-
-  const contacts = [
-    { name: "Relan Rivas", phone: "0999 885 2599", region: "Region IV-A" },
-    { name: "Preach Tibayan", phone: "0998 985 3740", region: "Region IV-A" },
-    { name: "Conrado Vasquez", phone: "0998 954 5137", region: "Region V" },
-  ];
-
+  const contacts = [{
+    name: "Relan Rivas",
+    phone: "0999 885 2599",
+    region: "Region IV-A"
+  }, {
+    name: "Preach Tibayan",
+    phone: "0998 985 3740",
+    region: "Region IV-A"
+  }, {
+    name: "Conrado Vasquez",
+    phone: "0998 954 5137",
+    region: "Region V"
+  }];
   const handleCallTechnician = (phoneNumber: string, name: string) => {
     window.location.href = `tel:${phoneNumber}`;
     toast({
       title: "Calling...",
-      description: `Initiating call to ${name}`,
+      description: `Initiating call to ${name}`
     });
   };
-
   useEffect(() => {
     fetchProducts();
   }, []);
-
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase.from('products').select('*').eq('active', true).order('created_at', { ascending: false });
+      const {
+        data,
+        error
+      } = await supabase.from('products').select('*').eq('active', true).order('created_at', {
+        ascending: false
+      });
       if (error) {
         console.error('Error fetching products:', error);
         setProducts([{
@@ -117,7 +126,6 @@ const Products = () => {
       setLoading(false);
     }
   };
-
   const generateSuggestions = useCallback((query: string) => {
     if (!query || query.length < 2) {
       setSearchSuggestions([]);
@@ -128,7 +136,6 @@ const Products = () => {
     const productSuggestions = products.filter(p => p.name?.toLowerCase().includes(queryLower)).map(p => p.name).slice(0, 3);
     setSearchSuggestions([...suggestions, ...productSuggestions]);
   }, [products]);
-
   const filteredProducts = useMemo(() => {
     let filtered = products.filter(product => {
       let matchesSearch = true;
@@ -137,21 +144,17 @@ const Products = () => {
         const name = product.name?.toLowerCase() || '';
         const description = product.description?.toLowerCase() || '';
         const category = product.category?.toLowerCase() || '';
-
         const nameMatch = name.includes(query);
         const descMatch = description.includes(query);
         const categoryMatch = category.includes(query);
-
         let benefitsMatch = false;
         if (product.benefits && Array.isArray(product.benefits)) {
           benefitsMatch = product.benefits.some((benefit: string) => benefit.toLowerCase().includes(query));
         }
-
         const queryWords = query.split(/\s+/).filter(word => word.length > 0);
         const wordMatches = queryWords.some(word => name.includes(word) || description.includes(word) || category.includes(word) || product.benefits && Array.isArray(product.benefits) && product.benefits.some((benefit: string) => benefit.toLowerCase().includes(word)));
         matchesSearch = nameMatch || descMatch || categoryMatch || benefitsMatch || wordMatches;
       }
-
       let matchesPrice = true;
       try {
         const priceStr = product.price?.toString() || '0';
@@ -160,12 +163,10 @@ const Products = () => {
       } catch (error) {
         matchesPrice = true;
       }
-
       const matchesCategory = selectedCategory === "All" || product.category?.toLowerCase() === selectedCategory.toLowerCase();
       const matchesStock = !showInStockOnly || product.inStock;
       return matchesSearch && matchesCategory && matchesPrice && matchesStock;
     });
-
     switch (sortBy) {
       case "price-low":
         filtered.sort((a, b) => {
@@ -203,24 +204,20 @@ const Products = () => {
     }
     return filtered;
   }, [products, searchQuery, selectedCategory, priceRange, sortBy, showInStockOnly]);
-
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     generateSuggestions(value);
     setShowSuggestions(value.length > 0);
   };
-
   const handleSuggestionClick = (suggestion: string) => {
     setSearchQuery(suggestion);
     setShowSuggestions(false);
   };
-
   const clearSearch = () => {
     setSearchQuery("");
     setShowSuggestions(false);
     setSearchSuggestions([]);
   };
-
   const priceRangeFromProducts = useMemo(() => {
     if (products.length === 0) return [0, 2000];
     const prices = products.map(p => {
@@ -231,13 +228,56 @@ const Products = () => {
     if (prices.length === 0) return [0, 2000];
     return [Math.min(...prices), Math.max(...prices)];
   }, [products]);
-
-  return (
-    <div className="min-h-screen bg-background pb-20">
+  return <div className="min-h-screen bg-background pb-20">
       {/* Clean Hero Section - Minimal Style */}
       <div className="px-5 pt-6 pb-4 bg-background">
         <h1 className="text-2xl font-bold text-foreground leading-tight">
-          Find The <span className="text-primary">Best Products</span> For You
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          Find The Best Products
+   
+  
+  
+  
+   
+  
+  
+   
+    
+     
+  
+  
+  
+  
+  
+  
+  
+     
+     
+      
+       
+        
+     <span className="text-primary">​</span>            ​  
         </h1>
       </div>
 
@@ -245,40 +285,19 @@ const Products = () => {
       <div className="px-5 pb-4">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search your favorite products" 
-            value={searchQuery} 
-            onChange={e => handleSearchChange(e.target.value)} 
-            onFocus={() => generateSuggestions(searchQuery)} 
-            className="pl-11 pr-10 h-12 rounded-2xl bg-muted/50 border-0 placeholder:text-muted-foreground/70 text-sm" 
-          />
-          {searchQuery && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={clearSearch} 
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 rounded-full"
-            >
+          <Input placeholder="Search your favorite products" value={searchQuery} onChange={e => handleSearchChange(e.target.value)} onFocus={() => generateSuggestions(searchQuery)} className="pl-11 pr-10 h-12 rounded-2xl bg-muted/50 border-0 placeholder:text-muted-foreground/70 text-sm" />
+          {searchQuery && <Button variant="ghost" size="sm" onClick={clearSearch} className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 rounded-full">
               <X className="w-4 h-4" />
-            </Button>
-          )}
+            </Button>}
           
           {/* Search suggestions dropdown */}
-          {showSuggestions && searchSuggestions.length > 0 && (
-            <Card className="absolute top-full left-0 right-0 z-10 mt-2 shadow-lg border-0 rounded-xl overflow-hidden">
+          {showSuggestions && searchSuggestions.length > 0 && <Card className="absolute top-full left-0 right-0 z-10 mt-2 shadow-lg border-0 rounded-xl overflow-hidden">
               <CardContent className="p-2">
-                {searchSuggestions.map((suggestion, index) => (
-                  <button 
-                    key={index} 
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors" 
-                    onClick={() => handleSuggestionClick(suggestion)}
-                  >
+                {searchSuggestions.map((suggestion, index) => <button key={index} className="w-full text-left px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors" onClick={() => handleSuggestionClick(suggestion)}>
                     {suggestion}
-                  </button>
-                ))}
+                  </button>)}
               </CardContent>
-            </Card>
-          )}
+            </Card>}
         </div>
       </div>
 
@@ -287,10 +306,7 @@ const Products = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold text-foreground">Find</h2>
-            <button 
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-1 text-xs text-primary font-medium"
-            >
+            <button onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-1 text-xs text-primary font-medium">
               <SlidersHorizontal className="w-3 h-3" />
               <span>Filter</span>
             </button>
@@ -314,21 +330,12 @@ const Products = () => {
       {/* Category Pills - Horizontal Scroll */}
       <div className="px-5 pb-4">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`
+          {categories.map(category => <button key={category} onClick={() => setSelectedCategory(category)} className={`
                 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200
-                ${selectedCategory === category 
-                  ? 'bg-primary text-primary-foreground shadow-md' 
-                  : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-                }
-              `}
-            >
+                ${selectedCategory === category ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted/60 text-muted-foreground hover:bg-muted'}
+              `}>
               {category.charAt(0).toUpperCase() + category.slice(1)}
-            </button>
-          ))}
+            </button>)}
         </div>
       </div>
 
@@ -343,25 +350,12 @@ const Products = () => {
                   <label className="text-sm font-medium mb-3 block">
                     Price: ₱{priceRange[0]} - ₱{priceRange[1]}
                   </label>
-                  <Slider 
-                    value={priceRange} 
-                    onValueChange={setPriceRange} 
-                    max={priceRangeFromProducts[1]} 
-                    min={priceRangeFromProducts[0]} 
-                    step={50} 
-                    className="w-full" 
-                  />
+                  <Slider value={priceRange} onValueChange={setPriceRange} max={priceRangeFromProducts[1]} min={priceRangeFromProducts[0]} step={50} className="w-full" />
                 </div>
                 
                 {/* Stock filter */}
                 <div className="flex items-center gap-3">
-                  <input 
-                    type="checkbox" 
-                    id="inStock" 
-                    checked={showInStockOnly} 
-                    onChange={e => setShowInStockOnly(e.target.checked)} 
-                    className="rounded" 
-                  />
+                  <input type="checkbox" id="inStock" checked={showInStockOnly} onChange={e => setShowInStockOnly(e.target.checked)} className="rounded" />
                   <label htmlFor="inStock" className="text-sm">In stock only</label>
                 </div>
               </CardContent>
@@ -372,10 +366,7 @@ const Products = () => {
 
       {/* Registered Dealers Card - Compact */}
       <div className="px-5 pb-4">
-        <Card 
-          className="bg-gradient-to-r from-primary to-primary/80 border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-200 rounded-2xl overflow-hidden"
-          onClick={() => navigate('/dealers')}
-        >
+        <Card className="bg-gradient-to-r from-primary to-primary/80 border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-200 rounded-2xl overflow-hidden" onClick={() => navigate('/dealers')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
@@ -400,43 +391,19 @@ const Products = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {loading ? (
-            <div className="col-span-2 text-center py-10">
+          {loading ? <div className="col-span-2 text-center py-10">
               <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
               <p className="text-muted-foreground mt-3 text-sm">Loading products...</p>
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="col-span-2 text-center py-10 space-y-3">
+            </div> : filteredProducts.length === 0 ? <div className="col-span-2 text-center py-10 space-y-3">
               <Package className="w-12 h-12 text-muted-foreground mx-auto" />
               <p className="text-muted-foreground font-medium">No products found</p>
               <p className="text-sm text-muted-foreground">
                 {searchQuery ? "Try different keywords" : "Check back later"}
               </p>
-              {searchQuery && (
-                <Button variant="outline" size="sm" onClick={clearSearch} className="mt-3 rounded-full">
+              {searchQuery && <Button variant="outline" size="sm" onClick={clearSearch} className="mt-3 rounded-full">
                   Clear search
-                </Button>
-              )}
-            </div>
-          ) : (
-            filteredProducts.map(product => (
-              <ProductCard 
-                key={product.id} 
-                id={product.id} 
-                name={product.name} 
-                description={product.description} 
-                price={product.price} 
-                image={product.image} 
-                rating={product.rating} 
-                reviews={product.reviews} 
-                benefits={product.benefits} 
-                inStock={product.inStock} 
-                featured={product.featured} 
-                stockQuantity={product.stockQuantity} 
-                lowStockThreshold={product.lowStockThreshold} 
-              />
-            ))
-          )}
+                </Button>}
+            </div> : filteredProducts.map(product => <ProductCard key={product.id} id={product.id} name={product.name} description={product.description} price={product.price} image={product.image} rating={product.rating} reviews={product.reviews} benefits={product.benefits} inStock={product.inStock} featured={product.featured} stockQuantity={product.stockQuantity} lowStockThreshold={product.lowStockThreshold} />)}
         </div>
       </div>
 
@@ -460,8 +427,7 @@ const Products = () => {
       </div>
 
       {/* Contact Modal */}
-      {isMobile ? (
-        <Drawer open={showContactModal} onOpenChange={setShowContactModal}>
+      {isMobile ? <Drawer open={showContactModal} onOpenChange={setShowContactModal}>
           <DrawerContent className="max-h-[85vh]">
             <DrawerHeader className="pb-2">
               <DrawerTitle className="text-center text-base font-semibold">
@@ -475,8 +441,7 @@ const Products = () => {
               </p>
               
               <div className="space-y-3">
-                {contacts.map((contact, index) => (
-                  <Card key={index} className="transition-all duration-200 active:scale-[0.98] rounded-xl">
+                {contacts.map((contact, index) => <Card key={index} className="transition-all duration-200 active:scale-[0.98] rounded-xl">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -487,24 +452,17 @@ const Products = () => {
                           <p className="text-sm font-medium">{contact.phone}</p>
                           <p className="text-xs text-muted-foreground">{contact.region}</p>
                         </div>
-                        <Button
-                          size="sm"
-                          className="ml-3 rounded-full"
-                          onClick={() => handleCallTechnician(contact.phone.replace(/\s/g, ''), contact.name)}
-                        >
+                        <Button size="sm" className="ml-3 rounded-full" onClick={() => handleCallTechnician(contact.phone.replace(/\s/g, ''), contact.name)}>
                           <Phone className="w-4 h-4 mr-1" />
                           Call
                         </Button>
                       </div>
                     </CardContent>
-                  </Card>
-                ))}
+                  </Card>)}
               </div>
             </div>
           </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
+        </Drawer> : <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
           <DialogContent className="max-w-md rounded-2xl">
             <DialogHeader className="pb-2">
               <DialogTitle className="text-center text-lg font-semibold">
@@ -518,8 +476,7 @@ const Products = () => {
               </p>
               
               <div className="space-y-3">
-                {contacts.map((contact, index) => (
-                  <Card key={index} className="transition-all duration-200 hover:shadow-md rounded-xl">
+                {contacts.map((contact, index) => <Card key={index} className="transition-all duration-200 hover:shadow-md rounded-xl">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -530,25 +487,17 @@ const Products = () => {
                           <p className="text-sm font-medium">{contact.phone}</p>
                           <p className="text-xs text-muted-foreground">{contact.region}</p>
                         </div>
-                        <Button
-                          size="sm"
-                          className="rounded-full"
-                          onClick={() => handleCallTechnician(contact.phone.replace(/\s/g, ''), contact.name)}
-                        >
+                        <Button size="sm" className="rounded-full" onClick={() => handleCallTechnician(contact.phone.replace(/\s/g, ''), contact.name)}>
                           <Phone className="w-4 h-4 mr-1" />
                           Call
                         </Button>
                       </div>
                     </CardContent>
-                  </Card>
-                ))}
+                  </Card>)}
               </div>
             </div>
           </DialogContent>
-        </Dialog>
-      )}
-    </div>
-  );
+        </Dialog>}
+    </div>;
 };
-
 export default Products;
