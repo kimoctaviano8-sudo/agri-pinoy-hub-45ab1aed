@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useVacationModeContext } from "@/contexts/VacationModeContext";
+import { Star, Plus } from "lucide-react";
 
 interface ProductCardProps {
   id: string;
@@ -21,12 +22,9 @@ interface ProductCardProps {
 const ProductCard = ({
   id,
   name,
-  description,
   price,
   image,
   rating,
-  reviews,
-  benefits,
   inStock,
   featured = false,
   stockQuantity = 0,
@@ -41,51 +39,71 @@ const ProductCard = ({
 
   return (
     <Card 
-      className="group cursor-pointer transition-smooth hover:scale-[1.02] active:scale-[0.98] touch-manipulation rounded-lg"
+      className="group cursor-pointer transition-all duration-300 hover:shadow-lg active:scale-[0.98] touch-manipulation rounded-2xl border-0 bg-muted/30 overflow-hidden"
       onClick={handleClick}
     >
-      <CardContent className="p-0">
-        <div className="relative overflow-hidden rounded-t-lg">
-          <img
-            src={image}
-            alt={name}
-            className="w-full h-32 object-cover transition-smooth group-hover:scale-105 rounded-t-lg"
-          />
+      <CardContent className="p-3">
+        {/* Product Image - Rounded Style */}
+        <div className="relative mb-3">
+          <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted">
+            <img
+              src={image}
+              alt={name}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          </div>
+          
+          {/* Featured Badge */}
           {featured && (
             <div className="absolute top-2 left-2">
-              <Badge className="bg-primary text-white text-xs px-2 py-1">
+              <Badge className="bg-primary text-white text-[10px] px-2 py-0.5 rounded-full">
                 Featured
               </Badge>
             </div>
           )}
-          {/* Hide stock indicators in vacation mode */}
+          
+          {/* Stock Indicators - Hidden in Vacation Mode */}
           {!vacationMode && !inStock && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <Badge variant="destructive" className="text-xs px-2 py-1">Out of Stock</Badge>
+            <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
+              <Badge variant="destructive" className="text-xs px-2 py-1 rounded-full">Out of Stock</Badge>
             </div>
           )}
           {!vacationMode && inStock && stockQuantity <= lowStockThreshold && stockQuantity > 0 && (
             <div className="absolute top-2 right-2">
-              <Badge variant="secondary" className="text-xs px-2 py-1 bg-warning/90 text-warning-foreground">
+              <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-warning/90 text-warning-foreground rounded-full">
                 Low Stock
               </Badge>
             </div>
           )}
         </div>
-        <div className="p-4 space-y-3">
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-smooth line-clamp-2">
+
+        {/* Product Info */}
+        <div className="space-y-2">
+          {/* Name and Rating Row */}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-semibold text-sm leading-tight line-clamp-2 flex-1 text-foreground">
               {name}
             </h3>
-            <div className="text-base font-bold text-foreground">{price}</div>
           </div>
           
-          <div className="flex flex-wrap gap-1.5">
-            {benefits.slice(0, 2).map((benefit, index) => (
-              <Badge key={index} variant="outline" className="text-[10px] px-2 py-0.5 h-5">
-                {benefit}
-              </Badge>
-            ))}
+          {/* Rating */}
+          <div className="flex items-center gap-1">
+            <Star className="w-3 h-3 fill-accent-warm text-accent-warm" />
+            <span className="text-xs font-medium text-foreground">{rating.toFixed(1)}</span>
+          </div>
+
+          {/* Price and Add Button Row */}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-base font-bold text-foreground">{price}</span>
+            <button 
+              className="w-8 h-8 rounded-lg bg-accent-warm text-white flex items-center justify-center shadow-md hover:bg-accent-warm/90 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/products/${id}`);
+              }}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </CardContent>
