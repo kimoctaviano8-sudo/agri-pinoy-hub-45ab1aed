@@ -96,13 +96,13 @@ const ProductCard = ({
           <div className="flex items-center justify-between pt-1">
             <span className="text-base font-bold text-foreground">{price}</span>
             <button 
-              className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+              className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm hover:bg-primary/90 transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/products/${id}`);
               }}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
         </div>
