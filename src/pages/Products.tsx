@@ -321,7 +321,7 @@ const Products = () => {
               className={`
                 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200
                 ${selectedCategory === category 
-                  ? 'bg-accent-warm text-white shadow-md' 
+                  ? 'bg-primary text-primary-foreground shadow-md' 
                   : 'bg-muted/60 text-muted-foreground hover:bg-muted'
                 }
               `}
