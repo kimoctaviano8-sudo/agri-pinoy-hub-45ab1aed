@@ -33,10 +33,11 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     --muted: 154 54% 85%;  /* Darker emerald-100 */
     --muted-foreground: 150 81% 20%;
 
-    /* Accent using darker green */
-    --accent: 142 76% 35%;  /* Much darker green */
+    /* Accent using warm amber/gold for CTAs */
+    --accent: 38 92% 50%;  /* Warm amber for emphasis */
     --accent-foreground: 0 0% 100%;
-    --accent-warm: 138 60% 85%;  /* Much darker green-50 */
+    --accent-warm: 32 95% 44%;  /* Rich gold/terracotta */
+    --accent-soft: 43 96% 56%;  /* Soft golden yellow */
 
     --destructive: 0 75% 58%;
     --destructive-foreground: 0 0% 100%;  /* Pure white text on destructive */
@@ -68,6 +69,8 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     --gradient-button-primary: linear-gradient(to right, hsl(142 76% 50%), hsl(151 83% 42%));  /* green-500 to emerald-600 */
     --gradient-button-secondary: linear-gradient(to right, hsl(217 91% 60%), hsl(224 76% 48%));  /* blue-500 to indigo-600 */
     --gradient-button-primary-deep: linear-gradient(to right, hsl(151 83% 35%), hsl(151 83% 40%));  /* lighter by ~15% */
+    --gradient-button-warm: linear-gradient(to right, hsl(38 92% 50%), hsl(32 95% 44%));  /* Warm amber to gold CTA */
+    --gradient-button-warm-hover: linear-gradient(to right, hsl(38 92% 45%), hsl(32 95% 40%));  /* Darker on hover */
     --gradient-info: linear-gradient(to right, hsl(214 100% 97%), hsl(224 76% 94%));  /* Very light blue-50 to indigo-100 */
     --gradient-section: linear-gradient(to bottom right, hsl(0 0% 100%), hsl(138 60% 98%));  /* White to very light green */
     --gradient-page: linear-gradient(to bottom, hsl(0 0% 100%), hsl(154 54% 97%));  /* White to very light emerald */
@@ -129,10 +132,11 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     --muted: 0 0% 15%;             /* Neutral dark muted */
     --muted-foreground: 0 0% 65%;  /* Muted gray text */
 
-    /* Accent colors - bright for visibility */
-    --accent: 142 70% 50%;         /* Bright green accent */
+    /* Accent colors - warm amber for visibility */
+    --accent: 38 85% 55%;          /* Warm amber accent */
     --accent-foreground: 0 0% 100%; /* White text on accent */
-    --accent-warm: 151 50% 40%;    /* Warm green accent */
+    --accent-warm: 32 90% 50%;     /* Rich gold accent */
+    --accent-soft: 43 90% 60%;     /* Soft golden yellow */
 
     /* Status colors adjusted for dark mode */
     --destructive: 0 72% 51%;      /* Bright red for visibility */
@@ -166,6 +170,8 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     --gradient-button-primary: linear-gradient(to right, hsl(142 70% 45%), hsl(151 70% 50%));
     --gradient-button-secondary: linear-gradient(to right, hsl(217 80% 50%), hsl(224 70% 45%));
     --gradient-button-primary-deep: linear-gradient(to right, hsl(151 70% 40%), hsl(151 70% 45%));
+    --gradient-button-warm: linear-gradient(to right, hsl(38 85% 55%), hsl(32 90% 50%));  /* Warm amber CTA */
+    --gradient-button-warm-hover: linear-gradient(to right, hsl(38 85% 50%), hsl(32 90% 45%));
     --gradient-info: linear-gradient(to right, hsl(0 0% 12%), hsl(0 0% 15%));
     --gradient-section: linear-gradient(to bottom right, hsl(0 0% 8%), hsl(0 0% 10%));
     --gradient-page: linear-gradient(to bottom, hsl(0 0% 7%), hsl(0 0% 9%));
