@@ -88,7 +88,7 @@ const ProductCard = ({
           
           {/* Rating */}
           <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 fill-accent-warm text-accent-warm" />
+            <Star className="w-3 h-3 fill-primary text-primary" />
             <span className="text-xs font-medium text-foreground">{rating.toFixed(1)}</span>
           </div>
 
@@ -96,7 +96,7 @@ const ProductCard = ({
           <div className="flex items-center justify-between pt-1">
             <span className="text-base font-bold text-foreground">{price}</span>
             <button 
-              className="w-8 h-8 rounded-lg bg-accent-warm text-white flex items-center justify-center shadow-md hover:bg-accent-warm/90 transition-colors"
+              className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/products/${id}`);
