@@ -9,29 +9,29 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
 
 @layer base {
   :root {
-    /* Plant Scanner Inspired Color Palette - Reduced Light Colors */
+    /* Fresh Green Color Palette - Based on #64d145 */
     --background: 0 0% 100%;  /* Pure white background */
-    --foreground: 150 81% 20%;  /* Deep emerald for text */
+    --foreground: 107 60% 20%;  /* Deep green for text */
 
     --card: 0 0% 97%;  /* Slightly darker white cards */
-    --card-foreground: 150 81% 20%;
+    --card-foreground: 107 60% 20%;
 
     --popover: 0 0% 97%;  /* Slightly darker white */
-    --popover-foreground: 150 81% 20%;
+    --popover-foreground: 107 60% 20%;
 
-    /* Primary using much darker emerald tones */
-    --primary: 151 83% 25%;  /* Much darker emerald */
+    /* Primary using #64d145 base (HSL: 107 60% 55%) */
+    --primary: 107 60% 45%;  /* Darker version for better contrast */
     --primary-foreground: 0 0% 100%;  /* Pure white text on primary */
-    --primary-glow: 142 76% 30%;  /* Much darker green */
-    --primary-deep: 150 81% 20%;  /* Much darker emerald-700 */
+    --primary-glow: 107 60% 55%;  /* The exact #64d145 color */
+    --primary-deep: 107 60% 35%;  /* Deep green */
 
-    /* Secondary using much darker green */
-    --secondary: 142 71% 28%;  /* Much darker green */
+    /* Secondary using slightly muted green */
+    --secondary: 107 50% 40%;  /* Muted green */
     --secondary-foreground: 0 0% 100%;  /* Pure white text on secondary */
 
-    /* Muted using darker emerald-100 tones */
-    --muted: 154 54% 85%;  /* Darker emerald-100 */
-    --muted-foreground: 150 81% 20%;
+    /* Muted using light green tones */
+    --muted: 107 40% 90%;  /* Light green-100 */
+    --muted-foreground: 107 60% 25%;
 
     /* Accent using warm amber/gold for CTAs */
     --accent: 38 92% 50%;  /* Warm amber for emphasis */
@@ -45,41 +45,41 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     --warning: 38 92% 50%;  /* amber-500 for warning states */
     --warning-foreground: 0 0% 100%;
 
-    --success: 142 76% 36%;  /* green-600 for success states */
+    --success: 107 60% 45%;  /* Using primary green for success */
     --success-foreground: 0 0% 100%;
 
-    --border: 154 54% 83%;  /* Darker emerald border */
-    --input: 138 60% 95%;     /* Darker green input background */
-    --ring: 151 83% 42%;   /* Primary emerald for focus rings */
+    --border: 107 40% 85%;  /* Light green border */
+    --input: 107 40% 96%;  /* Very light green input background */
+    --ring: 107 60% 50%;  /* Primary green for focus rings */
 
-    /* Using emerald for links */
-    --link: 151 83% 42%;  /* emerald-600 */
-    --link-foreground: 150 81% 20%;
+    /* Using green for links */
+    --link: 107 60% 45%;  /* Primary green */
+    --link-foreground: 107 60% 35%;
 
-    /* Plant Scanner Exact Gradients - Light Background Gradients */
-    --gradient-primary: linear-gradient(to right, hsl(142 71% 45%), hsl(150 81% 36%));  /* green-600 to emerald-700 */
-    --gradient-earth: linear-gradient(to bottom right, hsl(138 60% 97%), hsl(154 54% 95%));  /* Very light green-50 to emerald-100 */
-    --gradient-accent: linear-gradient(to right, hsl(142 76% 50%), hsl(151 83% 42%));  /* green-500 to emerald-600 */
-    --gradient-forest: linear-gradient(to right, hsl(156 81% 49%), hsl(142 76% 50%));  /* emerald-500 to green-600 */
-    --gradient-botanical: linear-gradient(to bottom right, hsl(138 60% 98%), hsl(154 54% 96%));  /* Very light backgrounds */
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 99%), hsl(138 60% 98%));
-    --gradient-scanner-hero: linear-gradient(to right, hsl(142 71% 45%), hsl(150 81% 36%));  /* Header gradient */
-    --gradient-scanner-bg: linear-gradient(to bottom right, hsl(138 60% 98%), hsl(154 54% 96%));  /* Very light background gradient */
-    --gradient-emerald: linear-gradient(to right, hsl(151 83% 42%), hsl(156 81% 49%));  /* emerald-600 to emerald-500 */
-    --gradient-button-primary: linear-gradient(to right, hsl(142 76% 50%), hsl(151 83% 42%));  /* green-500 to emerald-600 */
+    /* Fresh Green Gradients - Based on #64d145 */
+    --gradient-primary: linear-gradient(to right, hsl(107 60% 50%), hsl(107 60% 40%));  /* Fresh green gradient */
+    --gradient-earth: linear-gradient(to bottom right, hsl(107 40% 97%), hsl(107 40% 94%));  /* Very light green */
+    --gradient-accent: linear-gradient(to right, hsl(107 60% 55%), hsl(107 60% 45%));  /* #64d145 to darker */
+    --gradient-forest: linear-gradient(to right, hsl(107 60% 55%), hsl(107 55% 45%));  /* Fresh to muted green */
+    --gradient-botanical: linear-gradient(to bottom right, hsl(107 40% 98%), hsl(107 40% 95%));  /* Very light backgrounds */
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 99%), hsl(107 40% 98%));
+    --gradient-scanner-hero: linear-gradient(to right, hsl(107 60% 50%), hsl(107 60% 40%));  /* Header gradient */
+    --gradient-scanner-bg: linear-gradient(to bottom right, hsl(107 40% 98%), hsl(107 40% 95%));  /* Very light background gradient */
+    --gradient-emerald: linear-gradient(to right, hsl(107 60% 45%), hsl(107 60% 55%));  /* Dark to light green */
+    --gradient-button-primary: linear-gradient(to right, hsl(107 60% 55%), hsl(107 60% 45%));  /* #64d145 to darker */
     --gradient-button-secondary: linear-gradient(to right, hsl(217 91% 60%), hsl(224 76% 48%));  /* blue-500 to indigo-600 */
-    --gradient-button-primary-deep: linear-gradient(to right, hsl(151 83% 35%), hsl(151 83% 40%));  /* lighter by ~15% */
+    --gradient-button-primary-deep: linear-gradient(to right, hsl(107 60% 38%), hsl(107 60% 42%));  /* Deep green */
     --gradient-button-warm: linear-gradient(to right, hsl(38 92% 50%), hsl(32 95% 44%));  /* Warm amber to gold CTA */
     --gradient-button-warm-hover: linear-gradient(to right, hsl(38 92% 45%), hsl(32 95% 40%));  /* Darker on hover */
     --gradient-info: linear-gradient(to right, hsl(214 100% 97%), hsl(224 76% 94%));  /* Very light blue-50 to indigo-100 */
-    --gradient-section: linear-gradient(to bottom right, hsl(0 0% 100%), hsl(138 60% 98%));  /* White to very light green */
-    --gradient-page: linear-gradient(to bottom, hsl(0 0% 100%), hsl(154 54% 97%));  /* White to very light emerald */
+    --gradient-section: linear-gradient(to bottom right, hsl(0 0% 100%), hsl(107 40% 98%));  /* White to very light green */
+    --gradient-page: linear-gradient(to bottom, hsl(0 0% 100%), hsl(107 40% 97%));  /* White to very light green */
 
-    /* Updated shadows with Plant Scanner palette */
-    --shadow-card: 0 4px 25px hsl(151 83% 42% / 0.15), 0 2px 10px hsl(151 83% 42% / 0.08);
-    --shadow-elevated: 0 8px 35px hsl(151 83% 42% / 0.20), 0 4px 15px hsl(151 83% 42% / 0.12);
-    --shadow-glow: 0 0 30px hsl(142 76% 50% / 0.4);
-    --shadow-botanical: 0 4px 20px hsl(150 81% 36% / 0.18);
+    /* Updated shadows with fresh green palette */
+    --shadow-card: 0 4px 25px hsl(107 60% 50% / 0.15), 0 2px 10px hsl(107 60% 50% / 0.08);
+    --shadow-elevated: 0 8px 35px hsl(107 60% 50% / 0.20), 0 4px 15px hsl(107 60% 50% / 0.12);
+    --shadow-glow: 0 0 30px hsl(107 60% 55% / 0.4);
+    --shadow-botanical: 0 4px 20px hsl(107 60% 45% / 0.18);
 
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -96,15 +96,15 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     --font-3xl: 1.625rem;    /* 26px - reduced from default 30px */
     --font-4xl: 2rem;        /* 32px - reduced from default 36px */
 
-    /* Updated sidebar with Plant Scanner palette */
+    /* Updated sidebar with fresh green palette */
     --sidebar-background: 0 0% 100%;  /* Pure white sidebar */
-    --sidebar-foreground: 150 81% 20%;
-    --sidebar-primary: 151 83% 42%;
+    --sidebar-foreground: 107 60% 20%;
+    --sidebar-primary: 107 60% 50%;
     --sidebar-primary-foreground: 0 0% 100%;  /* Pure white text on primary */
-    --sidebar-accent: 138 76% 98%;  /* Very light green accent */
-    --sidebar-accent-foreground: 150 81% 20%;
-    --sidebar-border: 154 54% 88%;
-    --sidebar-ring: 151 83% 42%;
+    --sidebar-accent: 107 40% 97%;  /* Very light green accent */
+    --sidebar-accent-foreground: 107 60% 25%;
+    --sidebar-border: 107 40% 88%;
+    --sidebar-ring: 107 60% 50%;
   }
 
   .dark {
@@ -118,14 +118,14 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     --popover: 0 0% 12%;           /* Popover background */
     --popover-foreground: 0 0% 95%; /* Off-white text on popovers */
 
-    /* Bright emerald primary for dark mode - high contrast */
-    --primary: 151 70% 50%;        /* Bright emerald for visibility */
+    /* Bright fresh green for dark mode - high contrast */
+    --primary: 107 60% 55%;        /* Bright fresh green (#64d145) */
     --primary-foreground: 0 0% 100%; /* Pure white text on primary */
-    --primary-glow: 142 70% 55%;   /* Bright green glow */
-    --primary-deep: 151 70% 45%;   /* Deeper emerald */
+    --primary-glow: 107 60% 60%;   /* Brighter green glow */
+    --primary-deep: 107 60% 45%;   /* Deeper green */
 
     /* Secondary with subtle green tint */
-    --secondary: 150 15% 18%;      /* Dark gray with subtle green */
+    --secondary: 107 15% 18%;      /* Dark gray with subtle green */
     --secondary-foreground: 0 0% 95%; /* Off-white text on secondary */
 
     /* Muted dark tones */
@@ -145,31 +145,31 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     --warning: 38 92% 50%;         /* Amber warning */
     --warning-foreground: 0 0% 100%;
 
-    --success: 142 70% 45%;        /* Green success */
+    --success: 107 60% 50%;        /* Fresh green success */
     --success-foreground: 0 0% 100%;
 
     /* Borders and inputs */
     --border: 0 0% 20%;            /* Subtle gray border */
     --input: 0 0% 15%;             /* Dark input background */
-    --ring: 151 70% 50%;           /* Emerald focus ring */
+    --ring: 107 60% 55%;           /* Fresh green focus ring */
 
     /* Link colors */
-    --link: 151 70% 55%;           /* Bright emerald links */
-    --link-foreground: 151 70% 55%;
+    --link: 107 60% 60%;           /* Bright fresh green links */
+    --link-foreground: 107 60% 60%;
 
     /* Dark mode gradients */
-    --gradient-primary: linear-gradient(to right, hsl(142 70% 45%), hsl(151 70% 50%));
+    --gradient-primary: linear-gradient(to right, hsl(107 60% 50%), hsl(107 60% 55%));
     --gradient-earth: linear-gradient(to bottom right, hsl(0 0% 10%), hsl(0 0% 12%));
-    --gradient-accent: linear-gradient(to right, hsl(142 70% 45%), hsl(151 70% 50%));
-    --gradient-forest: linear-gradient(to right, hsl(151 70% 45%), hsl(142 70% 50%));
+    --gradient-accent: linear-gradient(to right, hsl(107 60% 50%), hsl(107 60% 55%));
+    --gradient-forest: linear-gradient(to right, hsl(107 60% 50%), hsl(107 55% 55%));
     --gradient-botanical: linear-gradient(to bottom right, hsl(0 0% 8%), hsl(0 0% 10%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 11%), hsl(0 0% 9%));
-    --gradient-scanner-hero: linear-gradient(to right, hsl(142 70% 40%), hsl(151 70% 45%));
+    --gradient-scanner-hero: linear-gradient(to right, hsl(107 60% 45%), hsl(107 60% 50%));
     --gradient-scanner-bg: linear-gradient(to bottom right, hsl(0 0% 8%), hsl(0 0% 10%));
-    --gradient-emerald: linear-gradient(to right, hsl(151 70% 45%), hsl(142 70% 50%));
-    --gradient-button-primary: linear-gradient(to right, hsl(142 70% 45%), hsl(151 70% 50%));
+    --gradient-emerald: linear-gradient(to right, hsl(107 60% 50%), hsl(107 60% 55%));
+    --gradient-button-primary: linear-gradient(to right, hsl(107 60% 50%), hsl(107 60% 55%));
     --gradient-button-secondary: linear-gradient(to right, hsl(217 80% 50%), hsl(224 70% 45%));
-    --gradient-button-primary-deep: linear-gradient(to right, hsl(151 70% 40%), hsl(151 70% 45%));
+    --gradient-button-primary-deep: linear-gradient(to right, hsl(107 60% 42%), hsl(107 60% 48%));
     --gradient-button-warm: linear-gradient(to right, hsl(38 85% 55%), hsl(32 90% 50%));  /* Warm amber CTA */
     --gradient-button-warm-hover: linear-gradient(to right, hsl(38 85% 50%), hsl(32 90% 45%));
     --gradient-info: linear-gradient(to right, hsl(0 0% 12%), hsl(0 0% 15%));
@@ -179,18 +179,18 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     /* Dark mode shadows */
     --shadow-card: 0 4px 25px hsl(0 0% 0% / 0.3), 0 2px 10px hsl(0 0% 0% / 0.2);
     --shadow-elevated: 0 8px 35px hsl(0 0% 0% / 0.4), 0 4px 15px hsl(0 0% 0% / 0.25);
-    --shadow-glow: 0 0 30px hsl(151 70% 50% / 0.3);
+    --shadow-glow: 0 0 30px hsl(107 60% 55% / 0.3);
     --shadow-botanical: 0 4px 20px hsl(0 0% 0% / 0.3);
 
     /* Dark sidebar */
     --sidebar-background: 0 0% 7%;        /* Soft dark gray */
     --sidebar-foreground: 0 0% 90%;       /* Off-white text */
-    --sidebar-primary: 151 70% 50%;       /* Bright emerald primary */
+    --sidebar-primary: 107 60% 55%;       /* Bright fresh green primary */
     --sidebar-primary-foreground: 0 0% 100%; /* White text on primary */
     --sidebar-accent: 0 0% 15%;           /* Dark accent surface */
     --sidebar-accent-foreground: 0 0% 90%; /* Off-white text */
     --sidebar-border: 0 0% 20%;           /* Subtle border */
-    --sidebar-ring: 151 70% 50%;          /* Emerald focus ring */
+    --sidebar-ring: 107 60% 55%;          /* Fresh green focus ring */
   }
 }
 
