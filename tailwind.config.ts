@@ -66,7 +66,8 @@ export default {
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',
 					foreground: 'hsl(var(--accent-foreground))',
-					warm: 'hsl(var(--accent-warm))'
+					warm: 'hsl(var(--accent-warm))',
+					soft: 'hsl(var(--accent-soft))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -105,7 +106,9 @@ export default {
 					'gradient-button-primary': 'var(--gradient-button-primary)',
 					'gradient-button-secondary': 'var(--gradient-button-secondary)',
 					'gradient-info': 'var(--gradient-info)',
-					'gradient-button-primary-deep': 'var(--gradient-button-primary-deep)'
+					'gradient-button-primary-deep': 'var(--gradient-button-primary-deep)',
+					'gradient-button-warm': 'var(--gradient-button-warm)',
+					'gradient-button-warm-hover': 'var(--gradient-button-warm-hover)'
 				},
 			boxShadow: {
 				'card': 'var(--shadow-card)',
