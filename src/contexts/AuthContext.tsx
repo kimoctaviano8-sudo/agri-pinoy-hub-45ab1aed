@@ -9,18 +9,34 @@ import { Capacitor } from '@capacitor/core';
 // BuildNatively OneSignal integration helpers
 const setOneSignalExternalId = (userId: string) => {
   try {
+    console.log('[Push Debug] Attempting to set OneSignal external_id:', userId);
+    console.log('[Push Debug] window.NativelyNotifications exists:', !!(window as any).NativelyNotifications);
+    console.log('[Push Debug] window.natively exists:', !!(window as any).natively);
+    
     if (typeof window !== 'undefined' && (window as any).NativelyNotifications) {
       const notifications = new (window as any).NativelyNotifications();
-      notifications.setExternalId(userId, (resp: any) => {
-        console.log('OneSignal external_id set:', resp);
-      });
-      // Also request push permission
+      
+      // First request push permission
       notifications.requestPermissionIOS((permResp: any) => {
-        console.log('OneSignal push permission:', permResp);
+        console.log('[Push Debug] iOS push permission response:', JSON.stringify(permResp));
       });
+      
+      // Then set external ID
+      notifications.setExternalId(userId, (resp: any) => {
+        console.log('[Push Debug] setExternalId response:', JSON.stringify(resp));
+      });
+      
+      // Also try getting the push token for debugging
+      if (notifications.getDeviceToken) {
+        notifications.getDeviceToken((tokenResp: any) => {
+          console.log('[Push Debug] Device token:', JSON.stringify(tokenResp));
+        });
+      }
+    } else {
+      console.log('[Push Debug] NativelyNotifications SDK not available - not running in BuildNatively wrapper');
     }
   } catch (error) {
-    console.log('OneSignal setExternalId not available:', error);
+    console.log('[Push Debug] Error setting external_id:', error);
   }
 };
 
