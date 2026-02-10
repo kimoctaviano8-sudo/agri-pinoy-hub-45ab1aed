@@ -39,8 +39,6 @@ import GeminiCares from "./pages/GeminiCares";
 import GeminiPolicies from "./pages/GeminiPolicies";
 import { useLocationPermission } from "./hooks/useLocationPermission";
 import { useDeepLink } from "./hooks/useDeepLink";
-import { PermissionPurposeDialog } from "./components/PermissionPurposeDialog";
-import { MapPin } from "lucide-react";
 const queryClient = new QueryClient();
 
 // Protected App Component that manages landing vs authenticated state
@@ -81,7 +79,7 @@ const ProtectedApp = () => {
   }, [user, isLoading, justLoggedInUserId, location.pathname, navigate]);
 
   // Request location permission on app startup
-  const { showPurpose: showLocationPurpose, allowLocation, denyLocation } = useLocationPermission();
+  useLocationPermission();
 
   // Set up deep link listener for native apps
   useDeepLink();
@@ -107,20 +105,6 @@ const ProtectedApp = () => {
   // Show main app if authenticated and onboarding completed
   if (user) {
     return <div className="min-h-screen bg-background">
-        <PermissionPurposeDialog
-          open={showLocationPurpose}
-          permissionType="location"
-          icon={MapPin}
-          title="Allow Location Access"
-          purpose="We use your location to provide localized weather updates, nearby dealer information, and region-specific agricultural advisories."
-          details={[
-            "Show real-time weather for your area",
-            "Find nearby registered dealers and technicians",
-            "Provide region-specific crop disease alerts",
-          ]}
-          onAllow={allowLocation}
-          onDeny={denyLocation}
-        />
         <Navigation notificationCount={notificationCount} setNotificationCount={setNotificationCount} />
         <FloatingNotifications onNotificationCountChange={setNotificationCount} />
         <Routes>
