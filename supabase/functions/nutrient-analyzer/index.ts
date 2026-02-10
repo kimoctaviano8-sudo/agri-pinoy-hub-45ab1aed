@@ -11,7 +11,6 @@ interface SymptomData {
   imageBase64?: string;
 }
 
-// Map symptoms to their readable names
 const symptomLabels: Record<string, string> = {
   'yellowing_leaves': 'Yellowing Leaves',
   'poor_flowering': 'Poor Flowering',
@@ -38,12 +37,10 @@ const analyzeNutrientDeficiency = async (data: SymptomData) => {
     throw new Error('At least one symptom is required');
   }
 
-  // Convert symptom IDs to readable labels
   const symptomDescriptions = data.symptoms
     .map(s => symptomLabels[s] || s)
     .join(', ');
 
-  // Build the analysis prompt
   const systemPrompt = `You are an expert agricultural nutritionist specializing in plant nutrient deficiencies and foliar fertilizer recommendations. 
   
 Analyze the provided plant symptoms and determine the most likely nutrient deficiency. Respond ONLY with valid JSON in this exact format:
@@ -86,7 +83,6 @@ Based on these symptoms, analyze the likely nutrient deficiency and recommend ap
     }
   ];
 
-  // If image is provided, include it in the analysis
   if (data.imageBase64 && data.imageBase64.length > 500) {
     const imageUrl = data.imageBase64.startsWith('data:') 
       ? data.imageBase64 
@@ -130,7 +126,6 @@ Based on these symptoms, analyze the likely nutrient deficiency and recommend ap
     throw new Error('No response from AI');
   }
 
-  // Parse JSON response
   let analysisResult;
   try {
     const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
@@ -188,29 +183,6 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Invalid authentication' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    // Check and consume credit
-    const { data: creditConsumed, error: creditError } = await supabaseClient
-      .rpc('consume_credit', { user_id_param: user.id });
-    
-    if (creditError) {
-      console.error('Credit check error:', creditError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to process credit' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    if (!creditConsumed) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Insufficient credits',
-          message: 'You have no remaining scan credits. Please purchase more credits to continue.',
-          creditsRequired: true
-        }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
