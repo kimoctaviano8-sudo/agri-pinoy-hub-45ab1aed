@@ -63,6 +63,8 @@ const Login = ({
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isSignupLoading, setIsSignupLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const {
     toast
   } = useToast();
@@ -271,6 +273,10 @@ const Login = ({
       ...formData,
       [name]: value
     });
+    // Clear error when user types
+    if (value.trim()) {
+      setFieldErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
+    }
 
     // Handle location cascading
     if (name === 'country') {
@@ -312,9 +318,87 @@ const Login = ({
       ...formData,
       birthday: date || null
     });
+    setTouched(prev => ({ ...prev, birthday: true }));
+    if (date) {
+      setFieldErrors(prev => { const n = { ...prev }; delete n.birthday; return n; });
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    validateField(field);
+  };
+
+  const validateField = (field: string) => {
+    const value = (formData as any)[field];
+    const errors: Record<string, string> = {};
+    if (field === 'birthday') {
+      if (!formData.birthday) errors.birthday = 'This field is required';
+    } else if (typeof value === 'string' && !value.trim()) {
+      errors[field] = 'This field is required';
+    }
+    if (field === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      errors.email = 'Please enter a valid email';
+    }
+    if (field === 'password' && value && value.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    }
+    if (field === 'confirmPassword' && value && value !== formData.password) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    setFieldErrors(prev => {
+      const next = { ...prev };
+      if (Object.keys(errors).length > 0) {
+        Object.assign(next, errors);
+      } else {
+        delete next[field];
+      }
+      return next;
+    });
+  };
+
+  const validateAllFields = (): boolean => {
+    const requiredFields = isLogin
+      ? ['email', 'password']
+      : ['firstName', 'lastName', 'birthday', 'gender', 'phone', 'streetNumber', 'country', 'province', 'city', 'email', 'password', 'confirmPassword'];
+    
+    const errors: Record<string, string> = {};
+    const allTouched: Record<string, boolean> = {};
+    
+    for (const field of requiredFields) {
+      allTouched[field] = true;
+      if (field === 'birthday') {
+        if (!formData.birthday) errors.birthday = 'This field is required';
+      } else {
+        const value = (formData as any)[field];
+        if (typeof value !== 'string' || !value.trim()) errors[field] = 'This field is required';
+      }
+    }
+    
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email';
+    }
+    if (formData.password && formData.password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    }
+    if (!isLogin && formData.confirmPassword && formData.confirmPassword !== formData.password) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    
+    setTouched(prev => ({ ...prev, ...allTouched }));
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateAllFields()) {
+      toast({
+        title: "Incomplete Form",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
     try {
       if (isLogin) {
         // Use the credential-storing login handler
@@ -332,15 +416,6 @@ const Login = ({
           });
         }
       } else {
-        // Check if passwords match for signup
-        if (formData.password !== formData.confirmPassword) {
-          toast({
-            title: "Password Mismatch",
-            description: "Passwords do not match. Please try again.",
-            variant: "destructive"
-          });
-          return;
-        }
 
         // Show the modal and start the signup process
         setShowSignupModal(true);
@@ -387,6 +462,14 @@ const Login = ({
     value: "researcher",
     label: "Researcher"
   }];
+  const FieldError = ({ field }: { field: string }) => 
+    touched[field] && fieldErrors[field] ? (
+      <p className="text-xs text-destructive mt-1">{fieldErrors[field]}</p>
+    ) : null;
+
+  const errClass = (field: string) => 
+    touched[field] && fieldErrors[field] ? 'border-destructive' : 'border-border';
+
   return <div className="min-h-screen bg-cover bg-center bg-no-repeat relative" style={{
     backgroundImage: `url(${isLogin ? loginBg : signupBg})`
   }}>
@@ -419,13 +502,15 @@ const Login = ({
                   <Label htmlFor="firstName" className="text-xs font-medium text-foreground">
                     First Name
                   </Label>
-                  <Input id="firstName" name="firstName" type="text" placeholder="First name" value={formData.firstName} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
+                  <Input id="firstName" name="firstName" type="text" placeholder="First name" value={formData.firstName} onChange={handleInputChange} onBlur={() => handleBlur('firstName')} className={`h-12 text-sm bg-background border ${errClass('firstName')} rounded-xl focus:border-primary`} />
+                  <FieldError field="firstName" />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="lastName" className="text-xs font-medium text-foreground">
                     Last Name
                   </Label>
-                  <Input id="lastName" name="lastName" type="text" placeholder="Last name" value={formData.lastName} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
+                  <Input id="lastName" name="lastName" type="text" placeholder="Last name" value={formData.lastName} onChange={handleInputChange} onBlur={() => handleBlur('lastName')} className={`h-12 text-sm bg-background border ${errClass('lastName')} rounded-xl focus:border-primary`} />
+                  <FieldError field="lastName" />
                 </div>
               </div>
 
@@ -434,7 +519,7 @@ const Login = ({
                 <Label className="text-xs font-medium text-foreground">Birthday</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("h-12 w-full text-sm bg-background border border-border rounded-xl justify-start text-left font-normal focus:border-primary", !formData.birthday && "text-muted-foreground")}>
+                    <Button variant="outline" className={cn(`h-12 w-full text-sm bg-background border ${errClass('birthday')} rounded-xl justify-start text-left font-normal focus:border-primary`, !formData.birthday && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.birthday ? format(formData.birthday, "MMM dd, yyyy") : <span>Select birthday</span>}
                     </Button>
@@ -443,18 +528,20 @@ const Login = ({
                     <Calendar mode="single" selected={formData.birthday || undefined} onSelect={handleDateChange} disabled={date => date > new Date() || date < new Date("1900-01-01")} captionLayout="dropdown-buttons" fromYear={1920} toYear={new Date().getFullYear()} initialFocus className="pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
+                <FieldError field="birthday" />
               </div>
 
               {/* Gender Field */}
               <div className="space-y-1">
                 <Label htmlFor="gender" className="text-xs font-medium text-foreground">Gender</Label>
-                <select id="gender" name="gender" value={formData.gender} onChange={handleInputChange} className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary" required>
+                <select id="gender" name="gender" value={formData.gender} onChange={handleInputChange} onBlur={() => handleBlur('gender')} className={`w-full h-12 text-sm bg-background border ${errClass('gender')} rounded-xl px-3 text-foreground focus:outline-none focus:border-primary`}>
                   <option value="">Select gender</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                   <option value="other">Other</option>
                   <option value="prefer_not_to_say">Prefer not to say</option>
                 </select>
+                <FieldError field="gender" />
               </div>
 
               {/* Phone Field */}
@@ -462,7 +549,8 @@ const Login = ({
                 <Label htmlFor="phone" className="text-xs font-medium text-foreground">
                   Phone Number
                 </Label>
-                <Input id="phone" name="phone" type="tel" placeholder="+63 XXX XXX XXXX" value={formData.phone} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
+                <Input id="phone" name="phone" type="tel" placeholder="+63 XXX XXX XXXX" value={formData.phone} onChange={handleInputChange} onBlur={() => handleBlur('phone')} className={`h-12 text-sm bg-background border ${errClass('phone')} rounded-xl focus:border-primary`} />
+                <FieldError field="phone" />
               </div>
 
               {/* Location Section */}
@@ -474,7 +562,8 @@ const Login = ({
                   <Label htmlFor="streetNumber" className="text-xs font-medium text-foreground">
                     House/Street Number
                   </Label>
-                  <Input id="streetNumber" name="streetNumber" type="text" placeholder="e.g., 123, Blk 4 Lot 5" value={formData.streetNumber} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
+                  <Input id="streetNumber" name="streetNumber" type="text" placeholder="e.g., 123, Blk 4 Lot 5" value={formData.streetNumber} onChange={handleInputChange} onBlur={() => handleBlur('streetNumber')} className={`h-12 text-sm bg-background border ${errClass('streetNumber')} rounded-xl focus:border-primary`} />
+                  <FieldError field="streetNumber" />
                 </div>
 
                 {/* Country */}
@@ -482,12 +571,13 @@ const Login = ({
                   <Label htmlFor="country" className="text-xs font-medium text-foreground">
                     Country
                   </Label>
-                  <select id="country" name="country" value={formData.country} onChange={handleInputChange} className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary" required>
+                  <select id="country" name="country" value={formData.country} onChange={handleInputChange} onBlur={() => handleBlur('country')} className={`w-full h-12 text-sm bg-background border ${errClass('country')} rounded-xl px-3 text-foreground focus:outline-none focus:border-primary`}>
                     <option value="">Select your country</option>
                     {countries.map(country => <option key={country.cca2} value={country.name.common}>
                         {country.name.common}
                       </option>)}
                   </select>
+                  <FieldError field="country" />
                 </div>
 
                 {/* Province/State */}
@@ -495,7 +585,7 @@ const Login = ({
                   <Label htmlFor="province" className="text-xs font-medium text-foreground">
                     Province/State
                   </Label>
-                  <select id="province" name="province" value={formData.province} onChange={handleInputChange} className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50" required disabled={!formData.country || isLoadingLocation}>
+                  <select id="province" name="province" value={formData.province} onChange={handleInputChange} onBlur={() => handleBlur('province')} className={`w-full h-12 text-sm bg-background border ${errClass('province')} rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50`} disabled={!formData.country || isLoadingLocation}>
                     <option value="">
                       {!formData.country ? "Select country first" : isLoadingLocation ? "Loading..." : "Select province/state"}
                     </option>
@@ -503,6 +593,7 @@ const Login = ({
                         {province.name}
                       </option>)}
                   </select>
+                  <FieldError field="province" />
                 </div>
 
                 {/* City */}
@@ -510,7 +601,7 @@ const Login = ({
                   <Label htmlFor="city" className="text-xs font-medium text-foreground">
                     City
                   </Label>
-                  <select id="city" name="city" value={formData.city} onChange={handleInputChange} className="w-full h-12 text-sm bg-background border border-border rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50" required disabled={!formData.province || isLoadingLocation}>
+                  <select id="city" name="city" value={formData.city} onChange={handleInputChange} onBlur={() => handleBlur('city')} className={`w-full h-12 text-sm bg-background border ${errClass('city')} rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50`} disabled={!formData.province || isLoadingLocation}>
                     <option value="">
                       {!formData.province ? "Select province first" : isLoadingLocation ? "Loading..." : "Select city"}
                     </option>
@@ -520,6 +611,7 @@ const Login = ({
                           {city.name}
                         </option>)}
                   </select>
+                  <FieldError field="city" />
                 </div>
               </div>
 
@@ -539,7 +631,8 @@ const Login = ({
             <Label htmlFor="email" className="text-xs font-medium text-foreground">
               {isLogin ? "Email/Username" : "Email Address"}
             </Label>
-            <Input id="email" name="email" type="email" placeholder={isLogin ? "Enter email or username" : "Enter your email"} value={formData.email} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
+            <Input id="email" name="email" type="email" placeholder={isLogin ? "Enter email or username" : "Enter your email"} value={formData.email} onChange={handleInputChange} onBlur={() => handleBlur('email')} className={`h-12 text-sm bg-background border ${errClass('email')} rounded-xl focus:border-primary`} />
+            <FieldError field="email" />
           </div>
 
           {/* Password Field */}
@@ -548,7 +641,8 @@ const Login = ({
               Password
             </Label>
             <div className="relative">
-              <Input id="password" name="password" type={showPassword ? "text" : "password"} placeholder="Enter password" value={formData.password} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl pr-10 focus:border-primary" required />
+              <Input id="password" name="password" type={showPassword ? "text" : "password"} placeholder="Enter password" value={formData.password} onChange={handleInputChange} onBlur={() => handleBlur('password')} className={`h-12 text-sm bg-background border ${errClass('password')} rounded-xl pr-10 focus:border-primary`} />
+              <FieldError field="password" />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -560,7 +654,8 @@ const Login = ({
               <Label htmlFor="confirmPassword" className="text-xs font-medium text-foreground">
                 Confirm Password
               </Label>
-              <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm your password" value={formData.confirmPassword} onChange={handleInputChange} className="h-12 text-sm bg-background border border-border rounded-xl focus:border-primary" required />
+              <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm your password" value={formData.confirmPassword} onChange={handleInputChange} onBlur={() => handleBlur('confirmPassword')} className={`h-12 text-sm bg-background border ${errClass('confirmPassword')} rounded-xl focus:border-primary`} />
+              <FieldError field="confirmPassword" />
             </div>}
 
           {/* Forgot Password */}
