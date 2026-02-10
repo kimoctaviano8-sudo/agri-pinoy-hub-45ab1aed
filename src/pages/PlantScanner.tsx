@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Camera, Upload, Loader2, AlertCircle, CheckCircle, X, RotateCcw, Zap, Info, Download, FileText, Image, MessageCircle, Trophy, Leaf, Droplets } from "lucide-react";
+import { PermissionPurposeDialog } from "@/components/PermissionPurposeDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -28,6 +29,7 @@ const PlantScanner = () => {
   const [showTechnicianDialog, setShowTechnicianDialog] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+  const [showCameraPurpose, setShowCameraPurpose] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -186,9 +188,14 @@ const PlantScanner = () => {
     }
   };
 
-  const handleCameraCapture = () => {
+  const handleCameraCapture = useCallback(() => {
+    setShowCameraPurpose(true);
+  }, []);
+
+  const proceedWithCamera = useCallback(() => {
+    setShowCameraPurpose(false);
     cameraInputRef.current?.click();
-  };
+  }, []);
 
   const compressImage = (file: File, maxWidth = 800, quality = 0.7): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -384,6 +391,20 @@ const PlantScanner = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <PermissionPurposeDialog
+        open={showCameraPurpose}
+        permissionType="camera"
+        icon={Camera}
+        title="Allow Camera Access"
+        purpose="We need camera access to capture images of your plants for nutrient deficiency and disease analysis."
+        details={[
+          "Take photos of plant leaves for instant diagnosis",
+          "Identify nutrient deficiencies and diseases",
+          "Get treatment recommendations based on visual analysis",
+        ]}
+        onAllow={proceedWithCamera}
+        onDeny={() => setShowCameraPurpose(false)}
+      />
       {/* Minimal Header */}
       <div className="px-4 pt-6 pb-4">
         <div className="flex items-center justify-between mb-2">
