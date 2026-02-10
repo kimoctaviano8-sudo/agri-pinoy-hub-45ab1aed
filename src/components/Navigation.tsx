@@ -37,12 +37,19 @@ const Navigation = ({
     avatar_url?: string;
     full_name?: string;
   } | null>(null);
+  // Mark inbox as seen when user is on /inbox
+  useEffect(() => {
+    if (user && location.pathname === '/inbox') {
+      localStorage.setItem(`inbox_last_seen_${user.id}`, new Date().toISOString());
+      setUnreadCount(0);
+    }
+  }, [location.pathname, user]);
+
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
       fetchUserProfile();
 
-      // Set up real-time subscription for unread messages
       const messagesChannel = supabase.channel('unread-messages').on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -52,23 +59,25 @@ const Navigation = ({
         fetchUnreadCount();
       }).subscribe();
 
-      // Set up real-time subscription for support ticket responses
       const ticketResponsesChannel = supabase.channel('unread-ticket-responses').on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'ticket_responses'
       }, () => {
-        fetchUnreadCount();
+        if (location.pathname !== '/inbox') {
+          fetchUnreadCount();
+        }
       }).subscribe();
 
-      // Also listen for ticket status changes
       const ticketsChannel = supabase.channel('ticket-updates').on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'support_tickets',
         filter: `user_id.eq.${user.id}`
       }, () => {
-        fetchUnreadCount();
+        if (location.pathname !== '/inbox') {
+          fetchUnreadCount();
+        }
       }).subscribe();
 
       return () => {
@@ -78,10 +87,15 @@ const Navigation = ({
       };
     }
   }, [user]);
+
   const fetchUnreadCount = async () => {
     if (!user) return;
+    // If currently on inbox, no unread
+    if (location.pathname === '/inbox') {
+      setUnreadCount(0);
+      return;
+    }
     try {
-      // Count unread direct messages
       const { count: messageCount, error: msgError } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
@@ -89,10 +103,11 @@ const Navigation = ({
         .eq('read', false);
       if (msgError) throw msgError;
 
-      // Count support tickets with recent unread responses (responses by others)
+      const lastSeen = localStorage.getItem(`inbox_last_seen_${user.id}`) || '1970-01-01T00:00:00Z';
+
       const { data: userTickets, error: ticketError } = await supabase
         .from('support_tickets')
-        .select('id, updated_at')
+        .select('id')
         .eq('user_id', user.id);
       if (ticketError) throw ticketError;
 
@@ -104,7 +119,7 @@ const Navigation = ({
           .select('*', { count: 'exact', head: true })
           .in('ticket_id', ticketIds)
           .neq('user_id', user.id)
-          .gt('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+          .gt('created_at', lastSeen);
         if (!respError) {
           unreadResponses = responseCount || 0;
         }
