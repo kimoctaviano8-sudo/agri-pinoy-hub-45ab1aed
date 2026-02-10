@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-export const useLocationPermission = () => {
+export const useLocationPermission = ({ enabled = true }: { enabled?: boolean } = {}) => {
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt' | 'unsupported'>('prompt');
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     const requestLocationPermission = async () => {
       if (!navigator.geolocation) {
         setPermissionStatus('unsupported');
@@ -47,7 +48,7 @@ export const useLocationPermission = () => {
     };
 
     requestLocationPermission();
-  }, []);
+  }, [enabled]);
 
   return { permissionStatus, location };
 };
