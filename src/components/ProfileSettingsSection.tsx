@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor, Trash2, Loader2, Fingerprint } from "lucide-react";
+import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor, Trash2, Loader2, Fingerprint, Eye, EyeOff } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { APP_VERSION, getFormattedBuildDate } from "@/lib/version";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useBiometricProtection } from "@/hooks/useBiometricProtection";
@@ -49,6 +50,9 @@ export const ProfileSettingsSection = () => {
   const [accountOpen, setAccountOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
   const [notifications, setNotifications] = useState<NotificationSettings>({
     orderUpdates: true,
     promotions: true,
@@ -68,55 +72,73 @@ export const ProfileSettingsSection = () => {
   });
 
   const executeDeleteAccount = async () => {
+    if (!deletePassword.trim()) {
+      setPasswordError("Please enter your password");
+      return;
+    }
+
     setIsDeleting(true);
+    setPasswordError("");
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("No user found");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("No active session");
       }
 
-      // Delete user data from related tables
-      await Promise.all([
-        supabase.from('user_streaks').delete().eq('user_id', user.id),
-        supabase.from('user_points').delete().eq('user_id', user.id),
-        supabase.from('user_achievements').delete().eq('user_id', user.id),
-        supabase.from('user_credits').delete().eq('user_id', user.id),
-        supabase.from('notifications').delete().eq('user_id', user.id),
-        supabase.from('plant_scan_history').delete().eq('user_id', user.id),
-      ]);
+      const response = await supabase.functions.invoke('delete-account', {
+        body: { password: deletePassword },
+      });
 
-      // Delete profile
-      await supabase.from('profiles').delete().eq('id', user.id);
+      if (response.error) {
+        const errorMsg = response.error.message || "Failed to delete account";
+        // Try to parse the error body for a more specific message
+        try {
+          const parsed = JSON.parse(errorMsg);
+          setPasswordError(parsed.error || errorMsg);
+        } catch {
+          setPasswordError(errorMsg);
+        }
+        return;
+      }
 
-      // Sign out the user
+      const data = response.data;
+      if (data?.error) {
+        setPasswordError(data.error);
+        return;
+      }
+
+      // Success - sign out locally and redirect
       await supabase.auth.signOut();
 
       toast({
         title: "Account Deleted",
-        description: "Your account has been successfully deleted.",
+        description: "Your account has been permanently deleted.",
       });
 
+      setShowDeleteDialog(false);
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting account:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete account. Please try again.",
-        variant: "destructive",
-      });
+      setPasswordError("An unexpected error occurred. Please try again.");
     } finally {
       setIsDeleting(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    // If biometric protection is active, require verification first
     if (isProtectionActive) {
       await protectAction(executeDeleteAccount);
     } else {
       await executeDeleteAccount();
     }
-    setShowDeleteDialog(false);
+  };
+
+  const openDeleteDialog = () => {
+    setDeletePassword("");
+    setPasswordError("");
+    setShowPassword(false);
+    setShowDeleteDialog(true);
   };
 
   // Load settings from localStorage on mount
@@ -134,7 +156,6 @@ export const ProfileSettingsSection = () => {
       }
     }
 
-    // Apply theme on mount
     applyTheme(savedThemeMode);
   }, []);
 
@@ -167,7 +188,6 @@ export const ProfileSettingsSection = () => {
       description: `${t('theme')}: ${themeLabels[value]}`
     });
   };
-
 
   const handleNotificationToggle = (key: keyof NotificationSettings, checked: boolean) => {
     const updated = {
@@ -207,9 +227,9 @@ export const ProfileSettingsSection = () => {
             {themeMode === "dark" ? (
               <Moon className="w-4 h-4 text-primary" />
             ) : themeMode === "system" ? (
-              <Monitor className="w-4 h-4 text-blue-500" />
+              <Monitor className="w-4 h-4 text-primary" />
             ) : (
-              <Sun className="w-4 h-4 text-amber-500" />
+              <Sun className="w-4 h-4 text-primary" />
             )}
           </div>
           <div className="flex flex-col items-start">
@@ -249,7 +269,6 @@ export const ProfileSettingsSection = () => {
           </SelectContent>
         </Select>
       </div>
-
 
       {/* Notification Settings */}
       <Collapsible open={notificationOpen} onOpenChange={setNotificationOpen}>
@@ -301,15 +320,15 @@ export const ProfileSettingsSection = () => {
         </CollapsibleTrigger>
         <CollapsibleContent className="pl-11 pr-3 pb-2 space-y-2">
           <div className="flex items-center gap-2 py-2 text-sm text-foreground">
-            <Check className="w-3 h-3 text-green-500" />
+            <Check className="w-3 h-3 text-primary" />
             <span>{t('data_encrypted')}</span>
           </div>
           <div className="flex items-center gap-2 py-2 text-sm text-foreground">
-            <Check className="w-3 h-3 text-green-500" />
+            <Check className="w-3 h-3 text-primary" />
             <span>{t('secure_connection')}</span>
           </div>
           <div className="flex items-center gap-2 py-2 text-sm text-foreground">
-            <Check className="w-3 h-3 text-green-500" />
+            <Check className="w-3 h-3 text-primary" />
             <span>{t('two_factor_available')}</span>
           </div>
           <p className="text-xs text-muted-foreground pt-1">
@@ -354,50 +373,107 @@ export const ProfileSettingsSection = () => {
           )}
           
           <div className="pt-3 border-t border-border">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  className="w-full gap-2"
-                  disabled={isDeleting || isVerifying}
-                >
-                  {isDeleting || isVerifying ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4" />
-                  )}
-                  {isVerifying ? 'Verifying...' : 'Delete Account'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your account and remove all your data from our servers, including your profile, orders, scan history, and achievements.
-                    {isProtectionActive && (
-                      <span className="block mt-2 text-primary font-medium">
-                        You will need to verify with {biometricName} to proceed.
-                      </span>
-                    )}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleDeleteAccount}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-                    disabled={isVerifying}
-                  >
-                    {isProtectionActive && <Fingerprint className="w-4 h-4" />}
-                    {isVerifying ? 'Verifying...' : 'Delete Account'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="w-full gap-2"
+              disabled={isDeleting || isVerifying}
+              onClick={openDeleteDialog}
+            >
+              {isDeleting || isVerifying ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              {isVerifying ? 'Verifying...' : 'Delete Account'}
+            </Button>
           </div>
         </CollapsibleContent>
       </Collapsible>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="w-5 h-5" />
+              Delete Account
+            </DialogTitle>
+            <DialogDescription className="space-y-2">
+              <span className="block font-semibold text-destructive">
+                ⚠️ This action is permanent and cannot be undone.
+              </span>
+              <span className="block">
+                All your data will be permanently removed, including your profile, orders, scan history, achievements, and forum activity.
+              </span>
+              {isProtectionActive && (
+                <span className="block text-primary font-medium">
+                  You will also need to verify with {biometricName} to proceed.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <Label htmlFor="delete-password" className="text-sm font-medium">
+              Enter your password to confirm
+            </Label>
+            <div className="relative">
+              <Input
+                id="delete-password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={deletePassword}
+                onChange={(e) => {
+                  setDeletePassword(e.target.value);
+                  setPasswordError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && deletePassword.trim()) {
+                    handleDeleteAccount();
+                  }
+                }}
+                className={passwordError ? "border-destructive pr-10" : "pr-10"}
+                disabled={isDeleting}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {passwordError && (
+              <p className="text-xs text-destructive">{passwordError}</p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting || !deletePassword.trim()}
+              className="gap-2"
+            >
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              {isDeleting ? 'Deleting...' : 'Permanently Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* App Version Info */}
       <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors rounded-lg">
