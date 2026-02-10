@@ -4,6 +4,7 @@ import { Search, Mic, MicOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { PermissionPurposeDialog } from "@/components/PermissionPurposeDialog";
 
 // Type declarations for Web Speech API
 type SpeechRecognitionType = typeof window.SpeechRecognition;
@@ -42,6 +43,7 @@ export const GreetingHeader = ({
 
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [showMicPurpose, setShowMicPurpose] = useState(false);
 
   useEffect(() => {
     // Check if Web Speech API is supported
@@ -106,8 +108,32 @@ export const GreetingHeader = ({
     }
   }, [onSearchChange, toast]);
 
+  const handleMicClick = useCallback(() => {
+    setShowMicPurpose(true);
+  }, []);
+
+  const proceedWithMic = useCallback(() => {
+    setShowMicPurpose(false);
+    startListening();
+  }, [startListening]);
+
   return (
     <div className="bg-primary px-4 pt-6 pb-10 rounded-b-3xl">
+      <PermissionPurposeDialog
+        open={showMicPurpose}
+        permissionType="microphone"
+        icon={Mic}
+        title="Allow Microphone Access"
+        purpose="We use your microphone for voice search so you can quickly find news and products hands-free."
+        details={[
+          "Search for news and products using your voice",
+          "Hands-free search while working in the field",
+          "Your audio is only used for search and never stored",
+        ]}
+        onAllow={proceedWithMic}
+        onDeny={() => setShowMicPurpose(false)}
+      />
+
       {/* Greeting Row */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex-1">
@@ -136,7 +162,7 @@ export const GreetingHeader = ({
         {speechSupported && (
           <button
             type="button"
-            onClick={startListening}
+            onClick={handleMicClick}
             disabled={isListening}
             className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition-colors ${
               isListening 
