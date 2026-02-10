@@ -51,23 +51,66 @@ const Navigation = ({
       }, () => {
         fetchUnreadCount();
       }).subscribe();
+
+      // Set up real-time subscription for support ticket responses
+      const ticketResponsesChannel = supabase.channel('unread-ticket-responses').on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'ticket_responses'
+      }, () => {
+        fetchUnreadCount();
+      }).subscribe();
+
+      // Also listen for ticket status changes
+      const ticketsChannel = supabase.channel('ticket-updates').on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'support_tickets',
+        filter: `user_id.eq.${user.id}`
+      }, () => {
+        fetchUnreadCount();
+      }).subscribe();
+
       return () => {
         supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(ticketResponsesChannel);
+        supabase.removeChannel(ticketsChannel);
       };
     }
   }, [user]);
   const fetchUnreadCount = async () => {
     if (!user) return;
     try {
-      const {
-        count,
-        error
-      } = await supabase.from('messages').select('*', {
-        count: 'exact',
-        head: true
-      }).eq('recipient_id', user.id).eq('read', false);
-      if (error) throw error;
-      setUnreadCount(count || 0);
+      // Count unread direct messages
+      const { count: messageCount, error: msgError } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('recipient_id', user.id)
+        .eq('read', false);
+      if (msgError) throw msgError;
+
+      // Count support tickets with recent unread responses (responses by others)
+      const { data: userTickets, error: ticketError } = await supabase
+        .from('support_tickets')
+        .select('id, updated_at')
+        .eq('user_id', user.id);
+      if (ticketError) throw ticketError;
+
+      let unreadResponses = 0;
+      if (userTickets && userTickets.length > 0) {
+        const ticketIds = userTickets.map(t => t.id);
+        const { count: responseCount, error: respError } = await supabase
+          .from('ticket_responses')
+          .select('*', { count: 'exact', head: true })
+          .in('ticket_id', ticketIds)
+          .neq('user_id', user.id)
+          .gt('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+        if (!respError) {
+          unreadResponses = responseCount || 0;
+        }
+      }
+
+      setUnreadCount((messageCount || 0) + unreadResponses);
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }
