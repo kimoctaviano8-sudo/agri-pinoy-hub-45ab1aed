@@ -37,14 +37,6 @@ const Navigation = ({
     avatar_url?: string;
     full_name?: string;
   } | null>(null);
-  // Mark inbox as seen when user is on /inbox
-  useEffect(() => {
-    if (user && location.pathname === '/inbox') {
-      localStorage.setItem(`inbox_last_seen_${user.id}`, new Date().toISOString());
-      setUnreadCount(0);
-    }
-  }, [location.pathname, user]);
-
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
@@ -64,38 +56,25 @@ const Navigation = ({
         schema: 'public',
         table: 'ticket_responses'
       }, () => {
-        if (location.pathname !== '/inbox') {
-          fetchUnreadCount();
-        }
+        fetchUnreadCount();
       }).subscribe();
 
-      const ticketsChannel = supabase.channel('ticket-updates').on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'support_tickets',
-        filter: `user_id.eq.${user.id}`
-      }, () => {
-        if (location.pathname !== '/inbox') {
-          fetchUnreadCount();
-        }
-      }).subscribe();
+      // Listen for custom "ticket read" events from Inbox page
+      const handleTicketRead = () => fetchUnreadCount();
+      window.addEventListener('ticket-read', handleTicketRead);
 
       return () => {
         supabase.removeChannel(messagesChannel);
         supabase.removeChannel(ticketResponsesChannel);
-        supabase.removeChannel(ticketsChannel);
+        window.removeEventListener('ticket-read', handleTicketRead);
       };
     }
   }, [user]);
 
   const fetchUnreadCount = async () => {
     if (!user) return;
-    // If currently on inbox, no unread
-    if (location.pathname === '/inbox') {
-      setUnreadCount(0);
-      return;
-    }
     try {
+      // Count unread direct messages
       const { count: messageCount, error: msgError } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
@@ -103,8 +82,12 @@ const Navigation = ({
         .eq('read', false);
       if (msgError) throw msgError;
 
-      const lastSeen = localStorage.getItem(`inbox_last_seen_${user.id}`) || '1970-01-01T00:00:00Z';
+      // Get read timestamps per ticket from localStorage
+      const readTimestamps: Record<string, string> = JSON.parse(
+        localStorage.getItem(`ticket_read_times_${user.id}`) || '{}'
+      );
 
+      // Get user's tickets
       const { data: userTickets, error: ticketError } = await supabase
         .from('support_tickets')
         .select('id')
@@ -113,15 +96,17 @@ const Navigation = ({
 
       let unreadResponses = 0;
       if (userTickets && userTickets.length > 0) {
-        const ticketIds = userTickets.map(t => t.id);
-        const { count: responseCount, error: respError } = await supabase
-          .from('ticket_responses')
-          .select('*', { count: 'exact', head: true })
-          .in('ticket_id', ticketIds)
-          .neq('user_id', user.id)
-          .gt('created_at', lastSeen);
-        if (!respError) {
-          unreadResponses = responseCount || 0;
+        for (const ticket of userTickets) {
+          const lastRead = readTimestamps[ticket.id] || '1970-01-01T00:00:00Z';
+          const { count, error: respError } = await supabase
+            .from('ticket_responses')
+            .select('*', { count: 'exact', head: true })
+            .eq('ticket_id', ticket.id)
+            .neq('user_id', user.id)
+            .gt('created_at', lastRead);
+          if (!respError) {
+            unreadResponses += count || 0;
+          }
         }
       }
 

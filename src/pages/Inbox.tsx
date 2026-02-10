@@ -73,9 +73,17 @@ const Inbox = () => {
   }, [user, userRole]);
 
   useEffect(() => {
-    if (selectedTicket) {
+    if (selectedTicket && user) {
       selectedTicketRef.current = selectedTicket;
       fetchResponses(selectedTicket.id);
+
+      // Mark this ticket as read in localStorage and notify Navigation
+      const readTimestamps: Record<string, string> = JSON.parse(
+        localStorage.getItem(`ticket_read_times_${user.id}`) || '{}'
+      );
+      readTimestamps[selectedTicket.id] = new Date().toISOString();
+      localStorage.setItem(`ticket_read_times_${user.id}`, JSON.stringify(readTimestamps));
+      window.dispatchEvent(new Event('ticket-read'));
     }
   }, [selectedTicket]);
 
