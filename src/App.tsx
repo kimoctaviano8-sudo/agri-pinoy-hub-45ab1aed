@@ -78,8 +78,8 @@ const ProtectedApp = () => {
     }
   }, [user, isLoading, justLoggedInUserId, location.pathname, navigate]);
 
-  // Request location permission on app startup
-  useLocationPermission();
+  // Request location permission only after user is logged in
+  useLocationPermission({ enabled: !!user });
 
   // Set up deep link listener for native apps
   useDeepLink();
