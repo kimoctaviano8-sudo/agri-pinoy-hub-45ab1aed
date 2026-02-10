@@ -205,7 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Custom URL scheme for deep linking back to the app
           return 'geminiagri://email-confirmed';
         }
-        return 'https://agri-pinoy-hub.lovable.app/email-confirmed';
+        return 'https://geminiagri.vercel.app/email-confirmed';
       };
 
       const { data, error } = await supabase.auth.signUp({
