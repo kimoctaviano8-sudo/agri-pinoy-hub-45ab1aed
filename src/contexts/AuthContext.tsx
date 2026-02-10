@@ -6,6 +6,37 @@ import { useOAuthSignIn } from '@/hooks/useOAuthSignIn';
 import { useNativeBiometric } from '@/hooks/useNativeBiometric';
 import { Capacitor } from '@capacitor/core';
 
+// BuildNatively OneSignal integration helpers
+const setOneSignalExternalId = (userId: string) => {
+  try {
+    if (typeof window !== 'undefined' && (window as any).NativelyNotifications) {
+      const notifications = new (window as any).NativelyNotifications();
+      notifications.setExternalId(userId, (resp: any) => {
+        console.log('OneSignal external_id set:', resp);
+      });
+      // Also request push permission
+      notifications.requestPermissionIOS((permResp: any) => {
+        console.log('OneSignal push permission:', permResp);
+      });
+    }
+  } catch (error) {
+    console.log('OneSignal setExternalId not available:', error);
+  }
+};
+
+const removeOneSignalExternalId = () => {
+  try {
+    if (typeof window !== 'undefined' && (window as any).NativelyNotifications) {
+      const notifications = new (window as any).NativelyNotifications();
+      notifications.removeExternalId((resp: any) => {
+        console.log('OneSignal external_id removed:', resp);
+      });
+    }
+  } catch (error) {
+    console.log('OneSignal removeExternalId not available:', error);
+  }
+};
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -128,6 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTimeout(() => {
           fetchUserRole(session.user.id);
           updateLoginStreak(session.user.id);
+          setOneSignalExternalId(session.user.id);
         }, 0);
       } else {
         setUserRole(null);
@@ -145,6 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTimeout(() => {
           fetchUserRole(session.user!.id);
           updateLoginStreak(session.user!.id);
+          setOneSignalExternalId(session.user!.id);
         }, 0);
       } else {
         setUserRole(null);
@@ -294,6 +327,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    removeOneSignalExternalId();
     setUser(null);
     setSession(null);
     setUserRole(null);
