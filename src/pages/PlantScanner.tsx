@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Camera, Upload, Loader2, AlertCircle, CheckCircle, X, RotateCcw, Zap, Info, CreditCard, Coins, Download, FileText, Image, MessageCircle, Trophy, ArrowLeft, Leaf, Droplets } from "lucide-react";
+import { Camera, Upload, Loader2, AlertCircle, CheckCircle, X, RotateCcw, Zap, Info, Download, FileText, Image, MessageCircle, Trophy, Leaf, Droplets } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -10,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DiagnosisHistory } from "@/components/DiagnosisHistory";
@@ -26,16 +24,11 @@ const PlantScanner = () => {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [analysisResult, setAnalysisResult] = useState<NutrientAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
-  const [credits, setCredits] = useState<number>(0);
-  const [showCreditDialog, setShowCreditDialog] = useState(false);
-  const [purchasingCredits, setPurchasingCredits] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<{ credits: number; price: number } | null>(null);
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const [showTechnicianDialog, setShowTechnicianDialog] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
-  const [processingPayment, setProcessingPayment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -70,78 +63,8 @@ const PlantScanner = () => {
     }
   };
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  useEffect(() => {
-    const checkPaymentStatus = async () => {
-      const status = searchParams.get('status');
-      const orderId = searchParams.get('order_id');
-      
-      if (!status || !orderId || !user) return;
-      
-      setSearchParams({});
-      
-      if (status === 'success') {
-        setProcessingPayment(true);
-        
-        const { data: initialCredits } = await supabase
-          .from('user_credits')
-          .select('credits_remaining')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        const startCredits = initialCredits?.credits_remaining ?? 0;
-        
-        let attempts = 0;
-        const maxAttempts = 12;
-        
-        while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 5000));
-          
-          const { data } = await supabase
-            .from('user_credits')
-            .select('credits_remaining')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          
-          const currentCredits = data?.credits_remaining ?? 0;
-          
-          if (currentCredits > startCredits) {
-            setCredits(currentCredits);
-            toast({
-              title: "Payment Successful! 🎉",
-              description: `${currentCredits - startCredits} credits added to your account.`,
-            });
-            setProcessingPayment(false);
-            return;
-          }
-          
-          attempts++;
-        }
-        
-        setProcessingPayment(false);
-        await fetchUserCredits();
-        toast({
-          title: "Payment Received",
-          description: "Your credits are being processed and will appear shortly.",
-        });
-      } else if (status === 'failed' || status === 'cancelled') {
-        toast({
-          title: status === 'cancelled' ? "Payment Cancelled" : "Payment Failed",
-          description: status === 'cancelled' 
-            ? "You cancelled the payment. No charges were made."
-            : "Payment could not be processed. Please try again.",
-          variant: "destructive"
-        });
-      }
-    };
-    
-    checkPaymentStatus();
-  }, [searchParams, user]);
-
   useEffect(() => {
     if (user) {
-      fetchUserCredits();
       fetchUserPoints();
     }
   }, [user]);
@@ -174,22 +97,6 @@ const PlantScanner = () => {
 
     return () => clearTimeout(timer);
   }, []);
-
-  const fetchUserCredits = async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase.from('user_credits').select('credits_remaining').eq('user_id', user.id).maybeSingle();
-      if (error) {
-        console.error('Error fetching credits:', error);
-        await supabase.rpc('initialize_user_credits', { user_id_param: user.id });
-        setCredits(10);
-        return;
-      }
-      setCredits(data?.credits_remaining || 10);
-    } catch (error) {
-      console.error('Error fetching credits:', error);
-    }
-  };
 
   const trackAchievements = async (confidence: number) => {
     if (!user) return;
@@ -322,25 +229,6 @@ const PlantScanner = () => {
       });
       return;
     }
-
-    const { data: creditData } = await supabase
-      .from('user_credits')
-      .select('credits_remaining')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    
-    const currentCredits = creditData?.credits_remaining ?? 0;
-    setCredits(currentCredits);
-
-    if (currentCredits <= 0) {
-      setShowCreditDialog(true);
-      toast({
-        title: "No Credits Available",
-        description: "Please purchase credits to continue.",
-        variant: "destructive"
-      });
-      return;
-    }
     
     setLoading(true);
     
@@ -349,7 +237,6 @@ const PlantScanner = () => {
     }
 
     try {
-      // Prepare image if provided
       let compressedImage: string | undefined;
       if (selectedImage) {
         compressedImage = await compressImage(selectedImage, 800, 0.7);
@@ -372,21 +259,6 @@ const PlantScanner = () => {
       });
 
       if (response.error) {
-        const isCreditsError = 
-          response.error.message?.includes('Insufficient credits') || 
-          response.error.message?.includes('creditsRequired') ||
-          response.error.message?.includes('no remaining scan credits');
-        
-        if (isCreditsError) {
-          setShowCreditDialog(true);
-          toast({
-            title: "Insufficient Credits",
-            description: "You need more credits to analyze. Please purchase credits to continue.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
         throw new Error(response.error.message || 'Analysis failed');
       }
       
@@ -396,7 +268,6 @@ const PlantScanner = () => {
         throw new Error('Invalid response from analysis service');
       }
 
-      setCredits(prev => Math.max(0, prev - 1));
       setAnalysisResult(data);
 
       Promise.all([
@@ -406,7 +277,7 @@ const PlantScanner = () => {
       
       toast({
         title: "Analysis Complete",
-        description: `Detected: ${data.nutrient} Deficiency. ${credits - 1} credits remaining.`
+        description: `Detected: ${data.nutrient} Deficiency.`
       });
 
     } catch (error: any) {
@@ -418,57 +289,6 @@ const PlantScanner = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const purchaseCredits = async (paymentMethod: string) => {
-    if (!user || !selectedPackage) return;
-    setPurchasingCredits(true);
-    try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session?.access_token) {
-        throw new Error('Authentication required');
-      }
-
-      const orderId = `CREDITS-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      const redirectUrl = window.location.origin + '/plant-scanner';
-
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          amount: selectedPackage.price,
-          paymentMethod: paymentMethod,
-          orderId: orderId,
-          description: `${selectedPackage.credits} Scan Credits`,
-          redirectUrl: redirectUrl,
-          credits: selectedPackage.credits,
-        },
-        headers: {
-          Authorization: `Bearer ${session.data.session.access_token}`
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else if (data.clientKey) {
-        toast({
-          title: "Card Payment",
-          description: "Card payment integration requires additional setup. Please try another payment method.",
-          variant: "destructive"
-        });
-      } else {
-        throw new Error('No checkout URL received');
-      }
-    } catch (error: any) {
-      console.error('Error initiating payment:', error);
-      toast({
-        title: "Payment Failed",
-        description: error.message || "Failed to initiate payment. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setPurchasingCredits(false);
     }
   };
 
@@ -588,15 +408,6 @@ const PlantScanner = () => {
                 className="h-8 px-2"
               >
                 <Trophy className="w-4 h-4 text-primary" />
-              </Button>
-              <Button 
-                variant="outline"
-                size="sm" 
-                onClick={() => setShowCreditDialog(true)}
-                className="h-8 px-3 text-xs font-medium"
-              >
-                <Coins className="w-3.5 h-3.5 mr-1 text-primary" />
-                {credits}
               </Button>
             </div>
           )}
@@ -780,130 +591,6 @@ const PlantScanner = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Credit Purchase Drawer */}
-      <Drawer open={showCreditDialog} onOpenChange={(open) => {
-        setShowCreditDialog(open);
-        if (!open) setSelectedPackage(null);
-      }}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="px-4 pb-2">
-            <DrawerTitle className="text-lg font-semibold text-primary">
-              {selectedPackage ? 'Complete Payment' : 'Purchase Credits'}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="p-4 overflow-y-auto max-h-[60vh] scrollbar-hide space-y-4">
-            {!selectedPackage ? (
-              <>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-4 h-4 text-primary" />
-                    <span className="text-sm text-muted-foreground">Current Balance</span>
-                  </div>
-                  <span className="text-lg font-bold text-primary">{credits}</span>
-                </div>
-                
-                {credits <= 20 && (
-                  <div className="p-3 bg-warning/10 border border-warning/20 rounded-xl">
-                    <p className="text-warning text-xs font-medium">
-                      ⚠️ Credits running low. Purchase more to continue.
-                    </p>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  {[
-                    { credits: 100, price: 299, popular: false },
-                    { credits: 200, price: 499, popular: true },
-                    { credits: 300, price: 699, popular: false },
-                    { credits: 500, price: 999, popular: false },
-                  ].map((pkg) => (
-                    <button 
-                      key={pkg.credits} 
-                      onClick={() => setSelectedPackage({ credits: pkg.credits, price: pkg.price })} 
-                      className={`w-full flex items-center justify-between p-4 rounded-xl transition-all active:scale-[0.98] ${
-                        pkg.popular
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/50 hover:bg-muted'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Coins className="w-5 h-5" />
-                        <div className="text-left">
-                          <p className="font-semibold">{pkg.credits} Credits</p>
-                          {pkg.popular && <span className="text-xs opacity-80">Most Popular</span>}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">₱{pkg.price}</p>
-                        <p className="text-xs opacity-70">₱{(pkg.price / pkg.credits).toFixed(2)}/scan</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setSelectedPackage(null)}
-                  className="mb-2 -ml-2 h-8"
-                  disabled={purchasingCredits}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>
-
-                <div className="p-4 bg-muted/50 rounded-xl">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Coins className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">{selectedPackage.credits} Credits</p>
-                        <p className="text-xs text-muted-foreground">₱{(selectedPackage.price / selectedPackage.credits).toFixed(2)} per scan</p>
-                      </div>
-                    </div>
-                    <p className="text-xl font-bold text-primary">₱{selectedPackage.price}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground mb-2">Select Payment Method</p>
-                  
-                  {[
-                    { id: 'qrph', name: 'QRPh', desc: 'InstaPay/PESONet' },
-                    { id: 'gcash', name: 'GCash', desc: 'Pay with GCash' },
-                    { id: 'maya', name: 'Maya', desc: 'Pay with Maya' },
-                    { id: 'card', name: 'Card', desc: 'Visa, Mastercard' },
-                  ].map((method) => (
-                    <Button
-                      key={method.id}
-                      onClick={() => purchaseCredits(method.id)}
-                      disabled={purchasingCredits}
-                      variant="outline"
-                      className="w-full h-auto p-4 justify-between"
-                    >
-                      <div className="text-left">
-                        <p className="font-medium">{method.name}</p>
-                        <p className="text-xs text-muted-foreground">{method.desc}</p>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-
-                {purchasingCredits && (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary mr-2" />
-                    <span className="text-sm text-muted-foreground">Processing...</span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </DrawerContent>
-      </Drawer>
 
       {/* Download Format Dialog */}
       <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
