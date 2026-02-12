@@ -617,7 +617,7 @@ const Inbox = () => {
   // Conversation View: Show selected ticket with responses
   if (selectedTicket) {
     return (
-      <div className="fixed inset-x-0 top-0 bottom-[5.5rem] bg-background flex flex-col z-[60]">
+      <div className="fixed inset-x-0 top-0 bottom-[6.5rem] bg-background flex flex-col z-[60]">
         <div className="flex-none bg-background/95 backdrop-blur-sm border-b border-border">
           <div className="flex items-center gap-3 p-4">
             <Button variant="ghost" size="icon" onClick={() => setSelectedTicket(null)}>
