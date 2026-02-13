@@ -5,12 +5,14 @@ import { useToast } from '@/components/ui/use-toast';
 interface AppSettings {
   vacation_mode: boolean;
   vacation_mode_message: string;
+  hide_product_prices: boolean;
   updated_at: string;
 }
 
 export const useVacationMode = () => {
   const [vacationMode, setVacationMode] = useState(false);
   const [vacationMessage, setVacationMessage] = useState('Orders are temporarily paused. Please check back later.');
+  const [hideProductPrices, setHideProductPrices] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -18,7 +20,7 @@ export const useVacationMode = () => {
     try {
       const { data, error } = await supabase
         .from('app_settings' as any)
-        .select('vacation_mode, vacation_mode_message, updated_at')
+        .select('vacation_mode, vacation_mode_message, hide_product_prices, updated_at')
         .eq('id', 'global')
         .single();
 
@@ -31,6 +33,7 @@ export const useVacationMode = () => {
         const settings = data as unknown as AppSettings;
         setVacationMode(settings.vacation_mode);
         setVacationMessage(settings.vacation_mode_message || 'Orders are temporarily paused. Please check back later.');
+        setHideProductPrices(settings.hide_product_prices ?? false);
       }
     } catch (error) {
       console.error('Error fetching app settings:', error);
@@ -93,6 +96,7 @@ export const useVacationMode = () => {
           const newData = payload.new as AppSettings;
           setVacationMode(newData.vacation_mode);
           setVacationMessage(newData.vacation_mode_message || 'Orders are temporarily paused. Please check back later.');
+          setHideProductPrices(newData.hide_product_prices ?? false);
         }
       )
       .subscribe();
@@ -102,11 +106,47 @@ export const useVacationMode = () => {
     };
   }, [fetchSettings]);
 
+  const toggleHideProductPrices = useCallback(async (hidden: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('app_settings' as any)
+        .update({ hide_product_prices: hidden })
+        .eq('id', 'global');
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update price visibility setting.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      setHideProductPrices(hidden);
+      toast({
+        title: hidden ? "Prices Hidden" : "Prices Visible",
+        description: hidden 
+          ? "Product prices are now hidden from users." 
+          : "Product prices are now visible to users.",
+      });
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update price visibility",
+        variant: "destructive"
+      });
+      return false;
+    }
+  }, [toast]);
+
   return {
     vacationMode,
     vacationMessage,
+    hideProductPrices,
     loading,
     toggleVacationMode,
+    toggleHideProductPrices,
     refetch: fetchSettings,
   };
 };

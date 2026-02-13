@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          hide_product_prices: boolean
           id: string
           show_carousel: boolean | null
           updated_at: string
@@ -24,6 +25,7 @@ export type Database = {
           vacation_mode_message: string | null
         }
         Insert: {
+          hide_product_prices?: boolean
           id?: string
           show_carousel?: boolean | null
           updated_at?: string
@@ -32,6 +34,7 @@ export type Database = {
           vacation_mode_message?: string | null
         }
         Update: {
+          hide_product_prices?: boolean
           id?: string
           show_carousel?: boolean | null
           updated_at?: string

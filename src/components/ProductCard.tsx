@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useVacationModeContext } from "@/contexts/VacationModeContext";
-import { Star, Plus } from "lucide-react";
+import { Star } from "lucide-react";
 
 interface ProductCardProps {
   id: string;
@@ -31,7 +31,7 @@ const ProductCard = ({
   lowStockThreshold = 5,
 }: ProductCardProps) => {
   const navigate = useNavigate();
-  const { vacationMode } = useVacationModeContext();
+  const { vacationMode, hideProductPrices } = useVacationModeContext();
 
   const handleClick = () => {
     navigate(`/products/${id}`);
@@ -93,9 +93,11 @@ const ProductCard = ({
           </div>
 
           {/* Price */}
-          <div className="pt-1">
-            <span className="text-base font-bold text-foreground">{price}</span>
-          </div>
+          {!hideProductPrices && (
+            <div className="pt-1">
+              <span className="text-base font-bold text-foreground">{price}</span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
