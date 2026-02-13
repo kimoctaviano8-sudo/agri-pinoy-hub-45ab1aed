@@ -27,15 +27,11 @@ const HelpCentre = () => {
   const categories = [{
     id: 'all',
     name: 'All Topics',
-    count: 24
+    count: 15
   }, {
     id: 'account',
     name: 'Account & Profile',
     count: 8
-  }, {
-    id: 'orders',
-    name: 'Orders & Payments',
-    count: 6
   }, {
     id: 'products',
     name: 'Products & Services',
@@ -62,24 +58,6 @@ const HelpCentre = () => {
     category: 'scanner',
     tags: ['scanner', 'ai', 'diagnosis']
   }, {
-    id: '3',
-    question: 'How can I track my order?',
-    answer: 'You can track your order by going to "My Purchases" in your profile. Click on the order you want to track to see its current status and estimated delivery time.',
-    category: 'orders',
-    tags: ['tracking', 'orders', 'delivery']
-  }, {
-    id: '4',
-    question: 'What payment methods do you accept?',
-    answer: 'We accept various payment methods including credit/debit cards, GCash, PayMaya, and bank transfers. Cash on delivery is also available in selected areas.',
-    category: 'orders',
-    tags: ['payment', 'gcash', 'cod']
-  }, {
-    id: '5',
-    question: 'How do I cancel my order?',
-    answer: 'You can cancel your order within 24 hours of placing it. Go to "My Purchases", find your order, and click the "Cancel" button. For orders that have already been processed, please contact our support team.',
-    category: 'orders',
-    tags: ['cancel', 'refund', 'orders']
-  }, {
     id: '6',
     question: 'How do I update my profile information?',
     answer: 'To update your profile, go to your Profile page and click the "Edit Profile" button. You can update your name, email, phone number, and location.',
@@ -100,13 +78,6 @@ const HelpCentre = () => {
     category: 'scanner',
     readTime: '8 min read',
     helpful: 89
-  }, {
-    id: '3',
-    title: 'Understanding Your Order Status',
-    excerpt: 'Detailed explanation of each order status and what they mean.',
-    category: 'orders',
-    readTime: '3 min read',
-    helpful: 67
   }, {
     id: '4',
     title: 'Troubleshooting Common Issues',
