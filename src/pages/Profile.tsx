@@ -528,7 +528,7 @@ const Profile = () => {
 
           <div className="text-center">
             {/* Stats */}
-            <div className="grid grid-cols-4 gap-3 mb-6">
+            <div className="flex justify-center gap-6 mb-6">
               <div className="text-center">
                 <div className="flex items-center justify-center mb-1">
                   <Target className="w-4 h-4 mr-1 text-white" />
