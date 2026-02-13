@@ -175,14 +175,6 @@ const AchievementsModal = ({ isOpen, onClose, currentPoints }: AchievementsModal
     { action: "Complete Profile", points: 20, icon: Crown }
   ];
 
-  const redeemOptions = [
-    { item: "5% Product Discount", cost: 100, icon: Gift },
-    { item: "Free Plant Scan (10x)", cost: 150, icon: Scan },
-    { item: "10% Product Discount", cost: 200, icon: Gift },
-    { item: "Premium Forum Badge", cost: 300, icon: Crown },
-    { item: "15% Product Discount", cost: 400, icon: Gift },
-    { item: "Exclusive Product Access", cost: 500, icon: Star }
-  ];
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
@@ -251,7 +243,6 @@ const AchievementsModal = ({ isOpen, onClose, currentPoints }: AchievementsModal
             <TabsList className="w-full justify-between">
               <TabsTrigger value="achievements" className="text-xs">Achievements</TabsTrigger>
               <TabsTrigger value="earn" className="text-xs">Earn Points</TabsTrigger>
-              <TabsTrigger value="redeem" className="text-xs">Redeem</TabsTrigger>
             </TabsList>
           </div>
 
@@ -377,57 +368,6 @@ const AchievementsModal = ({ isOpen, onClose, currentPoints }: AchievementsModal
                     );
                   })}
                 </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="redeem" className="mt-0 space-y-4">
-              <div>
-                <h3 className="text-base font-semibold text-foreground mb-3">Redeem Points</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Use your points to unlock discounts, vouchers, and exclusive features.
-                </p>
-                <div className="space-y-3">
-                  {redeemOptions.map((option, index) => {
-                    const IconComponent = option.icon;
-                    const canAfford = currentPoints >= option.cost;
-                    return (
-                      <Card key={index} className={`p-3 ${canAfford ? 'border-primary/20' : 'opacity-60'}`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              canAfford ? 'bg-primary/10' : 'bg-muted'
-                            }`}>
-                              <IconComponent className={`w-4 h-4 ${
-                                canAfford ? 'text-primary' : 'text-muted-foreground'
-                              }`} />
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-foreground">{option.item}</span>
-                              <div className="flex items-center gap-1">
-                                <Coins className="w-3 h-3 text-primary" />
-                                <span className="text-xs text-muted-foreground">{option.cost} points</span>
-                              </div>
-                            </div>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            disabled={!canAfford}
-                            className="text-xs"
-                          >
-                            {canAfford ? 'Redeem' : 'Locked'}
-                          </Button>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="p-4 bg-warning/10 rounded-lg">
-                <h4 className="font-medium text-foreground mb-2">🎁 Coming Soon</h4>
-                <p className="text-sm text-muted-foreground">
-                  More redemption options including premium features, exclusive products, and seasonal rewards are coming soon!
-                </p>
               </div>
             </TabsContent>
           </div>
