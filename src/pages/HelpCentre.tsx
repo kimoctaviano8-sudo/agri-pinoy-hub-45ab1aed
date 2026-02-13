@@ -38,7 +38,7 @@ const HelpCentre = () => {
     count: 5
   }, {
     id: 'scanner',
-    name: 'Plant Scanner',
+    name: 'Nutrient Scanner',
     count: 3
   }, {
     id: 'technical',
@@ -53,10 +53,10 @@ const HelpCentre = () => {
     tags: ['password', 'login', 'security']
   }, {
     id: '2',
-    question: 'How does the Plant Scanner work?',
-    answer: 'The Plant Scanner uses AI technology to identify plant diseases and pests. Simply take a clear photo of the affected plant part, and our system will analyze it and provide recommendations.',
+    question: 'How does the Nutrient Scanner work?',
+    answer: 'The Nutrient Scanner uses AI to identify nutrient deficiencies in your plants. Select the visible symptoms (e.g., yellowing leaves, weak stems) from the dropdown, optionally attach a photo, and our system will analyze potential nutritional gaps and recommend suitable Herogra Especiales foliar fertilizers.',
     category: 'scanner',
-    tags: ['scanner', 'ai', 'diagnosis']
+    tags: ['scanner', 'nutrient', 'deficiency', 'symptoms']
   }, {
     id: '6',
     question: 'How do I update my profile information?',
@@ -73,8 +73,8 @@ const HelpCentre = () => {
     helpful: 124
   }, {
     id: '2',
-    title: 'Plant Disease Identification Guide',
-    excerpt: 'Learn how to take better photos for accurate plant disease diagnosis.',
+    title: 'Nutrient Deficiency Scanner Guide',
+    excerpt: 'Learn how to select symptoms and use the scanner for accurate nutrient deficiency diagnosis.',
     category: 'scanner',
     readTime: '8 min read',
     helpful: 89
