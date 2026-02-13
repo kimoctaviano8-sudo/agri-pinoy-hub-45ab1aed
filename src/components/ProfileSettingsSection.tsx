@@ -18,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 type ThemeMode = "light" | "dark" | "system";
 
 interface NotificationSettings {
-  orderUpdates: boolean;
   promotions: boolean;
   communityAlerts: boolean;
   newsUpdates: boolean;
@@ -54,7 +53,6 @@ export const ProfileSettingsSection = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [notifications, setNotifications] = useState<NotificationSettings>({
-    orderUpdates: true,
     promotions: true,
     communityAlerts: true,
     newsUpdates: true
@@ -198,7 +196,6 @@ export const ProfileSettingsSection = () => {
     localStorage.setItem("notificationSettings", JSON.stringify(updated));
     
     const labels: Record<keyof NotificationSettings, string> = {
-      orderUpdates: t('order_updates'),
       promotions: t('promotions'),
       communityAlerts: t('community_alerts'),
       newsUpdates: t('news_updates')
@@ -285,10 +282,6 @@ export const ProfileSettingsSection = () => {
           {notificationOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
         </CollapsibleTrigger>
         <CollapsibleContent className="pl-11 pr-3 pb-2 space-y-3">
-          <div className="flex items-center justify-between py-2">
-            <Label className="text-sm text-foreground">{t('order_updates')}</Label>
-            <Switch checked={notifications.orderUpdates} onCheckedChange={checked => handleNotificationToggle("orderUpdates", checked)} className="data-[state=checked]:bg-primary scale-90" />
-          </div>
           <div className="flex items-center justify-between py-2">
             <Label className="text-sm text-foreground">{t('promotions')}</Label>
             <Switch checked={notifications.promotions} onCheckedChange={checked => handleNotificationToggle("promotions", checked)} className="data-[state=checked]:bg-primary scale-90" />
