@@ -33,7 +33,7 @@ const ProductDetail = () => {
   const {
     addToCart
   } = useCart();
-  const { vacationMode, vacationMessage } = useVacationModeContext();
+  const { vacationMode, vacationMessage, hideProductPrices } = useVacationModeContext();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
@@ -204,7 +204,7 @@ const ProductDetail = () => {
               <div>
                 <h1 className="text-xl font-bold mb-2 leading-tight">{product.name}</h1>
                 <p className="text-lg font-bold text-primary">
-                  ₱{product.price?.toFixed(2)}
+                  {hideProductPrices ? 'Contact for price' : `₱${product.price?.toFixed(2)}`}
                 </p>
                 {!vacationMode && (
                   <p className="text-xs text-muted-foreground mt-1 mb-4">
@@ -293,7 +293,7 @@ const ProductDetail = () => {
                   <CardContent className="p-3">
                     <img src={item.image_url || "/placeholder.svg"} alt={item.name} className="w-full h-28 object-cover rounded-md mb-3" />
                     <h3 className="text-xs font-medium line-clamp-2 mb-1.5">{item.name}</h3>
-                    <p className="text-sm font-bold text-primary">₱{item.price?.toFixed(2)}</p>
+                    <p className="text-sm font-bold text-primary">{hideProductPrices ? '' : `₱${item.price?.toFixed(2)}`}</p>
                     {item.category && <Badge variant="secondary" className="text-[10px] mt-2">
                         {item.category}
                       </Badge>}

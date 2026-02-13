@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Edit, Trash2, Eye, EyeOff, Package, AlertTriangle, Palmtree, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, Package, AlertTriangle, Palmtree, Loader2, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,14 +28,21 @@ interface AdminProductsTabProps {
 
 export const AdminProductsTab = ({ products, onToggleActive, onDelete }: AdminProductsTabProps) => {
   const navigate = useNavigate();
-  const { vacationMode, toggleVacationMode, loading: vacationLoading } = useVacationModeContext();
+  const { vacationMode, toggleVacationMode, hideProductPrices, toggleHideProductPrices, loading: vacationLoading } = useVacationModeContext();
   const [isToggling, setIsToggling] = useState(false);
+  const [isTogglingPrices, setIsTogglingPrices] = useState(false);
   const { toast } = useToast();
 
   const handleVacationToggle = async (enabled: boolean) => {
     setIsToggling(true);
     await toggleVacationMode(enabled);
     setIsToggling(false);
+  };
+
+  const handleHidePricesToggle = async (hidden: boolean) => {
+    setIsTogglingPrices(true);
+    await toggleHideProductPrices(hidden);
+    setIsTogglingPrices(false);
   };
 
   return (
@@ -53,6 +60,20 @@ export const AdminProductsTab = ({ products, onToggleActive, onDelete }: AdminPr
               <Switch
                 checked={vacationMode}
                 onCheckedChange={handleVacationToggle}
+                className="scale-75"
+              />
+            )}
+          </div>
+          {/* Hide Prices Toggle */}
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${hideProductPrices ? 'bg-primary/10 border-primary/30' : 'bg-muted/30 border-border'}`}>
+            <DollarSign className={`w-4 h-4 ${hideProductPrices ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className="text-xs font-medium hidden sm:inline">Hide ₱</span>
+            {vacationLoading || isTogglingPrices ? (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            ) : (
+              <Switch
+                checked={hideProductPrices}
+                onCheckedChange={handleHidePricesToggle}
                 className="scale-75"
               />
             )}
