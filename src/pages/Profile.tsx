@@ -547,13 +547,6 @@ Streak</div>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center mb-1">
-                  <Gift className="w-4 h-4 mr-1 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-foreground">{streakData.vouchersEarned}</div>
-                <div className="text-xs text-muted-foreground">Vouchers Earned</div>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
                   <PhilippinePeso className="w-4 h-4 mr-1 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-foreground">{earnedPoints}</div>
@@ -595,7 +588,7 @@ Streak</div>
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Keep using the app to get benefits & bonus! Vouchers earned: {streakData.vouchersEarned}
+                Keep using the app to get benefits & bonus!
               </p>
               <div className="w-full bg-muted rounded-full h-2">
                 <div className="bg-accent h-2 rounded-full" style={{
