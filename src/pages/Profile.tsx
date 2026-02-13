@@ -363,11 +363,6 @@ const Profile = () => {
     subtitle: "Terms and privacy policies",
     action: () => navigate('/gemini-policies')
   }, {
-    icon: Fingerprint,
-    label: "Enable Biometrics / Face ID",
-    subtitle: "Login made easy",
-    action: () => setShowBiometricSettings(true)
-  }, {
     icon: HelpCircle,
     label: "Show App Tutorial",
     subtitle: "Restart onboarding guide",
@@ -693,11 +688,6 @@ Streak</div>
       </Drawer>
 
 
-      {/* Biometric Settings Modal */}
-      <BiometricSettingsModal 
-        open={showBiometricSettings} 
-        onOpenChange={setShowBiometricSettings} 
-      />
 
       {/* Achievements Modal */}
       <AchievementsModal isOpen={showAchievements} onClose={() => setShowAchievements(false)} currentPoints={earnedPoints} />

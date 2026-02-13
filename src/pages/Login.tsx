@@ -663,42 +663,6 @@ const Login = ({
             {isLoading ? "Creating Account..." : isLogin ? "Sign In" : "Create Account"}
           </Button>
 
-          {/* Biometric Authentication Button - Only show for login */}
-          {isLogin && <>
-              <div className="relative my-6">
-                <Separator className="bg-border" />
-                <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background px-4">
-                  <span className="text-xs text-muted-foreground">or</span>
-                </div>
-              </div>
-
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={handleBiometricAuth}
-                disabled={!biometricSupported || biometricChecking || isBiometricLoading}
-                className={`w-full h-12 text-sm border-2 rounded-2xl flex items-center justify-center gap-3 transition-all ${
-                  biometricSupported 
-                    ? 'border-primary/50 hover:bg-primary/10 hover:border-primary active:scale-[0.98]' 
-                    : 'border-border disabled:opacity-50 disabled:cursor-not-allowed'
-                }`}
-              >
-                {isBiometricLoading || biometricChecking ? (
-                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Fingerprint className={`w-5 h-5 ${biometricSupported ? 'text-primary' : 'text-muted-foreground'}`} />
-                )}
-                <span className={biometricSupported ? 'text-foreground' : 'text-muted-foreground'}>
-                  {isBiometricLoading 
-                    ? 'Verifying...' 
-                    : biometricChecking 
-                      ? 'Checking...' 
-                      : biometricEnabled 
-                        ? 'Use Face ID/Fingerprint' 
-                        : 'Face ID/Fingerprint (Setup Required)'}
-                </span>
-              </Button>
-            </>}
 
           {/* Switch Mode */}
           <div className="text-center mt-8 pt-4">
