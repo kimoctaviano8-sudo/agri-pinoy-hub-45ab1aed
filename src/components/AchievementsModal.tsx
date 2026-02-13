@@ -168,7 +168,7 @@ const AchievementsModal = ({ isOpen, onClose, currentPoints }: AchievementsModal
 
   const pointsGuide = [
     { action: "Plant Disease Scan", points: 5, icon: Scan },
-    { action: "Purchase Product", points: 10, icon: ShoppingCart },
+    
     { action: "Daily Login", points: 2, icon: Target },
     { action: "Forum Post", points: 8, icon: Star },
     { action: "Article Read", points: 3, icon: BookOpen },
