@@ -180,16 +180,9 @@ const Login = ({
     }
   };
 
-  // Store credentials for biometric login after successful email/password login
+  // Login without auto-storing biometric credentials
   const handleLoginWithCredentialStorage = async (email: string, password: string): Promise<boolean> => {
-    const success = await login(email, password);
-    
-    if (success && biometricSupported) {
-      // Store credentials for biometric login
-      await setCredentials(email, password);
-    }
-    
-    return success;
+    return await login(email, password);
   };
   const fetchCountries = async () => {
     try {
