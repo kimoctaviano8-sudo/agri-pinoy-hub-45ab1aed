@@ -11,7 +11,7 @@ interface AppSettings {
 
 export const useVacationMode = () => {
   const [vacationMode, setVacationMode] = useState(false);
-  const [vacationMessage, setVacationMessage] = useState('Orders are temporarily paused. Please check back later.');
+  const [vacationMessage, setVacationMessage] = useState('You may contact us to further discuss about this product.');
   const [hideProductPrices, setHideProductPrices] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -32,7 +32,7 @@ export const useVacationMode = () => {
       if (data) {
         const settings = data as unknown as AppSettings;
         setVacationMode(settings.vacation_mode);
-        setVacationMessage(settings.vacation_mode_message || 'Orders are temporarily paused. Please check back later.');
+        setVacationMessage(settings.vacation_mode_message || 'You may contact us to further discuss about this product.');
         setHideProductPrices(settings.hide_product_prices ?? false);
       }
     } catch (error) {
@@ -95,7 +95,7 @@ export const useVacationMode = () => {
         (payload) => {
           const newData = payload.new as AppSettings;
           setVacationMode(newData.vacation_mode);
-          setVacationMessage(newData.vacation_mode_message || 'Orders are temporarily paused. Please check back later.');
+          setVacationMessage(newData.vacation_mode_message || 'You may contact us to further discuss about this product.');
           setHideProductPrices(newData.hide_product_prices ?? false);
         }
       )
