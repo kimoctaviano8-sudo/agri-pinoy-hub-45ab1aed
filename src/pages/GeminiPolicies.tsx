@@ -30,14 +30,12 @@ const GeminiPolicies = () => {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-4xl mx-auto">
           <p className="text-muted-foreground mb-6">
-            Comprehensive policies and terms for agricultural services, product purchases, and platform usage.
+            Comprehensive policies and terms for agricultural services and platform usage.
           </p>
 
           <Tabs defaultValue="terms" className="w-full">
             <TabsList className="w-full overflow-x-auto flex justify-start mb-4">
               <TabsTrigger value="terms" className="text-xs lg:text-sm whitespace-nowrap">Terms</TabsTrigger>
-              <TabsTrigger value="agriculture" className="text-xs lg:text-sm whitespace-nowrap">Agriculture</TabsTrigger>
-              <TabsTrigger value="purchase" className="text-xs lg:text-sm whitespace-nowrap">Purchase</TabsTrigger>
               <TabsTrigger value="privacy" className="text-xs lg:text-sm whitespace-nowrap">Privacy</TabsTrigger>
             </TabsList>
 
@@ -68,29 +66,8 @@ const GeminiPolicies = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="purchase" className="space-y-4 text-sm">
-              <div className="space-y-3">
-                <h3 className="font-semibold text-base">Purchase and Cancellation Policy</h3>
-                <div className="space-y-2">
-                  <p><strong>1. Product Ordering:</strong> All agricultural products must be ordered through our verified supplier network to ensure quality and authenticity.</p>
-                  <p><strong>2. Payment Terms:</strong> Payment is processed securely at the time of order confirmation. We accept multiple payment methods for your convenience.</p>
-                  <p><strong>3. Cancellation Policy:</strong></p>
-                  <ul className="ml-4 space-y-1">
-                    <li>• Orders can be cancelled within 24 hours of placement at no charge</li>
-                    <li>• Cancellations after 24 hours but before shipment may incur a 10% processing fee</li>
-                    <li>• Orders cannot be cancelled once shipped, but returns are accepted for defective products</li>
-                  </ul>
-                  <p><strong>4. Refund Policy:</strong></p>
-                  <ul className="ml-4 space-y-1">
-                    <li>• Full refunds for cancelled orders within 24 hours</li>
-                    <li>• Defective products: Full refund or replacement within 30 days</li>
-                    <li>• Refunds processed within 5-7 business days to original payment method</li>
-                  </ul>
-                  <p><strong>5. Delivery Terms:</strong> Delivery times vary by location and product type. Live plants and perishables receive priority shipping.</p>
-                  <p><strong>6. Quality Guarantee:</strong> All products come with our quality guarantee. Report any issues within 48 hours of delivery.</p>
-                </div>
-              </div>
-            </TabsContent>
+
+
 
             <TabsContent value="privacy" className="space-y-4 text-sm">
               <div className="space-y-3">
