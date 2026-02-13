@@ -92,18 +92,9 @@ const ProductCard = ({
             <span className="text-xs font-medium text-foreground">{rating.toFixed(1)}</span>
           </div>
 
-          {/* Price and Add Button Row */}
-          <div className="flex items-center justify-between pt-1">
+          {/* Price */}
+          <div className="pt-1">
             <span className="text-base font-bold text-foreground">{price}</span>
-            <button 
-              className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm hover:bg-primary/90 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/products/${id}`);
-              }}
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-            </button>
           </div>
         </div>
       </CardContent>
