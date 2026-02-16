@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor, Trash2, Loader2, Fingerprint, Eye, EyeOff, ShieldBan, UserX } from "lucide-react";
+import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor, Trash2, Loader2, Fingerprint, Eye, EyeOff, ShieldBan, UserX, Flag, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,6 +48,8 @@ export const ProfileSettingsSection = () => {
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [blockedUsersOpen, setBlockedUsersOpen] = useState(false);
+  const [reportedPostsOpen, setReportedPostsOpen] = useState(false);
+  const [reportedPosts, setReportedPosts] = useState<{ id: string; title: string; moderation_status: string | null; created_at: string; flagged_content: string[] | null }[]>([]);
   const [blockedUsers, setBlockedUsers] = useState<{ id: string; blocked_user_id: string; full_name: string | null; avatar_url: string | null }[]>([]);
   const [unblocking, setUnblocking] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -192,6 +194,24 @@ export const ProfileSettingsSection = () => {
       }
     };
     fetchBlockedUsers();
+  }, []);
+
+  // Fetch user's reported/pending posts
+  useEffect(() => {
+    const fetchReportedPosts = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('forum_posts')
+        .select('id, title, moderation_status, created_at, flagged_content')
+        .eq('author_id', user.id)
+        .in('moderation_status', ['pending', 'rejected'])
+        .order('created_at', { ascending: false });
+
+      setReportedPosts(data || []);
+    };
+    fetchReportedPosts();
   }, []);
 
   // Listen to system theme changes when in "system" mode
@@ -391,6 +411,61 @@ export const ProfileSettingsSection = () => {
           <p className="text-xs text-muted-foreground pt-1">
             {t('privacy_policy')}
           </p>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Reported Posts Status */}
+      <Collapsible open={reportedPostsOpen} onOpenChange={setReportedPostsOpen}>
+        <CollapsibleTrigger className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+              <Flag className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-medium text-foreground">Post Review Status</span>
+              <span className="text-xs text-muted-foreground">
+                {reportedPosts.length > 0 ? `${reportedPosts.length} post${reportedPosts.length > 1 ? 's' : ''} under review` : 'No flagged posts'}
+              </span>
+            </div>
+          </div>
+          {reportedPostsOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pl-11 pr-3 pb-2 space-y-2">
+          {reportedPosts.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-2">None of your posts are flagged or under review.</p>
+          ) : (
+            reportedPosts.map(post => (
+              <div key={post.id} className="py-2 border-b border-border last:border-0 space-y-1">
+                <p className="text-sm font-medium text-foreground line-clamp-1">{post.title}</p>
+                <div className="flex items-center gap-2">
+                  {post.moderation_status === 'pending' ? (
+                    <Badge variant="outline" className="text-xs gap-1 text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/50 dark:border-amber-800">
+                      <Clock className="w-3 h-3" />
+                      Under Review
+                    </Badge>
+                  ) : post.moderation_status === 'rejected' ? (
+                    <Badge variant="destructive" className="text-xs gap-1">
+                      <XCircle className="w-3 h-3" />
+                      Rejected
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs gap-1 text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/50 dark:border-emerald-800">
+                      <CheckCircle className="w-3 h-3" />
+                      Approved
+                    </Badge>
+                  )}
+                  <span className="text-[11px] text-muted-foreground">
+                    {new Date(post.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                {post.flagged_content && post.flagged_content.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Flagged for: {post.flagged_content.join(', ')}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
         </CollapsibleContent>
       </Collapsible>
 
