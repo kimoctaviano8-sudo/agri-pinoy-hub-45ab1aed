@@ -322,7 +322,7 @@ const Login = ({
     validateField(field);
   };
 
-  const optionalFields = ['birthday', 'gender', 'country', 'province', 'city'];
+  const optionalFields = ['birthday', 'gender', 'country', 'province', 'city', 'streetNumber'];
 
   const validateField = (field: string) => {
     const value = (formData as any)[field];
@@ -357,7 +357,7 @@ const Login = ({
   const validateAllFields = (): boolean => {
     const requiredFields = isLogin
       ? ['email', 'password']
-      : ['firstName', 'lastName', 'phone', 'streetNumber', 'email', 'password', 'confirmPassword'];
+      : ['firstName', 'lastName', 'phone', 'email', 'password', 'confirmPassword'];
     
     const errors: Record<string, string> = {};
     const allTouched: Record<string, boolean> = {};
@@ -557,7 +557,7 @@ const Login = ({
                 {/* Street Number */}
                 <div className="space-y-1">
                   <Label htmlFor="streetNumber" className="text-xs font-medium text-foreground">
-                    House/Street Number
+                    House/Street Number <span className="text-muted-foreground font-normal">(Optional)</span>
                   </Label>
                   <Input id="streetNumber" name="streetNumber" type="text" placeholder="e.g., 123, Blk 4 Lot 5" value={formData.streetNumber} onChange={handleInputChange} onBlur={() => handleBlur('streetNumber')} className={`h-12 text-sm bg-background border ${errClass('streetNumber')} rounded-xl focus:border-primary`} />
                   <FieldError field="streetNumber" />
