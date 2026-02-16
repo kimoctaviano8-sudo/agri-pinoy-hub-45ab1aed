@@ -322,11 +322,15 @@ const Login = ({
     validateField(field);
   };
 
+  const optionalFields = ['birthday', 'gender', 'country', 'province', 'city'];
+
   const validateField = (field: string) => {
     const value = (formData as any)[field];
     const errors: Record<string, string> = {};
-    if (field === 'birthday') {
-      if (!formData.birthday) errors.birthday = 'This field is required';
+    if (optionalFields.includes(field)) {
+      // Optional fields — no required validation
+    } else if (field === 'birthday') {
+      // kept for safety, but birthday is optional now
     } else if (typeof value === 'string' && !value.trim()) {
       errors[field] = 'This field is required';
     }
@@ -353,7 +357,7 @@ const Login = ({
   const validateAllFields = (): boolean => {
     const requiredFields = isLogin
       ? ['email', 'password']
-      : ['firstName', 'lastName', 'birthday', 'gender', 'phone', 'streetNumber', 'country', 'province', 'city', 'email', 'password', 'confirmPassword'];
+      : ['firstName', 'lastName', 'phone', 'streetNumber', 'email', 'password', 'confirmPassword'];
     
     const errors: Record<string, string> = {};
     const allTouched: Record<string, boolean> = {};
