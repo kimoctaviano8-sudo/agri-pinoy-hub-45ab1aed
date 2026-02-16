@@ -3,7 +3,7 @@ import { Plus, Edit, Trash2, MessageSquare, Shield, AlertTriangle } from "lucide
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ForumPost {
@@ -116,16 +116,17 @@ export const AdminForumTab = ({
           </span>
         </div>
         
-        {/* Add New Profanity Word */}
+        {/* Add New Profanity Words (Bulk) */}
         <Card className="p-3">
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Add Filter Word</h4>
+            <h4 className="text-sm font-medium">Add Filter Words</h4>
+            <p className="text-xs text-muted-foreground">Enter one word per line or separate with commas for bulk adding.</p>
             <div className="space-y-2">
-              <Input
-                placeholder="Enter word to filter..."
+              <Textarea
+                placeholder={"Enter words to filter...\ne.g. word1, word2, word3\nor one per line"}
                 value={newProfanityWord}
                 onChange={(e) => setNewProfanityWord(e.target.value)}
-                className="text-sm"
+                className="text-sm min-h-[80px] resize-none"
               />
               <div className="flex space-x-2">
                 <Select value={newWordSeverity} onValueChange={setNewWordSeverity}>
