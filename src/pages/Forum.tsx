@@ -335,7 +335,7 @@ const Forum = () => {
   };
   const fetchPosts = async () => {
     try {
-      // Get forum posts with images
+      // Get published forum posts
       const {
         data: forumPosts,
         error
@@ -352,8 +352,31 @@ const Forum = () => {
         return;
       }
 
+      // Also fetch user's own pending/unpublished posts
+      let userPendingPosts: typeof forumPosts = [];
+      if (user?.id) {
+        const { data: pendingData } = await supabase
+          .from('forum_posts')
+          .select('*')
+          .eq('author_id', user.id)
+          .eq('published', false)
+          .order('created_at', { ascending: false });
+        userPendingPosts = pendingData || [];
+      }
+
+      // Merge and deduplicate
+      const allPostIds = new Set(forumPosts?.map(p => p.id) || []);
+      const mergedPosts = [...(forumPosts || [])];
+      for (const p of userPendingPosts || []) {
+        if (!allPostIds.has(p.id)) {
+          mergedPosts.push(p);
+        }
+      }
+      // Re-sort by created_at descending
+      mergedPosts.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+
       // Get unique author IDs
-      const authorIds = [...new Set(forumPosts?.map(post => post.author_id).filter(Boolean))];
+      const authorIds = [...new Set(mergedPosts?.map(post => post.author_id).filter(Boolean))];
 
       // Fetch profile data for all authors
       let profilesMap: {
@@ -372,7 +395,7 @@ const Forum = () => {
       }
 
       // Fetch comments for all posts
-      const postIds = forumPosts?.map(post => post.id) || [];
+      const postIds = mergedPosts?.map(post => post.id) || [];
       let commentsMap: {
         [key: string]: Comment[];
       } = {};
@@ -497,7 +520,7 @@ const Forum = () => {
       }
 
       // Transform data to match our Post interface
-      const transformedPosts: Post[] = forumPosts?.map(post => {
+      const transformedPosts: Post[] = mergedPosts?.map(post => {
         const profile = profilesMap[post.author_id];
         const likeData = likesMap[post.id] || {
           count: 0,
