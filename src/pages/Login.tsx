@@ -513,7 +513,7 @@ const Login = ({
 
               {/* Birthday Field */}
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-foreground">Birthday</Label>
+                <Label className="text-xs font-medium text-foreground">Birthday <span className="text-muted-foreground font-normal">(Optional)</span></Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn(`h-12 w-full text-sm bg-background border ${errClass('birthday')} rounded-xl justify-start text-left font-normal focus:border-primary`, !formData.birthday && "text-muted-foreground")}>
@@ -530,7 +530,7 @@ const Login = ({
 
               {/* Gender Field */}
               <div className="space-y-1">
-                <Label htmlFor="gender" className="text-xs font-medium text-foreground">Gender</Label>
+                <Label htmlFor="gender" className="text-xs font-medium text-foreground">Gender <span className="text-muted-foreground font-normal">(Optional)</span></Label>
                 <select id="gender" name="gender" value={formData.gender} onChange={handleInputChange} onBlur={() => handleBlur('gender')} className={`w-full h-12 text-sm bg-background border ${errClass('gender')} rounded-xl px-3 text-foreground focus:outline-none focus:border-primary`}>
                   <option value="">Select gender</option>
                   <option value="male">Male</option>
@@ -552,7 +552,7 @@ const Login = ({
 
               {/* Location Section */}
               <div className="space-y-3 pt-2">
-                <h3 className="text-xs font-semibold text-foreground border-b border-border pb-1">Location Details</h3>
+                <h3 className="text-xs font-semibold text-foreground border-b border-border pb-1">Location Details <span className="text-muted-foreground font-normal">(Optional)</span></h3>
                 
                 {/* Street Number */}
                 <div className="space-y-1">
