@@ -1036,6 +1036,7 @@ const Forum = () => {
                       </div>
                     </div>
                   </div>
+                  {(isAdmin || post.author_id === user?.id) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-9 w-9 hover:bg-muted/80">
@@ -1070,6 +1071,7 @@ const Forum = () => {
                       </>}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  )}
                 </div>
               </CardHeader>
               
