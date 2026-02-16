@@ -1,0 +1,1 @@
+DELETE FROM public.forum_eula_acceptance WHERE user_id = '76d7fab5-92a5-47f3-840f-4f9e079832e1';
