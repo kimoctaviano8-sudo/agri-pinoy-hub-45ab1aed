@@ -44,6 +44,63 @@ export type Database = {
         }
         Relationships: []
       }
+      content_flags: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          details: string | null
+          id: string
+          post_id: string | null
+          reason: string
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          post_id?: string | null
+          reason: string
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          post_id?: string | null
+          reason?: string
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_flags_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "forum_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_flags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_emoji_sets: {
         Row: {
           created_at: string
@@ -248,6 +305,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      forum_eula_acceptance: {
+        Row: {
+          accepted_at: string
+          eula_version: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          eula_version?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          eula_version?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       forum_likes: {
         Row: {
@@ -1040,6 +1118,30 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_blocks: {
+        Row: {
+          blocked_user_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_user_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_user_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
         }
         Relationships: []
       }

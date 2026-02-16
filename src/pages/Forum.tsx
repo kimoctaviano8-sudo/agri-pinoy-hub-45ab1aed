@@ -5,8 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Heart, MessageCircle, Share2, Send, MoreHorizontal, Image as ImageIcon, X, Trash2, CheckCircle, XCircle, AlertTriangle, RefreshCw, BookOpen, Star, Edit3 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Heart, MessageCircle, Share2, Send, MoreHorizontal, Image as ImageIcon, X, Trash2, CheckCircle, XCircle, AlertTriangle, RefreshCw, BookOpen, Star, Edit3, Flag, ShieldBan } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,9 @@ import { ShareModal } from "@/components/ShareModal";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { CommentInput } from "@/components/CommentInput";
+import { CommunityEulaModal } from "@/components/CommunityEulaModal";
+import { ReportContentModal } from "@/components/ReportContentModal";
+import { BlockUserModal } from "@/components/BlockUserModal";
 import Lottie from "lottie-react";
 interface Comment {
   id: string;
@@ -85,6 +88,17 @@ const Forum = () => {
   // Lottie animation state
   const [lottieAnimationData, setLottieAnimationData] = useState(null);
 
+  // EULA state
+  const [showEula, setShowEula] = useState(false);
+  const [eulaAccepted, setEulaAccepted] = useState<boolean | null>(null); // null = loading
+
+  // Block & Report state
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ postId?: string; commentId?: string; type: "post" | "comment" } | null>(null);
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [blockTarget, setBlockTarget] = useState<{ userId: string; userName: string } | null>(null);
+
   // Pull to refresh state
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -101,6 +115,92 @@ const Forum = () => {
       }
     });
     return flaggedWords;
+  };
+
+  // Check EULA acceptance and load blocked users
+  useEffect(() => {
+    if (user?.id) {
+      checkEulaAcceptance();
+      fetchBlockedUsers();
+    } else {
+      setEulaAccepted(true); // Non-logged in users don't need EULA (they can't post)
+    }
+  }, [user?.id]);
+
+  const checkEulaAcceptance = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from('forum_eula_acceptance')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (data) {
+      setEulaAccepted(true);
+    } else {
+      setEulaAccepted(false);
+      setShowEula(true);
+    }
+  };
+
+  const handleEulaAccept = async () => {
+    if (!user?.id) return;
+    await supabase.from('forum_eula_acceptance').insert({ user_id: user.id });
+    setEulaAccepted(true);
+    setShowEula(false);
+    toast({ title: "Welcome!", description: "You can now participate in the community." });
+  };
+
+  const fetchBlockedUsers = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from('user_blocks')
+      .select('blocked_user_id')
+      .eq('blocker_id', user.id);
+    setBlockedUserIds(data?.map(b => b.blocked_user_id) || []);
+  };
+
+  const handleReportContent = async (reason: string, details: string) => {
+    if (!user?.id || !reportTarget) return;
+    const { error } = await supabase.from('content_flags').insert({
+      reporter_id: user.id,
+      post_id: reportTarget.postId || null,
+      comment_id: reportTarget.commentId || null,
+      reason,
+      details: details || null,
+    });
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to submit report." });
+    } else {
+      toast({ title: "Report submitted", description: "Our team will review this within 24 hours." });
+    }
+  };
+
+  const handleBlockUser = async (reason: string) => {
+    if (!user?.id || !blockTarget) return;
+    const { error } = await supabase.from('user_blocks').insert({
+      blocker_id: user.id,
+      blocked_user_id: blockTarget.userId,
+      reason: reason || null,
+    });
+    if (error) {
+      if (error.message.includes('duplicate')) {
+        toast({ title: "Already blocked", description: "This user is already blocked." });
+      } else {
+        toast({ variant: "destructive", title: "Error", description: "Failed to block user." });
+      }
+      return;
+    }
+    // Also create a content flag to notify admins
+    await supabase.from('content_flags').insert({
+      reporter_id: user.id,
+      post_id: null,
+      reason: `User blocked: ${blockTarget.userName}`,
+      details: reason || 'User blocked by community member',
+    });
+    setBlockedUserIds(prev => [...prev, blockTarget.userId]);
+    // Immediately remove blocked user's posts from the feed
+    setPosts(prev => prev.filter(p => p.author_id !== blockTarget.userId));
+    toast({ title: "User blocked", description: `${blockTarget.userName}'s content has been hidden from your feed.` });
   };
 
   // Fetch forum posts from database
@@ -424,7 +524,9 @@ const Forum = () => {
           avatar_url: profile?.avatar_url
         };
       }) || [];
-      setPosts(transformedPosts);
+      // Filter out posts from blocked users
+      const filteredPosts = transformedPosts.filter(p => !blockedUserIds.includes(p.author_id));
+      setPosts(filteredPosts);
     } catch (error) {
       console.error('Error fetching posts:', error);
       toast({
@@ -1036,7 +1138,6 @@ const Forum = () => {
                       </div>
                     </div>
                   </div>
-                  {(isAdmin || post.author_id === user?.id) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-9 w-9 hover:bg-muted/80">
@@ -1069,9 +1170,26 @@ const Forum = () => {
                           Delete Post
                         </DropdownMenuItem>
                       </>}
+                      {/* Report & Block - visible to everyone except post author */}
+                      {user && post.author_id !== user.id && <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => {
+                          setReportTarget({ postId: post.id, type: "post" });
+                          setReportModalOpen(true);
+                        }}>
+                          <Flag className="w-4 h-4 mr-2" />
+                          Report Post
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setBlockTarget({ userId: post.author_id, userName: post.author });
+                          setBlockModalOpen(true);
+                        }} className="text-destructive focus:text-destructive">
+                          <ShieldBan className="w-4 h-4 mr-2" />
+                          Block User
+                        </DropdownMenuItem>
+                      </>}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  )}
                 </div>
               </CardHeader>
               
@@ -1215,6 +1333,27 @@ const Forum = () => {
         {/* Mobile-friendly spacing at bottom */}
         <div className="h-8"></div>
       </div>
+
+      {/* EULA Modal */}
+      <CommunityEulaModal open={showEula} onAccept={handleEulaAccept} />
+
+      {/* Report Modal */}
+      <ReportContentModal
+        open={reportModalOpen}
+        onOpenChange={setReportModalOpen}
+        onSubmit={handleReportContent}
+        type={reportTarget?.type || "post"}
+      />
+
+      {/* Block Modal */}
+      {blockTarget && (
+        <BlockUserModal
+          open={blockModalOpen}
+          onOpenChange={setBlockModalOpen}
+          onConfirm={handleBlockUser}
+          userName={blockTarget.userName}
+        />
+      )}
     </div>;
 };
 export default Forum;
