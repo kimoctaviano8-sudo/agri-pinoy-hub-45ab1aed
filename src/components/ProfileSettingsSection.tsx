@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor, Trash2, Loader2, Fingerprint, Eye, EyeOff } from "lucide-react";
+import { Moon, Sun, Bell, Shield, User, Info, ChevronRight, ChevronDown, Check, Monitor, Trash2, Loader2, Fingerprint, Eye, EyeOff, ShieldBan, UserX } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -47,6 +47,9 @@ export const ProfileSettingsSection = () => {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [blockedUsersOpen, setBlockedUsersOpen] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<{ id: string; blocked_user_id: string; full_name: string | null; avatar_url: string | null }[]>([]);
+  const [unblocking, setUnblocking] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
@@ -157,6 +160,40 @@ export const ProfileSettingsSection = () => {
     applyTheme(savedThemeMode);
   }, []);
 
+  // Fetch blocked users
+  useEffect(() => {
+    const fetchBlockedUsers = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: blocks } = await supabase
+        .from('user_blocks')
+        .select('id, blocked_user_id')
+        .eq('blocker_id', user.id);
+
+      if (blocks && blocks.length > 0) {
+        const userIds = blocks.map(b => b.blocked_user_id);
+        const { data: profiles } = await supabase
+          .from('public_profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', userIds);
+
+        setBlockedUsers(blocks.map(b => {
+          const profile = profiles?.find(p => p.id === b.blocked_user_id);
+          return {
+            id: b.id,
+            blocked_user_id: b.blocked_user_id,
+            full_name: profile?.full_name || 'Unknown User',
+            avatar_url: profile?.avatar_url || null,
+          };
+        }));
+      } else {
+        setBlockedUsers([]);
+      }
+    };
+    fetchBlockedUsers();
+  }, []);
+
   // Listen to system theme changes when in "system" mode
   useEffect(() => {
     if (themeMode !== "system") return;
@@ -205,6 +242,33 @@ export const ProfileSettingsSection = () => {
       title: t('notifications'),
       description: `${labels[key]} ${checked ? "enabled" : "disabled"}`
     });
+  };
+
+  const handleUnblockUser = async (blockId: string) => {
+    setUnblocking(blockId);
+    try {
+      const { error } = await supabase
+        .from('user_blocks')
+        .delete()
+        .eq('id', blockId);
+
+      if (error) throw error;
+
+      setBlockedUsers(prev => prev.filter(b => b.id !== blockId));
+      toast({
+        title: "User Unblocked",
+        description: "You have unblocked this user. Their posts will be visible again.",
+      });
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unblock user. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUnblocking(null);
+    }
   };
 
   const formattedBuildDate = getFormattedBuildDate();
@@ -327,6 +391,56 @@ export const ProfileSettingsSection = () => {
           <p className="text-xs text-muted-foreground pt-1">
             {t('privacy_policy')}
           </p>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Blocked Users */}
+      <Collapsible open={blockedUsersOpen} onOpenChange={setBlockedUsersOpen}>
+        <CollapsibleTrigger className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+              <ShieldBan className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-medium text-foreground">Blocked Users</span>
+              <span className="text-xs text-muted-foreground">
+                {blockedUsers.length > 0 ? `${blockedUsers.length} blocked` : 'No blocked users'}
+              </span>
+            </div>
+          </div>
+          {blockedUsersOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pl-11 pr-3 pb-2 space-y-2">
+          {blockedUsers.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-2">You haven't blocked anyone.</p>
+          ) : (
+            blockedUsers.map(user => (
+              <div key={user.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserX className="w-3.5 h-3.5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <span className="text-sm text-foreground">{user.full_name}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7"
+                  disabled={unblocking === user.id}
+                  onClick={() => handleUnblockUser(user.id)}
+                >
+                  {unblocking === user.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  ) : null}
+                  Unblock
+                </Button>
+              </div>
+            ))
+          )}
         </CollapsibleContent>
       </Collapsible>
 
