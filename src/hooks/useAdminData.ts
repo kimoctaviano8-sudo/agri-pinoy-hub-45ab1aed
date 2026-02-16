@@ -220,37 +220,46 @@ export const useAdminData = () => {
     });
   }, [users, toast]);
 
-  const addProfanityWord = useCallback(async (word: string, severity: string, userId?: string) => {
-    if (!word.trim()) {
+  const addProfanityWord = useCallback(async (wordInput: string, severity: string, userId?: string) => {
+    if (!wordInput.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a word to add.",
+        description: "Please enter word(s) to add.",
         variant: "destructive",
       });
       return;
     }
 
+    // Parse bulk input: split by commas, newlines, or both
+    const words = wordInput
+      .split(/[,\n]+/)
+      .map(w => w.toLowerCase().trim())
+      .filter(w => w.length > 0);
+
+    if (words.length === 0) {
+      toast({
+        title: "Error",
+        description: "No valid words found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Remove duplicates from input
+    const uniqueWords = [...new Set(words)];
+
     try {
+      const rows = uniqueWords.map(word => ({
+        word,
+        severity,
+        created_by: userId,
+      }));
+
       const { error } = await supabase
         .from('profanity_words')
-        .insert({
-          word: word.toLowerCase().trim(),
-          severity: severity,
-          created_by: userId
-        });
+        .upsert(rows, { onConflict: 'word', ignoreDuplicates: true });
 
-      if (error) {
-        if (error.code === '23505') {
-          toast({
-            title: "Error",
-            description: "This word already exists in the filter list.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
-        return;
-      }
+      if (error) throw error;
 
       const { data } = await supabase
         .from('profanity_words')
@@ -261,13 +270,13 @@ export const useAdminData = () => {
       
       toast({
         title: "Success",
-        description: "Profanity word added successfully.",
+        description: `${uniqueWords.length} word${uniqueWords.length > 1 ? 's' : ''} added to filter.`,
       });
     } catch (error) {
-      console.error('Error adding profanity word:', error);
+      console.error('Error adding profanity words:', error);
       toast({
         title: "Error",
-        description: "Failed to add profanity word.",
+        description: "Failed to add profanity word(s).",
         variant: "destructive",
       });
     }
