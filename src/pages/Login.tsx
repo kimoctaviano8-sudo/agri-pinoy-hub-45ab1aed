@@ -566,7 +566,7 @@ const Login = ({
                 {/* Country */}
                 <div className="space-y-1">
                   <Label htmlFor="country" className="text-xs font-medium text-foreground">
-                    Country
+                    Country <span className="text-muted-foreground font-normal">(Optional)</span>
                   </Label>
                   <select id="country" name="country" value={formData.country} onChange={handleInputChange} onBlur={() => handleBlur('country')} className={`w-full h-12 text-sm bg-background border ${errClass('country')} rounded-xl px-3 text-foreground focus:outline-none focus:border-primary`}>
                     <option value="">Select your country</option>
@@ -580,7 +580,7 @@ const Login = ({
                 {/* Province/State */}
                 <div className="space-y-1">
                   <Label htmlFor="province" className="text-xs font-medium text-foreground">
-                    Province/State
+                    Province/State <span className="text-muted-foreground font-normal">(Optional)</span>
                   </Label>
                   <select id="province" name="province" value={formData.province} onChange={handleInputChange} onBlur={() => handleBlur('province')} className={`w-full h-12 text-sm bg-background border ${errClass('province')} rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50`} disabled={!formData.country || isLoadingLocation}>
                     <option value="">
@@ -596,7 +596,7 @@ const Login = ({
                 {/* City */}
                 <div className="space-y-1">
                   <Label htmlFor="city" className="text-xs font-medium text-foreground">
-                    City
+                    City <span className="text-muted-foreground font-normal">(Optional)</span>
                   </Label>
                   <select id="city" name="city" value={formData.city} onChange={handleInputChange} onBlur={() => handleBlur('city')} className={`w-full h-12 text-sm bg-background border ${errClass('city')} rounded-xl px-3 text-foreground focus:outline-none focus:border-primary disabled:opacity-50`} disabled={!formData.province || isLoadingLocation}>
                     <option value="">
