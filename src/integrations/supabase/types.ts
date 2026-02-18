@@ -131,6 +131,54 @@ export type Database = {
         }
         Relationships: []
       }
+      dealers: {
+        Row: {
+          active: boolean
+          address: string
+          city: string
+          created_at: string
+          hours: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          phone: string
+          province: string
+          region: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address: string
+          city: string
+          created_at?: string
+          hours?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          phone: string
+          province: string
+          region: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string
+          city?: string
+          created_at?: string
+          hours?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          phone?: string
+          province?: string
+          region?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       discount_rules: {
         Row: {
           active: boolean
