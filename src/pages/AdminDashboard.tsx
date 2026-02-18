@@ -19,6 +19,7 @@ import { AdminOrdersTab } from "@/components/admin/AdminOrdersTab";
 import { StockManagement } from "@/components/admin/StockManagement";
 import { AdminCarouselTab } from "@/components/admin/AdminCarouselTab";
 import { AdminVouchersTab } from "@/components/admin/AdminVouchersTab";
+import { AdminDealersTab } from "@/components/admin/AdminDealersTab";
 
 const AdminDashboard = () => {
   const {
@@ -179,6 +180,7 @@ const AdminDashboard = () => {
                 <TabsTrigger value="carousel" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Carousel</TabsTrigger>
                 <TabsTrigger value="forum" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Community</TabsTrigger>
                 <TabsTrigger value="users" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Users</TabsTrigger>
+                <TabsTrigger value="dealers" className="text-xs px-3 py-2 whitespace-nowrap flex-shrink-0">Dealers</TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -226,6 +228,11 @@ const AdminDashboard = () => {
           {/* Users Tab */}
           <TabsContent value="users" className="space-y-3">
             <AdminUsersTab users={users} onToggleUserRole={toggleUserRole} />
+          </TabsContent>
+
+          {/* Dealers Tab */}
+          <TabsContent value="dealers" className="space-y-3">
+            <AdminDealersTab />
           </TabsContent>
         </Tabs>
       </div>
