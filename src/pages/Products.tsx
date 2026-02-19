@@ -228,7 +228,7 @@ const Products = () => {
     if (prices.length === 0) return [0, 2000];
     return [Math.min(...prices), Math.max(...prices)];
   }, [products]);
-  return <div className="min-h-screen bg-background pb-16">
+  return <div className="min-h-screen bg-background pb-24">
       {/* Clean Hero Section - Minimal Style */}
       <div className="px-5 pt-6 pb-4 bg-background">
         <h1 className="text-2xl font-bold text-foreground leading-tight">
