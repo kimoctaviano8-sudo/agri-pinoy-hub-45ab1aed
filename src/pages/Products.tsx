@@ -228,7 +228,7 @@ const Products = () => {
     if (prices.length === 0) return [0, 2000];
     return [Math.min(...prices), Math.max(...prices)];
   }, [products]);
-  return <div className="min-h-screen bg-background pb-20">
+  return <div className="min-h-screen bg-background pb-16">
       {/* Clean Hero Section - Minimal Style */}
       <div className="px-5 pt-6 pb-4 bg-background">
         <h1 className="text-2xl font-bold text-foreground leading-tight">
@@ -410,7 +410,7 @@ const Products = () => {
       {/* Mobile Quick Support Card */}
       <div className="px-5 mt-6 mb-2">
         <Card className="rounded-2xl">
-          <CardContent className="p-5">
+          <CardContent className="p-4">
             <div className="flex items-center space-x-4">
               <div className="flex-1">
                 <h3 className="font-semibold text-sm mb-1">Need Help?</h3>
