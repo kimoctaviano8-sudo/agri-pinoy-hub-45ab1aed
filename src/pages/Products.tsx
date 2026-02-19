@@ -408,7 +408,7 @@ const Products = () => {
       </div>
 
       {/* Mobile Quick Support Card */}
-      <div className="px-5 mt-8">
+      <div className="px-5 mt-6 mb-2">
         <Card className="rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center space-x-4">
