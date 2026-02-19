@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Upload, Loader2, AlertCircle, CheckCircle, X, RotateCcw, Zap, Info, Download, FileText, Image, MessageCircle, Trophy, Leaf, Droplets } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Camera, Upload, Loader2, AlertCircle, CheckCircle, X, RotateCcw, Zap, Info, Download, FileText, Image, MessageCircle, Trophy, Leaf, Droplets, ShieldAlert } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DiagnosisHistory } from "@/components/DiagnosisHistory";
@@ -32,8 +34,18 @@ const PlantScanner = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const [showAccuracyNotice, setShowAccuracyNotice] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Show accuracy notice on first visit
+  useEffect(() => {
+    const acknowledged = localStorage.getItem('scanner_accuracy_acknowledged');
+    if (!acknowledged) {
+      setShowAccuracyNotice(true);
+    }
+  }, []);
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -383,6 +395,47 @@ const PlantScanner = () => {
   };
 
   return (
+    <>
+      {/* Scanner Accuracy Notice - First Time Only */}
+      <AlertDialog open={showAccuracyNotice} onOpenChange={setShowAccuracyNotice}>
+        <AlertDialogContent className="max-w-sm mx-auto rounded-2xl">
+          <AlertDialogHeader className="items-center text-center">
+            <div className="w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center mb-2">
+              <ShieldAlert className="w-7 h-7 text-warning" />
+            </div>
+            <AlertDialogTitle className="text-lg">Scanner Accuracy Notice</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-muted-foreground leading-relaxed space-y-3">
+              <p>
+                This scanner is designed to assist you, but results may not be 100% accurate and may contain errors.
+              </p>
+              <p>
+                Scan results should be used as a reference only and not as a final diagnosis or decision.
+              </p>
+              <p className="font-medium text-foreground">
+                By continuing, you acknowledge and accept this limitation.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction
+              onClick={() => {
+                localStorage.setItem('scanner_accuracy_acknowledged', 'true');
+                setShowAccuracyNotice(false);
+              }}
+              className="w-full"
+            >
+              I Understand & Continue
+            </AlertDialogAction>
+            <AlertDialogCancel
+              onClick={() => navigate(-1)}
+              className="w-full"
+            >
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     <div className="min-h-screen bg-background pb-20">
       {/* Minimal Header */}
       <div className="px-4 pt-6 pb-4">
@@ -660,6 +713,7 @@ const PlantScanner = () => {
         </TooltipProvider>
       )}
     </div>
+    </>
   );
 };
 
