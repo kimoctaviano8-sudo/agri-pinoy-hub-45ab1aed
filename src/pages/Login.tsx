@@ -429,11 +429,8 @@ const Login = ({
           // Keep modal open to show email verification message
         } else {
           setShowSignupModal(false);
-          toast({
-            title: "Registration Failed",
-            description: "Please check your information and try again.",
-            variant: "destructive"
-          });
+          // Don't show a generic toast here — AuthContext.register()
+          // already displays the specific Supabase error message.
         }
       }
     } catch (error) {
