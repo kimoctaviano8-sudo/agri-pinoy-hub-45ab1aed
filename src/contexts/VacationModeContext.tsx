@@ -5,9 +5,11 @@ interface VacationModeContextType {
   vacationMode: boolean;
   vacationMessage: string;
   hideProductPrices: boolean;
+  maintenanceMode: boolean;
   loading: boolean;
   toggleVacationMode: (enabled: boolean) => Promise<boolean>;
   toggleHideProductPrices: (hidden: boolean) => Promise<boolean>;
+  toggleMaintenanceMode: (enabled: boolean) => Promise<boolean>;
 }
 
 const VacationModeContext = createContext<VacationModeContextType | undefined>(undefined);
@@ -21,10 +23,10 @@ export const useVacationModeContext = () => {
 };
 
 export const VacationModeProvider = ({ children }: { children: React.ReactNode }) => {
-  const { vacationMode, vacationMessage, hideProductPrices, loading, toggleVacationMode, toggleHideProductPrices } = useVacationMode();
+  const { vacationMode, vacationMessage, hideProductPrices, maintenanceMode, loading, toggleVacationMode, toggleHideProductPrices, toggleMaintenanceMode } = useVacationMode();
 
   return (
-    <VacationModeContext.Provider value={{ vacationMode, vacationMessage, hideProductPrices, loading, toggleVacationMode, toggleHideProductPrices }}>
+    <VacationModeContext.Provider value={{ vacationMode, vacationMessage, hideProductPrices, maintenanceMode, loading, toggleVacationMode, toggleHideProductPrices, toggleMaintenanceMode }}>
       {children}
     </VacationModeContext.Provider>
   );

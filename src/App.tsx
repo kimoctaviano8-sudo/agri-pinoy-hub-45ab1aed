@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { TranslationProvider } from "./contexts/TranslationContext";
 import { CartProvider } from "./contexts/CartContext";
 import { OnboardingProvider, useOnboarding } from "./contexts/OnboardingContext";
-import { VacationModeProvider } from "./contexts/VacationModeContext";
+import { VacationModeProvider, useVacationModeContext } from "./contexts/VacationModeContext";
 import { useEffect, useState } from "react";
 import Navigation from "./components/Navigation";
 import { FloatingNotifications } from "./components/FloatingNotifications";
@@ -37,6 +37,7 @@ import OrderSuccess from "./pages/OrderSuccess";
 import HelpCentre from "./pages/HelpCentre";
 import GeminiCares from "./pages/GeminiCares";
 import GeminiPolicies from "./pages/GeminiPolicies";
+import Maintenance from "./pages/Maintenance";
 import { useLocationPermission } from "./hooks/useLocationPermission";
 import { useDeepLink } from "./hooks/useDeepLink";
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const queryClient = new QueryClient();
 const ProtectedApp = () => {
   const {
     user,
+    userRole,
     isLoading
   } = useAuth();
   const navigate = useNavigate();
@@ -53,6 +55,7 @@ const ProtectedApp = () => {
     hasCompletedOnboarding,
     completeOnboarding
   } = useOnboarding();
+  const { maintenanceMode } = useVacationModeContext();
   const [showAuthPage, setShowAuthPage] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
@@ -100,6 +103,10 @@ const ProtectedApp = () => {
   // Show onboarding if authenticated but hasn't completed onboarding
   if (user && !hasCompletedOnboarding) {
     return <Onboarding onComplete={completeOnboarding} />;
+  }
+
+  if (user && maintenanceMode && userRole !== 'admin') {
+    return <Maintenance />;
   }
 
   // Show main app if authenticated and onboarding completed
