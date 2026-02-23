@@ -15,6 +15,8 @@ const Maintenance = () => {
             loop
             autoplay
             className="w-full h-full"
+            renderConfig={{ autoResize: true }}
+            backgroundColor="transparent"
           />
         </div>
         <h1 className="text-2xl font-bold text-foreground mb-3">Under Maintenance</h1>
