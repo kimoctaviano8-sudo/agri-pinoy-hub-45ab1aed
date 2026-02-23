@@ -87,14 +87,14 @@ Coolors Palette: #DAD7CD, #A3B18A, #588157, #3A5A40, #344E41 - Applied 2025-01-2
     --radius: 0.75rem;
 
     /* Mobile-optimized font sizes */
-    --font-xs: 0.8125rem;    /* 13px */
-    --font-sm: 0.9375rem;    /* 15px */
-    --font-base: 1rem;       /* 16px */
-    --font-lg: 1.125rem;     /* 18px */
-    --font-xl: 1.25rem;      /* 20px */
-    --font-2xl: 1.5rem;      /* 24px */
-    --font-3xl: 1.75rem;     /* 28px */
-    --font-4xl: 2.125rem;    /* 34px */
+    --font-xs: 0.875rem;     /* 14px */
+    --font-sm: 1rem;         /* 16px */
+    --font-base: 1.0625rem;  /* 17px */
+    --font-lg: 1.1875rem;    /* 19px */
+    --font-xl: 1.3125rem;    /* 21px */
+    --font-2xl: 1.5625rem;   /* 25px */
+    --font-3xl: 1.875rem;    /* 30px */
+    --font-4xl: 2.25rem;     /* 36px */
 
     /* Updated sidebar with Plant Scanner palette */
     --sidebar-background: 0 0% 100%;  /* Pure white sidebar */
