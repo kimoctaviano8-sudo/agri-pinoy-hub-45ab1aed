@@ -9,7 +9,7 @@ const Maintenance = () => {
   return (
     <div className="min-h-screen bg-gradient-earth flex items-center justify-center p-6">
       <div className="text-center max-w-md">
-        <div className="w-48 h-48 mx-auto mb-6">
+        <div className="w-72 h-72 mx-auto mb-6">
           <DotLottieReact
             src="https://lottie.host/92045648-1edc-4e31-a37b-94222ce1e728/OMGDjgkz6c.lottie"
             loop
