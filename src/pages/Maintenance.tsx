@@ -1,6 +1,10 @@
-import { Construction, Wrench } from "lucide-react";
+import { Construction, Wrench, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const Maintenance = () => {
+  const { logout } = useAuth();
+
   return (
     <div className="min-h-screen bg-gradient-earth flex items-center justify-center p-6">
       <div className="text-center max-w-md">
@@ -11,10 +15,14 @@ const Maintenance = () => {
         <p className="text-muted-foreground mb-6 leading-relaxed">
           We are currently performing scheduled maintenance to improve your experience. Please check back soon.
         </p>
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6">
           <Wrench className="w-4 h-4" />
           <span>We'll be back shortly</span>
         </div>
+        <Button variant="outline" onClick={logout} className="gap-2">
+          <LogOut className="w-4 h-4" />
+          Logout
+        </Button>
       </div>
     </div>
   );
