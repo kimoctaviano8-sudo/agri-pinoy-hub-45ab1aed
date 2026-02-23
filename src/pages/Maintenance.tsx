@@ -1,13 +1,9 @@
-import { Wrench, LogOut } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
+import { Wrench } from "lucide-react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 const Maintenance = () => {
-  const { logout } = useAuth();
-
   return (
-    <div className="min-h-screen bg-gradient-earth flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-earth flex items-start justify-center pt-12 p-6">
       <div className="text-center max-w-md">
         <div className="w-96 h-96 mx-auto -mb-4">
           <DotLottieReact
@@ -20,17 +16,13 @@ const Maintenance = () => {
           />
         </div>
         <h1 className="text-2xl font-bold text-foreground mb-2">Under Maintenance</h1>
-        <p className="text-muted-foreground mb-6 leading-relaxed">
+        <p className="text-muted-foreground mb-4 leading-relaxed">
           We are currently performing scheduled maintenance to improve your experience. Please check back soon.
         </p>
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6">
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Wrench className="w-4 h-4" />
           <span>We'll be back shortly</span>
         </div>
-        <Button variant="outline" onClick={logout} className="gap-2">
-          <LogOut className="w-4 h-4" />
-          Logout
-        </Button>
       </div>
     </div>
   );
