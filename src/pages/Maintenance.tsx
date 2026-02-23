@@ -9,7 +9,7 @@ const Maintenance = () => {
   return (
     <div className="min-h-screen bg-gradient-earth flex items-center justify-center p-6">
       <div className="text-center max-w-md">
-        <div className="w-72 h-72 mx-auto mb-6">
+        <div className="w-96 h-96 mx-auto -mb-4">
           <DotLottieReact
             src="https://lottie.host/92045648-1edc-4e31-a37b-94222ce1e728/OMGDjgkz6c.lottie"
             loop
@@ -19,7 +19,7 @@ const Maintenance = () => {
             backgroundColor="transparent"
           />
         </div>
-        <h1 className="text-2xl font-bold text-foreground mb-3">Under Maintenance</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-2">Under Maintenance</h1>
         <p className="text-muted-foreground mb-6 leading-relaxed">
           We are currently performing scheduled maintenance to improve your experience. Please check back soon.
         </p>
