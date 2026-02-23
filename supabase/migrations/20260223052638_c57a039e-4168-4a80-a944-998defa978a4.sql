@@ -1,0 +1,2 @@
+ALTER TABLE public.app_settings ADD COLUMN maintenance_mode boolean NOT NULL DEFAULT false;
+ALTER TABLE public.app_settings ADD COLUMN maintenance_message text DEFAULT 'We are currently performing scheduled maintenance. Please check back soon.';

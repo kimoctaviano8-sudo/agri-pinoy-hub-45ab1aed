@@ -6,6 +6,7 @@ interface AppSettings {
   vacation_mode: boolean;
   vacation_mode_message: string;
   hide_product_prices: boolean;
+  maintenance_mode: boolean;
   updated_at: string;
 }
 
@@ -13,6 +14,7 @@ export const useVacationMode = () => {
   const [vacationMode, setVacationMode] = useState(false);
   const [vacationMessage, setVacationMessage] = useState('You may contact us to further discuss about this product.');
   const [hideProductPrices, setHideProductPrices] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -20,7 +22,7 @@ export const useVacationMode = () => {
     try {
       const { data, error } = await supabase
         .from('app_settings' as any)
-        .select('vacation_mode, vacation_mode_message, hide_product_prices, updated_at')
+        .select('vacation_mode, vacation_mode_message, hide_product_prices, maintenance_mode, updated_at')
         .eq('id', 'global')
         .single();
 
@@ -34,6 +36,7 @@ export const useVacationMode = () => {
         setVacationMode(settings.vacation_mode);
         setVacationMessage(settings.vacation_mode_message || 'You may contact us to further discuss about this product.');
         setHideProductPrices(settings.hide_product_prices ?? false);
+        setMaintenanceMode(settings.maintenance_mode ?? false);
       }
     } catch (error) {
       console.error('Error fetching app settings:', error);
@@ -97,6 +100,7 @@ export const useVacationMode = () => {
           setVacationMode(newData.vacation_mode);
           setVacationMessage(newData.vacation_mode_message || 'You may contact us to further discuss about this product.');
           setHideProductPrices(newData.hide_product_prices ?? false);
+          setMaintenanceMode(newData.maintenance_mode ?? false);
         }
       )
       .subscribe();
@@ -140,13 +144,49 @@ export const useVacationMode = () => {
     }
   }, [toast]);
 
+  const toggleMaintenanceMode = useCallback(async (enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('app_settings' as any)
+        .update({ maintenance_mode: enabled })
+        .eq('id', 'global');
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update maintenance mode.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      setMaintenanceMode(enabled);
+      toast({
+        title: enabled ? "Maintenance Mode Enabled" : "Maintenance Mode Disabled",
+        description: enabled
+          ? "Users will see the maintenance page."
+          : "The app is now accessible to users.",
+      });
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update maintenance mode",
+        variant: "destructive"
+      });
+      return false;
+    }
+  }, [toast]);
+
   return {
     vacationMode,
     vacationMessage,
     hideProductPrices,
+    maintenanceMode,
     loading,
     toggleVacationMode,
     toggleHideProductPrices,
+    toggleMaintenanceMode,
     refetch: fetchSettings,
   };
 };

@@ -7,6 +7,9 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminData } from "@/hooks/useAdminData";
 import { supabase } from "@/integrations/supabase/client";
+import { useVacationModeContext } from "@/contexts/VacationModeContext";
+import { Switch } from "@/components/ui/switch";
+import { Construction } from "lucide-react";
 
 // Import refactored components
 import { AdminStats } from "@/components/admin/AdminStats";
@@ -20,6 +23,22 @@ import { StockManagement } from "@/components/admin/StockManagement";
 import { AdminCarouselTab } from "@/components/admin/AdminCarouselTab";
 import { AdminVouchersTab } from "@/components/admin/AdminVouchersTab";
 import { AdminDealersTab } from "@/components/admin/AdminDealersTab";
+
+const MaintenanceToggle = () => {
+  const { maintenanceMode, toggleMaintenanceMode } = useVacationModeContext();
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+      <div className="flex items-center gap-3">
+        <Construction className="w-5 h-5 text-orange-500" />
+        <div>
+          <p className="text-sm font-medium">Maintenance Mode</p>
+          <p className="text-xs text-muted-foreground">Show maintenance page to all users</p>
+        </div>
+      </div>
+      <Switch checked={maintenanceMode} onCheckedChange={toggleMaintenanceMode} />
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const {
@@ -150,7 +169,10 @@ const AdminDashboard = () => {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-1">Admin Panel</h1>
-          <p className="text-sm text-muted-foreground">Manage your app content</p>
+          <p className="text-sm text-muted-foreground mb-4">Manage your app content</p>
+          
+          {/* Maintenance Mode Toggle */}
+          <MaintenanceToggle />
         </div>
 
         {/* Stats */}

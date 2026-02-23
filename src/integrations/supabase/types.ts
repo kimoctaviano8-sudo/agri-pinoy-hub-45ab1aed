@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           hide_product_prices: boolean
           id: string
+          maintenance_message: string | null
+          maintenance_mode: boolean
           show_carousel: boolean | null
           updated_at: string
           updated_by: string | null
@@ -27,6 +29,8 @@ export type Database = {
         Insert: {
           hide_product_prices?: boolean
           id?: string
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           show_carousel?: boolean | null
           updated_at?: string
           updated_by?: string | null
@@ -36,6 +40,8 @@ export type Database = {
         Update: {
           hide_product_prices?: boolean
           id?: string
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           show_carousel?: boolean | null
           updated_at?: string
           updated_by?: string | null
