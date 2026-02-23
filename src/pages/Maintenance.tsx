@@ -11,7 +11,7 @@ const Maintenance = () => {
       <div className="text-center max-w-md">
         <div className="w-48 h-48 mx-auto mb-6">
           <DotLottieReact
-            src="https://lottie.host/embed/926aaef4-cad5-41a0-a33d-c807366237e6/3mUzSlod6a.lottie"
+            src="https://lottie.host/926aaef4-cad5-41a0-a33d-c807366237e6/3mUzSlod6a.lottie"
             loop
             autoplay
             className="w-full h-full"
