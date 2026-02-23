@@ -1,6 +1,7 @@
-import { Construction, Wrench, LogOut } from "lucide-react";
+import { Wrench, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 const Maintenance = () => {
   const { logout } = useAuth();
@@ -8,8 +9,13 @@ const Maintenance = () => {
   return (
     <div className="min-h-screen bg-gradient-earth flex items-center justify-center p-6">
       <div className="text-center max-w-md">
-        <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Construction className="w-12 h-12 text-primary" />
+        <div className="w-48 h-48 mx-auto mb-6">
+          <DotLottieReact
+            src="https://lottie.host/embed/926aaef4-cad5-41a0-a33d-c807366237e6/3mUzSlod6a.lottie"
+            loop
+            autoplay
+            className="w-full h-full"
+          />
         </div>
         <h1 className="text-2xl font-bold text-foreground mb-3">Under Maintenance</h1>
         <p className="text-muted-foreground mb-6 leading-relaxed">
